@@ -1,0 +1,196 @@
+{
+  "name": "altium365-scripting",
+  "displayName": "Altium 365 Scripting",
+  "description": "Run Python scripts locally against the Altium 365 GraphQL API.",
+  "version": "0.0.2",
+  "publisher": "local",
+  "engines": {
+    "vscode": "^1.85.0",
+    "node": ">=18"
+  },
+  "categories": ["Other"],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "altium365.runScript",
+        "title": "Altium 365: Run Python Script",
+        "category": "Altium 365"
+      },
+      {
+        "command": "altium365.debugScript",
+        "title": "Altium 365: Debug Python Script",
+        "category": "Altium 365"
+      },
+      {
+        "command": "altium365.signIn",
+        "title": "Altium 365: Sign In",
+        "category": "Altium 365"
+      },
+      {
+        "command": "altium365.signOut",
+        "title": "Altium 365: Sign Out",
+        "category": "Altium 365"
+      },
+      {
+        "command": "altium365.selectWorkspace",
+        "title": "Altium 365: Select Workspace",
+        "category": "Altium 365"
+      },
+      {
+        "command": "altium365.selectEnvironment",
+        "title": "Altium 365: Select Environment (Dev / Uat / Prod)",
+        "category": "Altium 365"
+      }
+    ],
+    "configuration": {
+      "title": "Altium 365 Scripting",
+      "properties": {
+        "altium365.graphqlEndpoint": {
+          "type": "string",
+          "default": "https://usw2.dev-365.altium.com/napi/gateway/graphql",
+          "description": "Altium 365 GraphQL endpoint URL. Used to list workspaces and as ALTIUM365_GRAPHQL_ENDPOINT for scripts."
+        },
+        "altium365.clientId": {
+          "type": "string",
+          "default": "20C490ED-58EF-11EF-9194-02A5C34CA889",
+          "description": "OAuth2 client_id of the desktop application."
+        },
+        "altium365.authEndpoint": {
+          "type": "string",
+          "default": "https://auth.dev1.altium.com/connect/authorize",
+          "description": "OAuth2 authorization endpoint."
+        },
+        "altium365.tokenEndpoint": {
+          "type": "string",
+          "default": "https://auth.dev1.altium.com/connect/token",
+          "description": "OAuth2 token endpoint."
+        },
+        "altium365.scopes": {
+          "type": "string",
+          "default": "openid profile",
+          "description": "Space-delimited OAuth2 scopes."
+        },
+        "altium365.audience": {
+          "type": "string",
+          "default": "",
+          "description": "Optional 'audience' parameter (Auth0-style providers)."
+        },
+        "altium365.redirectPort": {
+          "type": "number",
+          "default": 8080,
+          "description": "Loopback port for the OAuth2 redirect."
+        },
+        "altium365.redirectPath": {
+          "type": "string",
+          "default": "/oauth/v2/callback",
+          "description": "Loopback path for the OAuth2 redirect (must match what the IdP has registered)."
+        },
+        "altium365.pythonPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to the Python interpreter. If empty, the ms-python.python extension or 'python' on PATH will be used."
+        },
+        "altium365.inputParametersPath": {
+          "type": "string",
+          "default": "",
+          "description": "Optional path to a JSON file passed as `input_parameters` to onExecute. If empty, the runner looks for '<script>.params.json' next to the script."
+        },
+        "altium365.extraEnv": {
+          "type": "object",
+          "default": {},
+          "description": "Extra environment variables passed to the Python process."
+        },
+        "altium365.injectHelper": {
+          "type": "boolean",
+          "default": true,
+          "description": "Inject the bundled 'a365' helper module on PYTHONPATH so scripts can `import a365`."
+        },
+        "altium365.promptForProjectId": {
+          "type": "boolean",
+          "default": true,
+          "description": "If no input_parameters file is configured/found, prompt for a projectId before running the script. The last value is remembered per workspace."
+        },
+        "altium365.activeEnvironment": {
+          "type": "string",
+          "default": "",
+          "description": "Name of the active environment from `altium365.environments`. Managed by the 'Altium 365: Select Environment' command."
+        },
+        "altium365.environments": {
+          "type": "object",
+          "default": {
+            "Dev": {
+              "graphqlEndpoint": "https://usw2.dev-365.altium.com/napi/gateway/graphql",
+              "authEndpoint": "https://auth.dev1.altium.com/connect/authorize",
+              "tokenEndpoint": "https://auth.dev1.altium.com/connect/token",
+              "scopes": "openid profile",
+              "audience": ""
+            },
+            "Uat": {
+              "graphqlEndpoint": "",
+              "authEndpoint": "",
+              "tokenEndpoint": "",
+              "scopes": "openid profile",
+              "audience": ""
+            },
+            "Prod": {
+              "graphqlEndpoint": "https://eur.365.altium.com/napi/gateway/graphql",
+              "authEndpoint": "",
+              "tokenEndpoint": "",
+              "scopes": "openid profile",
+              "audience": ""
+            }
+          },
+          "description": "Named environments. Each entry can override graphqlEndpoint, authEndpoint, tokenEndpoint, scopes, audience. Use 'Altium 365: Select Environment' to switch.",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "graphqlEndpoint": { "type": "string" },
+              "authEndpoint": { "type": "string" },
+              "tokenEndpoint": { "type": "string" },
+              "scopes": { "type": "string" },
+              "audience": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "menus": {
+      "editor/title/run": [
+        {
+          "command": "altium365.runScript",
+          "when": "resourceLangId == python",
+          "group": "navigation"
+        },
+        {
+          "command": "altium365.debugScript",
+          "when": "resourceLangId == python",
+          "group": "navigation"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "altium365.runScript",
+          "when": "resourceLangId == python",
+          "group": "navigation"
+        },
+        {
+          "command": "altium365.debugScript",
+          "when": "resourceLangId == python",
+          "group": "navigation"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.4.0"
+  }
+}
