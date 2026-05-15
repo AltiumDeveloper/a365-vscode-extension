@@ -128,16 +128,16 @@
               "audience": ""
             },
             "Uat": {
-              "graphqlEndpoint": "",
-              "authEndpoint": "",
-              "tokenEndpoint": "",
+              "graphqlEndpoint": "https://eur.uat-365.altium.com/napi/gateway/graphql",
+              "authEndpoint": "https://auth.uat1.altium.com/connect/authorize",
+              "tokenEndpoint": "https://auth.uat1.altium.com/connect/token",
               "scopes": "openid profile",
               "audience": ""
             },
             "Prod": {
               "graphqlEndpoint": "https://eur.365.altium.com/napi/gateway/graphql",
-              "authEndpoint": "",
-              "tokenEndpoint": "",
+              "authEndpoint": "https://auth.altium.com/connect/authorize",
+              "tokenEndpoint": "https://auth.altium.com/connect/token",
               "scopes": "openid profile",
               "audience": ""
             }
