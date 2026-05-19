@@ -7,11 +7,11 @@
 
 ### Side Panel
 
-- [ ] **PANEL-01**: Activity Bar entry point opens the A365 side panel
+- [x] **PANEL-01**: Activity Bar entry point opens the A365 side panel
 - [ ] **PANEL-02**: Side panel shows a list of workspaces the user has access to at the top level
 - [ ] **PANEL-03**: Each workspace expands to show its projects
 - [ ] **PANEL-04**: Each workspace expands to show its scripts (sibling to projects)
-- [ ] **PANEL-05**: Scripts have context menu actions: Run Script (locally), Edit Script, Execute Remotely, Publish Script
+- [x] **PANEL-05**: Scripts have context menu actions: Run Script (locally), Edit Script, Execute Remotely, Publish Script
 - [x] **PANEL-06**: Auth status (signed-in user, active environment) is visible in the panel header or status bar
 
 ### Remote Scripts
@@ -66,11 +66,11 @@
 | PKG-03 | Phase 1: Packaging | Complete |
 | PKG-04 | Phase 1: Packaging | Complete |
 | PKG-05 | Phase 1: Packaging | Complete |
-| PANEL-01 | Phase 2: Side Panel | Pending |
+| PANEL-01 | Phase 2: Side Panel | Complete |
 | PANEL-02 | Phase 2: Side Panel | Pending |
 | PANEL-03 | Phase 2: Side Panel | Pending |
 | PANEL-04 | Phase 2: Side Panel | Pending |
-| PANEL-05 | Phase 2: Side Panel | Pending |
+| PANEL-05 | Phase 2: Side Panel | Complete |
 | PANEL-06 | Phase 2: Side Panel | Complete |
 | SCRIPT-01 | Phase 2: Side Panel | Complete |
 | SCRIPT-02 | Phase 3: Remote Script Operations | Pending |
