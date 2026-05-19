@@ -66,7 +66,7 @@ Plans:
   5. Workspace and project context menus include `Open in Browser`, which opens the node's A365 URL in the system browser
 **Plans**: 5 plans
 Plans:
-- [ ] 02.1-01-PLAN.md — Category-grouped workspace children (G-01 / PANEL-07)
+- [x] 02.1-01-PLAN.md — Category-grouped workspace children (G-01 / PANEL-07)
 - [ ] 02.1-02-PLAN.md — Globe-icon view-title env switcher (G-04 / PANEL-10)
 - [ ] 02.1-03-PLAN.md — Drop GUIDs from labels + Copy ID command (G-02 / PANEL-08)
 - [ ] 02.1-04-PLAN.md — Active-workspace cue in tree (G-03 / PANEL-09)
@@ -94,4 +94,5 @@ Phases execute in numeric order: 1 → 2 → 3
 |-------|----------------|--------|-----------|
 | 1. Packaging | 2/2 | Complete   | 2026-05-19 |
 | 2. Side Panel | 6/6 | Complete | 2026-05-19 |
+| 02.1 Side-Panel UX Closure | 1/5 | In Progress | - |
 | 3. Remote Script Operations | 0/? | Not started | - |

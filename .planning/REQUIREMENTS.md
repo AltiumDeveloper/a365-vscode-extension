@@ -13,7 +13,7 @@
 - [x] **PANEL-04**: Each workspace expands to show its scripts (sibling to projects) *(superseded by PANEL-07 in Phase 02.1 — projects and scripts now grouped under category parent nodes based on UAT feedback)*
 - [x] **PANEL-05**: Scripts have context menu actions: Run Script (locally), Edit Script, Execute Remotely, Publish Script
 - [x] **PANEL-06**: Auth status (signed-in user, active environment) is visible in the panel header or status bar
-- [ ] **PANEL-07**: Workspace expansion shows two category parent nodes — `Projects (n)` and `Scripts (n)` — each lazy-loading its real children (reverses PANEL-04 based on Phase 02 UAT)
+- [x] **PANEL-07**: Workspace expansion shows two category parent nodes — `Projects (n)` and `Scripts (n)` — each lazy-loading its real children (reverses PANEL-04 based on Phase 02 UAT)
 - [ ] **PANEL-08**: Tree node labels exclude backend GUIDs; a `Copy ID` context menu item exposes the GUID for workspaces, projects, and scripts
 - [ ] **PANEL-09**: The active workspace (the one whose token was last exchanged) is visually distinguished from inactive workspaces in the tree
 - [ ] **PANEL-10**: The A365 view title bar exposes a globe-icon action that runs `altium365.selectEnvironment`
@@ -77,7 +77,7 @@
 | PANEL-04 | Phase 2: Side Panel | Complete (superseded by PANEL-07) |
 | PANEL-05 | Phase 2: Side Panel | Complete |
 | PANEL-06 | Phase 2: Side Panel | Complete |
-| PANEL-07 | Phase 02.1: Side-Panel UX Closure | Pending |
+| PANEL-07 | Phase 02.1: Side-Panel UX Closure | Complete (02.1-01, 2026-05-19) |
 | PANEL-08 | Phase 02.1: Side-Panel UX Closure | Pending |
 | PANEL-09 | Phase 02.1: Side-Panel UX Closure | Pending |
 | PANEL-10 | Phase 02.1: Side-Panel UX Closure | Pending |

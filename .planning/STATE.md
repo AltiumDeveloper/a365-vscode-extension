@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 02-06-PLAN.md (Phase 2 complete; SCRIPT-01/D-09 deferred to Phase 3)
-last_updated: "2026-05-19T22:38:49.797Z"
-last_activity: 2026-05-19 -- Phase 02.1 planning complete
+stopped_at: Completed 02.1-01-PLAN.md (G-01 / PANEL-07 — category-grouped workspace children)
+last_updated: "2026-05-19T22:47:37Z"
+last_activity: 2026-05-19 -- Completed 02.1-01 (category-grouped workspace tree)
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 13
-  completed_plans: 8
-  percent: 50
+  completed_plans: 9
+  percent: 69
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-19)
 
 **Core value:** A developer can open VS Code, sign in once, and go from browsing their A365 workspace to running or deploying a script — without leaving the editor or hand-crafting API calls.
-**Current focus:** Phase 02.1 — side-panel UX closure (gap-close insert)
+**Current focus:** Phase 02.1 — side-panel-ux
 
 ## Current Position
 
-Phase: 02.1 (side-panel-ux) — Ready to plan
-Plan: 0 of 0 — run /gsd-plan-phase 02.1
-Status: Ready to execute
-Last activity: 2026-05-19 -- Phase 02.1 planning complete
+Phase: 02.1 (side-panel-ux) — EXECUTING
+Plan: 2 of 5
+Status: Executing Phase 02.1 — 02.1-01 complete (G-01 / PANEL-07)
+Last activity: 2026-05-19 -- Completed 02.1-01 (category-grouped workspace tree)
 
 Progress: [██████████] 100% of Phase 2 plans; 67% of milestone
 
@@ -66,6 +66,7 @@ Wave structure:
 | Phase 02 P04 | 2 min | 2 tasks | 2 files |
 | Phase 02 P05 | 3 min | 2 tasks | 2 files |
 | Phase 02 P06 | 4 min | 2 tasks | 2 files |
+| Phase 02.1 P01 | 4 min | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -86,6 +87,8 @@ Recent decisions affecting current work:
 - [Phase 01-packaging]: Bumped extension version 0.0.2 to 0.1.0 to mark the first packaged build
 - [Phase ?]: [Phase 01-packaging]: Use main-only CI trigger with explicit npm run compile before npm run package for fail-fast tsc errors — Per D-08/D-09; redundant compile is acceptable for clearer failure step
 - [Phase 02-side-panel P06]: D-09 / SCRIPT-01 (run-local from tree) deferred to Phase 3 — Task 1 blocking human-verify of the A365 file-download endpoint (Assumption A1) and package format (A2) returned BLOCKED because no live A365 workspace was available for verification. All four altium365.script.* commands registered as Phase 3 placeholders so the right-click menu surfaces consistent UX. The runScriptAtPath refactor shipped anyway and is ready for Phase 3 to consume.
+- [Phase 02.1-01]: Workspace expand performs single Promise.all([listProjects, listScripts]) and hydrates both projectsCache + scriptsCache; category expansion is a pure synchronous cache read — preserves Phase 02's "one round-trip per workspace expand" performance contract while enabling collapsible Projects/Scripts groups
+- [Phase 02.1-01]: Missing category cache treated as empty array rather than triggering a fresh fetch — keeps category resolution side-effect-free; refresh() handles repopulation
 
 ### Pending Todos
 
@@ -107,6 +110,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-19T17:30:00.000Z
-Stopped at: Completed 02-06-PLAN.md (Phase 2 complete; SCRIPT-01/D-09 deferred to Phase 3)
+Last session: 2026-05-19T22:47:37Z
+Stopped at: Completed 02.1-01-PLAN.md (G-01 / PANEL-07 — category-grouped workspace children)
 Resume file: None
