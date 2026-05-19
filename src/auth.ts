@@ -24,9 +24,9 @@ export interface TokenSet {
 }
 
 const SECRET_TOKENS = 'altium365.tokens';
-const SECRET_WORKSPACE_TOKENS = 'altium365.workspaceTokens';
 const SECRET_WS_TOKEN_PREFIX = 'altium365.workspaceTokens.';
 const GLOBAL_WS_TOKEN_INDEX_KEY = 'altium365.workspaceTokenIds';
+const GLOBAL_SELECTED_WORKSPACE_KEY = 'altium365.selectedWorkspace';
 
 export interface AuthState {
     user?: string;
@@ -225,7 +225,6 @@ export async function signIn(
 
     const stored = withExpiry(tok);
     await context.secrets.store(SECRET_TOKENS, JSON.stringify(stored));
-    await context.secrets.delete(SECRET_WORKSPACE_TOKENS);
     try {
         const claims = decodeIdTokenClaims(stored.id_token);
         authStateEmitter.fire({ signedIn: true, user: userLabelFromClaims(claims) });
@@ -255,7 +254,6 @@ export async function exchangeWorkspaceToken(
     })) as TokenSet;
 
     const stored = withExpiry(tok);
-    await context.secrets.store(SECRET_WORKSPACE_TOKENS, JSON.stringify(stored));
     return stored;
 }
 
@@ -321,16 +319,8 @@ export async function getStoredTokens(
     return raw ? (JSON.parse(raw) as TokenSet) : undefined;
 }
 
-export async function getStoredWorkspaceTokens(
-    context: vscode.ExtensionContext
-): Promise<TokenSet | undefined> {
-    const raw = await context.secrets.get(SECRET_WORKSPACE_TOKENS);
-    return raw ? (JSON.parse(raw) as TokenSet) : undefined;
-}
-
 export async function clearAllTokens(context: vscode.ExtensionContext): Promise<void> {
     await context.secrets.delete(SECRET_TOKENS);
-    await context.secrets.delete(SECRET_WORKSPACE_TOKENS);
     const index = context.globalState.get<string[]>(GLOBAL_WS_TOKEN_INDEX_KEY, []);
     for (const id of index) {
         await context.secrets.delete(SECRET_WS_TOKEN_PREFIX + id);
@@ -365,22 +355,25 @@ export async function getActiveUserLabel(
  * reflects the user's explicit selection via `getSelectedWorkspace` in
  * `workspace.ts`, not the most-recently-exchanged token. Callers should use
  * `getSelectedWorkspace(context)?.workspaceId` from `./workspace`.
- */function isExpired(tok: TokenSet): boolean {
+ */
+function isExpired(tok: TokenSet): boolean {
     if (!tok.expires_at) {
         return false;
     }
     return Math.floor(Date.now() / 1000) >= tok.expires_at;
 }
 
-/** Returns the best available access token for use by scripts. */
-export async function getActiveAccessToken(
+/**
+ * Returns the base (refresh-aware) access token. Refreshes on expiry when a
+ * refresh_token is available; falls through with the stale token on refresh
+ * failure (the caller will see a 401 and the user re-authenticates).
+ * Use this for base-scope GraphQL callers (e.g., listWorkspaces) that must
+ * never receive a workspace-scoped token (WR-05).
+ */
+export async function getBaseAccessToken(
     context: vscode.ExtensionContext,
     cfg: OAuthConfig
 ): Promise<string | undefined> {
-    const ws = await getStoredWorkspaceTokens(context);
-    if (ws && !isExpired(ws)) {
-        return ws.access_token;
-    }
     let base = await getStoredTokens(context);
     if (!base) {
         return undefined;
@@ -393,6 +386,37 @@ export async function getActiveAccessToken(
         }
     }
     return base?.access_token;
+}
+
+/**
+ * Returns the best available access token for use by scripts and workspace-scoped
+ * callers. Routes by the user's explicit workspace selection (D-02): when a
+ * workspace is selected, delegates to ensureWorkspaceToken; otherwise returns the
+ * base token via getBaseAccessToken. On exchange failure, falls back to base so
+ * the caller has SOMETHING to attempt (existing re-sign-in path in extension.ts
+ * handles 401s).
+ *
+ * NOTE: reads the selected workspace inline from globalState to avoid a
+ * circular import with workspace.ts (which already imports from ./auth).
+ */
+export async function getActiveAccessToken(
+    context: vscode.ExtensionContext,
+    cfg: OAuthConfig
+): Promise<string | undefined> {
+    const selected = context.globalState.get<{ workspaceId: string; authId: string }>(
+        GLOBAL_SELECTED_WORKSPACE_KEY
+    );
+    if (selected?.workspaceId && selected?.authId) {
+        try {
+            return await ensureWorkspaceToken(context, cfg, {
+                workspaceId: selected.workspaceId,
+                authId: selected.authId,
+            });
+        } catch {
+            return await getBaseAccessToken(context, cfg);
+        }
+    }
+    return await getBaseAccessToken(context, cfg);
 }
 
 export function readOAuthConfig(): OAuthConfig {
