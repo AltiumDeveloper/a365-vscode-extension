@@ -113,6 +113,16 @@
         "command": "altium365.tree.copyId",
         "title": "Altium 365: Copy ID",
         "category": "Altium 365"
+      },
+      {
+        "command": "altium365.workspace.openInBrowser",
+        "title": "Altium 365: Open Workspace in Browser",
+        "category": "Altium 365"
+      },
+      {
+        "command": "altium365.project.openInBrowser",
+        "title": "Altium 365: Open Project in Browser",
+        "category": "Altium 365"
       }
     ],
     "configuration": {
@@ -300,6 +310,16 @@
           "command": "altium365.tree.copyId",
           "when": "view == altium365.tree && viewItem == scriptNode",
           "group": "9_clipboard@1"
+        },
+        {
+          "command": "altium365.workspace.openInBrowser",
+          "when": "view == altium365.tree && viewItem == workspaceNode",
+          "group": "9_open@1"
+        },
+        {
+          "command": "altium365.project.openInBrowser",
+          "when": "view == altium365.tree && viewItem == projectNode",
+          "group": "9_open@1"
         }
       ]
     }
