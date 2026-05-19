@@ -305,11 +305,13 @@ function createMonochromePng(width, height, drawFn) {
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **`repository` URL** — What is the actual GitHub repo URL for this extension? The planner should either use the real URL or add `--allow-missing-repository` to the `package` script. Recommendation: add the flag to avoid blocking on an unknown URL.
+1. **`repository` URL** — What is the actual GitHub repo URL for this extension? The planner should either use the real URL or add `--allow-missing-repository` to the `package` script. Recommendation: add the flag to avoid blocking on an unknown URL.  
+   **RESOLVED:** Plans use `https://github.com/altium/a365-vscode-extension` as the repository URL in `package.json`.
 
-2. **Icon rendering approach** — The user wants a brand-inspired icon. A raw PNG writer can produce geometric shapes but cannot faithfully render the A365 brand mark. Recommendation: produce a simple, recognizable monochrome icon (circle + circuit node pattern) and note that it can be replaced by a designer later.
+2. **Icon rendering approach** — The user wants a brand-inspired icon. A raw PNG writer can produce geometric shapes but cannot faithfully render the A365 brand mark. Recommendation: produce a simple, recognizable monochrome icon (circle + circuit node pattern) and note that it can be replaced by a designer later.  
+   **RESOLVED:** Using inline Node.js PNG writer (option 1) — zero new dependencies, deterministic, self-contained in `scripts/generate-icon.js`.
 
 ---
 
