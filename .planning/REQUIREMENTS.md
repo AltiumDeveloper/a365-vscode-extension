@@ -12,7 +12,7 @@
 - [ ] **PANEL-03**: Each workspace expands to show its projects
 - [ ] **PANEL-04**: Each workspace expands to show its scripts (sibling to projects)
 - [ ] **PANEL-05**: Scripts have context menu actions: Run Script (locally), Edit Script, Execute Remotely, Publish Script
-- [ ] **PANEL-06**: Auth status (signed-in user, active environment) is visible in the panel header or status bar
+- [x] **PANEL-06**: Auth status (signed-in user, active environment) is visible in the panel header or status bar
 
 ### Remote Scripts
 
@@ -71,7 +71,7 @@
 | PANEL-03 | Phase 2: Side Panel | Pending |
 | PANEL-04 | Phase 2: Side Panel | Pending |
 | PANEL-05 | Phase 2: Side Panel | Pending |
-| PANEL-06 | Phase 2: Side Panel | Pending |
+| PANEL-06 | Phase 2: Side Panel | Complete |
 | SCRIPT-01 | Phase 2: Side Panel | Complete |
 | SCRIPT-02 | Phase 3: Remote Script Operations | Pending |
 | SCRIPT-03 | Phase 3: Remote Script Operations | Pending |
