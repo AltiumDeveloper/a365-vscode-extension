@@ -98,7 +98,6 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
                 );
                 item.contextValue = CTX_WORKSPACE;
                 item.iconPath = new vscode.ThemeIcon('cloud');
-                item.description = n.info.workspaceId;
                 return item;
             }
             case 'projectsCategory': {
@@ -126,7 +125,6 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
                 );
                 item.contextValue = CTX_PROJECT;
                 item.iconPath = new vscode.ThemeIcon('folder');
-                item.description = n.project.id;
                 return item;
             }
             case 'script': {
@@ -137,7 +135,6 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
                 item.contextValue = CTX_SCRIPT;
                 item.iconPath = new vscode.ThemeIcon('file-code');
                 item.tooltip = n.script.description ?? n.script.name;
-                item.description = n.script.scriptId;
                 return item;
             }
             case 'info': {
