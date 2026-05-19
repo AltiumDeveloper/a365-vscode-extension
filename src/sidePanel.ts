@@ -24,7 +24,7 @@ export const CTX_SCRIPTS_CATEGORY = 'scriptsCategoryNode';
 const OUTPUT_PREFIX = '[Altium 365] tree:';
 
 export type A365Node =
-    | { kind: 'workspace'; info: WorkspaceInfo; workspaceUrl: string }
+    | { kind: 'workspace'; info: WorkspaceInfo; workspaceUrl: string; url?: string }
     | {
           kind: 'projectsCategory';
           workspaceId: string;
@@ -38,7 +38,7 @@ export type A365Node =
           workspaceUrl: string;
           count: number;
       }
-    | { kind: 'project'; workspaceId: string; project: ProjectInfo }
+    | { kind: 'project'; workspaceId: string; project: ProjectInfo; url?: string }
     | {
           kind: 'script';
           workspaceId: string;
@@ -229,6 +229,7 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
             kind: 'workspace' as const,
             info,
             workspaceUrl,
+            url: info.url,
         }));
         this.workspacesCache = nodes;
         return nodes;
@@ -257,6 +258,7 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
             kind: 'project' as const,
             workspaceId,
             project: p,
+            url: p.url,
         }));
         const scriptNodes: A365Node[] = sortedScripts.map((s) => ({
             kind: 'script' as const,
