@@ -200,6 +200,12 @@ export async function signIn(
     cfg: OAuthConfig,
     timeoutMs = 180_000
 ): Promise<TokenSet> {
+    // D-05: drain any prior identity's base + per-workspace token cache before
+    // starting a new OAuth dance so an account switch can't leave stale
+    // per-workspace tokens around. D-06: silent — suppress the transient
+    // signedIn:false event the drain would otherwise broadcast mid-sign-in.
+    await clearAllTokens(context, { silent: true });
+
     const { verifier, challenge } = pkcePair();
     const state = b64url(crypto.randomBytes(24));
     const redirectUri = `http://localhost:${cfg.redirectPort}${cfg.redirectPath}`;
@@ -335,17 +341,22 @@ export async function getStoredTokens(
     return raw ? (JSON.parse(raw) as TokenSet) : undefined;
 }
 
-export async function clearAllTokens(context: vscode.ExtensionContext): Promise<void> {
+export async function clearAllTokens(
+    context: vscode.ExtensionContext,
+    options?: { silent?: boolean }
+): Promise<void> {
     await context.secrets.delete(SECRET_TOKENS);
     const index = context.globalState.get<string[]>(GLOBAL_WS_TOKEN_INDEX_KEY, []);
     for (const id of index) {
         await context.secrets.delete(SECRET_WS_TOKEN_PREFIX + id);
     }
     await context.globalState.update(GLOBAL_WS_TOKEN_INDEX_KEY, undefined);
-    try {
-        authStateEmitter.fire({ signedIn: false });
-    } catch {
-        // emitter failures must not break sign-out
+    if (!options?.silent) {
+        try {
+            authStateEmitter.fire({ signedIn: false });
+        } catch {
+            // emitter failures must not break sign-out
+        }
     }
 }
 
