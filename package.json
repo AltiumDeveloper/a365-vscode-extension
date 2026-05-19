@@ -1,14 +1,20 @@
 {
   "name": "altium365-scripting",
-  "displayName": "Altium 365 Scripting",
-  "description": "Run Python scripts locally against the Altium 365 GraphQL API.",
-  "version": "0.0.2",
-  "publisher": "local",
+  "displayName": "Altium 365 Developer Tools",
+  "description": "Browse Altium 365 workspaces, run and debug Python scripts locally with live API access, and manage remote scripts — all without leaving VS Code.",
+  "version": "0.1.0",
+  "publisher": "altium",
   "engines": {
     "vscode": "^1.85.0",
     "node": ">=18"
   },
   "categories": ["Other"],
+  "icon": "resources/icon.png",
+  "keywords": ["altium", "altium365", "a365", "scripting", "pcb", "eda", "electronics"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/altium/a365-vscode-extension"
+  },
   "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {
@@ -186,11 +192,13 @@
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./"
+    "watch": "tsc -watch -p ./",
+    "package": "vsce package"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
     "@types/vscode": "^1.85.0",
-    "typescript": "^5.4.0"
+    "typescript": "^5.4.0",
+    "@vscode/vsce": "^3.9.1"
   }
 }
