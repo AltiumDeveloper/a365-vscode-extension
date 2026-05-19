@@ -4,13 +4,13 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Completed 02.1-01-PLAN.md (G-01 / PANEL-07 — category-grouped workspace children)
-last_updated: "2026-05-19T22:50:26.933Z"
+last_updated: "2026-05-19T22:53:30.551Z"
 last_activity: 2026-05-19
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 13
-  completed_plans: 10
+  completed_plans: 11
   percent: 50
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-05-19)
 ## Current Position
 
 Phase: 02.1 (side-panel-ux) — EXECUTING
-Plan: 3 of 5
+Plan: 4 of 5
 Status: Ready to execute
 Last activity: 2026-05-19
 
-Progress: [████████░░] 77%
+Progress: [█████████░] 85%
 
 Wave structure:
 
@@ -68,6 +68,7 @@ Wave structure:
 | Phase 02 P06 | 4 min | 2 tasks | 2 files |
 | Phase 02.1 P01 | 4 min | 2 tasks | 1 files |
 | Phase 02.1 P02 | 1 min | 1 tasks | 1 files |
+| Phase 02.1 P03 | 3 min | 4 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -91,6 +92,7 @@ Recent decisions affecting current work:
 - [Phase 02.1-01]: Workspace expand performs single Promise.all([listProjects, listScripts]) and hydrates both projectsCache + scriptsCache; category expansion is a pure synchronous cache read — preserves Phase 02's "one round-trip per workspace expand" performance contract while enabling collapsible Projects/Scripts groups
 - [Phase 02.1-01]: Missing category cache treated as empty array rather than triggering a fresh fetch — keeps category resolution side-effect-free; refresh() handles repopulation
 - [Phase 02.1-02]: Bound view/title globe icon to existing altium365.selectEnvironment command (D-08 named it altium365.switchEnvironment which is a typo) — Reuse existing handler — zero new code; D-08 behaviour preserved with the actual command id that compiles
+- [Phase 02.1-03]: New shared module src/treeCommands.ts hosts tree-generic command handlers per D-11 — registerTreeCommands(ctx, output) factory mirrors registerScriptCommands shape; future plans (Open in Browser) append disposables to the returned array
 
 ### Pending Todos
 
@@ -112,6 +114,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-19T22:50:20.173Z
+Last session: 2026-05-19T22:53:21.806Z
 Stopped at: Completed 02.1-01-PLAN.md (G-01 / PANEL-07 — category-grouped workspace children)
 Resume file: None
