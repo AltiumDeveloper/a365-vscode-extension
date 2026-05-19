@@ -252,6 +252,12 @@
           "command": "altium365.tree.refresh",
           "when": "view == altium365.tree",
           "group": "navigation"
+        },
+        {
+          "command": "altium365.selectEnvironment",
+          "when": "view == altium365.tree && altium365.signedIn",
+          "group": "navigation",
+          "icon": "$(globe)"
         }
       ],
       "view/item/context": [
