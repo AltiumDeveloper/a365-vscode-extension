@@ -120,3 +120,31 @@ export async function listProjects(
     const nodes = data?.desProjects?.nodes;
     return Array.isArray(nodes) ? (nodes as ProjectInfo[]) : [];
 }
+
+export interface ScriptInfo {
+    scriptId: string;
+    name: string;
+    description?: string;
+}
+
+// TODO: paginate if hasNextPage (RESEARCH.md Assumption A3 — 100-item page is sufficient for v1)
+const LIST_SCRIPTS_QUERY = `
+    query ListScripts($first: Int = 100) {
+        gloScrScripts(first: $first) {
+            nodes {
+                scriptId
+                name
+                description
+            }
+        }
+    }
+`;
+
+export async function listScripts(
+    endpoint: string,
+    workspaceToken: string
+): Promise<ScriptInfo[]> {
+    const data = await graphqlRequest(endpoint, workspaceToken, LIST_SCRIPTS_QUERY, { first: 100 });
+    const nodes = data?.gloScrScripts?.nodes;
+    return Array.isArray(nodes) ? (nodes as ScriptInfo[]) : [];
+}
