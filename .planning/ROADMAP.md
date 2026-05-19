@@ -62,7 +62,7 @@ Plans:
   1. Expanding a workspace shows two category nodes — `Projects (n)` and `Scripts (n)` — each lazy-loading its real children (reverses Phase 02 D-05/PANEL-04)
   2. Tree labels for workspaces, projects, and scripts no longer contain backend GUIDs; a `Copy ID` context menu item is available on each node
   3. The active workspace is visually distinguishable from inactive workspaces in the tree
-  4. The A365 view title exposes a globe-icon action that runs the existing `altium365.switchEnvironment` command
+  4. The A365 view title exposes a globe-icon action that runs the existing `altium365.selectEnvironment` command
   5. Workspace and project context menus include `Open in Browser`, which opens the node's A365 URL in the system browser
 **Plans**: 5 plans
 Plans:
