@@ -2,6 +2,39 @@ import * as vscode from 'vscode';
 import { A365Node } from './sidePanel';
 
 /**
+ * Safely open an http(s) URL supplied by the GraphQL backend in the user's
+ * external browser. Rejects any other scheme (javascript:, file:, vscode:,
+ * data:, ...) defensively — `vscode.Uri.parse` is permissive and would
+ * otherwise hand a hostile or malformed backend URL to `openExternal`. See
+ * WR-04 in 02.1-REVIEW.md.
+ */
+async function openExternalHttpUrl(
+    url: string,
+    output: vscode.OutputChannel,
+    logTag: string
+): Promise<void> {
+    let parsed: vscode.Uri;
+    try {
+        parsed = vscode.Uri.parse(url, true);
+    } catch (e) {
+        const msg = (e as Error).message;
+        vscode.window.showErrorMessage('Altium 365: malformed URL from server');
+        output.appendLine(`[Altium 365] ${logTag} rejected malformed URL: ${msg}`);
+        return;
+    }
+    if (parsed.scheme !== 'https' && parsed.scheme !== 'http') {
+        vscode.window.showErrorMessage(
+            `Altium 365: refusing to open non-http(s) URL (scheme: ${parsed.scheme})`
+        );
+        output.appendLine(
+            `[Altium 365] ${logTag} rejected URL with scheme=${parsed.scheme}`
+        );
+        return;
+    }
+    await vscode.env.openExternal(parsed);
+}
+
+/**
  * Hosts tree-generic (non-script-scoped) command handlers contributed by
  * Phase 02.1. Mirrors the `registerScriptCommands` factory shape per D-11 of
  * `.planning/phases/02.1-side-panel-ux/02.1-CONTEXT.md`.
@@ -80,7 +113,7 @@ export function registerTreeCommands(
                     return;
                 }
                 try {
-                    await vscode.env.openExternal(vscode.Uri.parse(url));
+                    await openExternalHttpUrl(url, output, 'workspace.openInBrowser');
                 } catch (e) {
                     const err = e as Error;
                     vscode.window.showErrorMessage(
@@ -111,7 +144,7 @@ export function registerTreeCommands(
                     return;
                 }
                 try {
-                    await vscode.env.openExternal(vscode.Uri.parse(url));
+                    await openExternalHttpUrl(url, output, 'project.openInBrowser');
                 } catch (e) {
                     const err = e as Error;
                     vscode.window.showErrorMessage(
