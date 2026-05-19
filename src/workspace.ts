@@ -14,6 +14,7 @@ export interface WorkspaceInfo {
     name: string;
     workspaceId: string;
     authId: string;
+    url?: string;
 }
 
 export async function graphqlRequest(
@@ -54,7 +55,7 @@ export async function listWorkspaces(
     const data = await graphqlRequest(
         endpoint,
         accessToken,
-        'query { desWorkspaceInfos { name workspaceId authId } }'
+        'query { desWorkspaceInfos { name workspaceId authId url } }'
     );
     return (data?.desWorkspaceInfos as WorkspaceInfo[]) || [];
 }
@@ -106,6 +107,7 @@ export function getSelectedWorkspace(
 export interface ProjectInfo {
     id: string;
     name: string;
+    url?: string;
 }
 
 export async function listProjects(
@@ -115,7 +117,7 @@ export async function listProjects(
     const data = await graphqlRequest(
         endpoint,
         accessToken,
-        'query { desProjects { nodes { id name } } }'
+        'query { desProjects { nodes { id name url } } }'
     );
     const nodes = data?.desProjects?.nodes;
     return Array.isArray(nodes) ? (nodes as ProjectInfo[]) : [];
