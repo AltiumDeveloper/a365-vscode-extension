@@ -1,78 +1,71 @@
-# Altium 365 Scripting (VS Code extension)
+# Altium 365 Developer Tools
 
-Run Python ERC / scripting rules locally with the same `onExecute(context, input_parameters)` contract as the in-browser editor on Altium 365. Includes browser-based OAuth2 sign-in (Authorization Code + PKCE) modeled on the Renesas R365 MATLAB toolbox.
+Browse Altium 365 workspaces, run and debug Python scripts locally with live API access, and manage remote scripts — all without leaving VS Code.
 
-## Sign-in flow
+## Prerequisites
 
-`Altium 365: Sign In` →
+- VS Code 1.85 or later
+- Python 3.8 or later on your system `PATH` (or configured via the `altium365.pythonPath` setting)
+- An Altium 365 account with access to at least one workspace
 
-1. Opens the system browser at `auth.../connect/authorize` (PKCE S256, `state`).
-2. Spins up a loopback HTTP listener on `http://localhost:<port><path>`.
-3. Receives the auth code, exchanges it at `connect/token` for `access_token` + `refresh_token`.
-4. Stores tokens in VS Code SecretStorage.
+## Installation
 
-`Altium 365: Select Workspace` →
+1. Download the latest `.vsix` from the [GitHub Releases](https://github.com/altium/a365-vscode-extension/releases) page (or from the CI workflow artifacts).
+2. In VS Code, open the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`), run **Extensions: Install from VSIX...**, and select the downloaded file.
+3. Reload VS Code when prompted.
 
-1. Calls GraphQL `desWorkspaceInfos { name workspaceId authId }` with the base access token.
-2. Lets you pick a workspace.
-3. Performs a `urn:ietf:params:oauth:grant-type:token-exchange` with scope `a365:workspace:<authId> <baseScopes>` and stores the workspace token.
+## Getting Started
 
-`Altium 365: Run Python Script` uses the workspace token if present, otherwise the base token (auto-refreshed via `refresh_token`).
+1. **Sign in** — Run **Altium 365: Sign In** from the Command Palette. Your browser opens and completes the OAuth2 login. Tokens are stored in VS Code's secure secret storage.
+2. **Select a workspace** — Run **Altium 365: Select Workspace**. Pick a workspace from the list. A workspace-scoped token is obtained and stored automatically.
+3. **Run a script** — Open any `.py` file that defines `onExecute(context, input_parameters)`. Click the run button (▷) in the editor title bar, or right-click the file in the Explorer and choose **Altium 365: Run Python Script**.
 
-`Altium 365: Sign Out` clears all tokens.
+## Running and Debugging Scripts
 
-## Defaults (override in Settings)
+Scripts must define a top-level `onExecute(context, input_parameters)` function. The extension calls it with:
 
-| Setting | Default |
-|---|---|
-| `altium365.clientId` | `20C490ED-58EF-11EF-9194-02A5C34CA889` |
-| `altium365.authEndpoint` | `https://auth.dev1.altium.com/connect/authorize` |
-| `altium365.tokenEndpoint` | `https://auth.dev1.altium.com/connect/token` |
-| `altium365.scopes` | `openid profile` |
-| `altium365.redirectPort` | `8080` |
-| `altium365.redirectPath` | `/oauth/v2/callback` |
-| `altium365.graphqlEndpoint` | `https://usw2.dev-365.altium.com/napi/gateway/graphql` |
+- `context.auth_token` — the current Altium 365 access token (workspace-scoped when a workspace is selected)
+- `context.graphql_url` — the active GraphQL endpoint
+- `input_parameters` — a dict loaded from `<script>.params.json` next to the script, or from the file pointed to by `altium365.inputParametersPath`
 
-The redirect URI sent to the IdP is `http://localhost:<redirectPort><redirectPath>`. It must be registered on the OAuth client.
-
-## Script contract
-
-When you run a `.py` file, the extension spawns:
-
-```
-python -u python/_runner.py <yourScript.py> [<params.json>]
-```
-
-The bootstrap imports your script as a module and calls:
-
-```python
-onExecute(context, input_parameters)
-```
-
-- `context.auth_token` — current Altium 365 access token (workspace token if available).
-- `context.graphql_url` — value of `altium365.graphqlEndpoint`.
-- `input_parameters` — dict from `<scriptName>.params.json` next to the script, or from the `altium365.inputParametersPath` setting, or `{}`.
-
-Environment variables also injected: `ALTIUM365_TOKEN`, `ALTIUM365_GRAPHQL_ENDPOINT`.
-
-The script's directory is added to `sys.path`, so sibling modules (e.g. `ProjectData.py`, `altium_data_models.py`) work as in the A365 editor.
-
-The bundled `a365` Python helper (stdlib-only) is auto-injected on `PYTHONPATH`:
+A bundled `a365` helper module is auto-injected onto `PYTHONPATH`, so scripts can call the Altium 365 GraphQL API directly:
 
 ```python
 import a365
+
 data = a365.query("query { __typename }")
 ```
 
-## Build
+To debug a script, run **Altium 365: Debug Python Script** from the Command Palette or the editor title bar. The script launches under the VS Code debugger, so breakpoints, step-through, and variable inspection all work.
 
-```powershell
-npm install
-npm run compile
-```
+## Switching Environments
 
-Press **F5** to launch an Extension Development Host. Then:
+Run **Altium 365: Select Environment (Dev / Uat / Prod)** from the Command Palette to switch the active A365 environment. Three environments are pre-configured:
 
-1. Run **Altium 365: Sign In** (browser opens; complete login).
-2. Run **Altium 365: Select Workspace**.
-3. Open a `.py` script defining `onExecute(context, input_parameters)` and run **Altium 365: Run Python Script**.
+- **Dev** — `usw2.dev-365.altium.com`
+- **Uat** — `eur.uat-365.altium.com`
+- **Prod** — `eur.365.altium.com`
+
+Switching environments clears the active workspace and workspace token. Run **Altium 365: Select Workspace** again after switching to pick a workspace in the new environment.
+
+You can define additional environments under the `altium365.environments` setting; each entry may override `graphqlEndpoint`, `authEndpoint`, `tokenEndpoint`, `scopes`, and `audience`.
+
+## Commands Reference
+
+| Command | Description |
+| --- | --- |
+| Altium 365: Sign In | Opens the browser for OAuth2 login and stores tokens securely |
+| Altium 365: Sign Out | Clears all stored tokens |
+| Altium 365: Select Workspace | Lists accessible workspaces and stores a workspace-scoped token |
+| Altium 365: Select Environment (Dev / Uat / Prod) | Switches the active A365 environment |
+| Altium 365: Run Python Script | Runs the active `.py` file against the A365 API |
+| Altium 365: Debug Python Script | Runs the active `.py` file under the VS Code debugger |
+
+## Configuration
+
+Key settings (see VS Code Settings for the full list):
+
+- `altium365.pythonPath` — path to the Python interpreter (default: auto-detect via the Python extension or `python` on `PATH`)
+- `altium365.inputParametersPath` — path to a JSON file passed as `input_parameters` (default: look for `<script>.params.json` next to the script)
+- `altium365.promptForProjectId` — whether to prompt for a `projectId` when no params file is found (default: `true`)
+- `altium365.environments` — object of named environments; each entry can override `graphqlEndpoint`, `authEndpoint`, `tokenEndpoint`, `scopes`, and `audience`
