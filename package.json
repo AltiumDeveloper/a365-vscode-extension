@@ -18,6 +18,30 @@
   "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "altium365",
+          "title": "Altium 365",
+          "icon": "$(circuit-board)"
+        }
+      ]
+    },
+    "views": {
+      "altium365": [
+        {
+          "id": "altium365.tree",
+          "name": "Workspaces"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "altium365.tree",
+        "contents": "You are not signed in to Altium 365.\n\n[Sign In](command:altium365.signIn)\n\nLearn more about [Altium 365](https://www.altium.com/altium-365).",
+        "when": "!altium365.signedIn"
+      }
+    ],
     "commands": [
       {
         "command": "altium365.runScript",
