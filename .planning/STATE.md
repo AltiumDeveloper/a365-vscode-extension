@@ -4,13 +4,13 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Completed 02.1-01-PLAN.md (G-01 / PANEL-07 — category-grouped workspace children)
-last_updated: "2026-05-19T22:53:30.551Z"
+last_updated: "2026-05-19T22:55:34.587Z"
 last_activity: 2026-05-19
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 13
-  completed_plans: 11
+  completed_plans: 12
   percent: 50
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-05-19)
 ## Current Position
 
 Phase: 02.1 (side-panel-ux) — EXECUTING
-Plan: 4 of 5
+Plan: 5 of 5
 Status: Ready to execute
 Last activity: 2026-05-19
 
-Progress: [█████████░] 85%
+Progress: [█████████░] 92%
 
 Wave structure:
 
@@ -69,6 +69,7 @@ Wave structure:
 | Phase 02.1 P01 | 4 min | 2 tasks | 1 files |
 | Phase 02.1 P02 | 1 min | 1 tasks | 1 files |
 | Phase 02.1 P03 | 3 min | 4 tasks | 3 files |
+| Phase 02.1 P04 | 3 min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -93,6 +94,8 @@ Recent decisions affecting current work:
 - [Phase 02.1-01]: Missing category cache treated as empty array rather than triggering a fresh fetch — keeps category resolution side-effect-free; refresh() handles repopulation
 - [Phase 02.1-02]: Bound view/title globe icon to existing altium365.selectEnvironment command (D-08 named it altium365.switchEnvironment which is a typo) — Reuse existing handler — zero new code; D-08 behaviour preserved with the actual command id that compiles
 - [Phase 02.1-03]: New shared module src/treeCommands.ts hosts tree-generic command handlers per D-11 — registerTreeCommands(ctx, output) factory mirrors registerScriptCommands shape; future plans (Open in Browser) append disposables to the returned array
+- [Phase 02.1-04]: Active workspace = the workspace whose token was most recently exchanged via ensureWorkspaceToken; tracked in globalState 'altium365.activeWorkspaceId', written exchange-path-only, cleared on sign-out
+- [Phase 02.1-04]: Inactive workspace icon uses ThemeIcon('cloud') + ThemeColor('descriptionForeground') because 'cloud-outline' is not in the standard VS Code codicon set
 
 ### Pending Todos
 
@@ -114,6 +117,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-19T22:53:21.806Z
+Last session: 2026-05-19T22:55:29.004Z
 Stopped at: Completed 02.1-01-PLAN.md (G-01 / PANEL-07 — category-grouped workspace children)
 Resume file: None
