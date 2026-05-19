@@ -53,7 +53,8 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
     public readonly onDidChangeTreeData = this._onDidChange.event;
 
     private workspacesCache?: A365Node[];
-    private childrenCache = new Map<string, A365Node[]>();
+    private projectsCache = new Map<string, A365Node[]>();
+    private scriptsCache = new Map<string, A365Node[]>();
 
     constructor(
         private ctx: vscode.ExtensionContext,
@@ -64,12 +65,24 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
     refresh(node?: A365Node): void {
         if (!node) {
             this.workspacesCache = undefined;
-            this.childrenCache.clear();
+            this.projectsCache.clear();
+            this.scriptsCache.clear();
             this._onDidChange.fire(undefined);
             return;
         }
         if (node.kind === 'workspace') {
-            this.childrenCache.delete(node.info.workspaceId);
+            this.projectsCache.delete(node.info.workspaceId);
+            this.scriptsCache.delete(node.info.workspaceId);
+            this._onDidChange.fire(node);
+            return;
+        }
+        if (node.kind === 'projectsCategory') {
+            this.projectsCache.delete(node.workspaceId);
+            this._onDidChange.fire(node);
+            return;
+        }
+        if (node.kind === 'scriptsCategory') {
+            this.scriptsCache.delete(node.workspaceId);
             this._onDidChange.fire(node);
             return;
         }
@@ -159,6 +172,12 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
             if (element.kind === 'workspace') {
                 return await this.loadWorkspaceChildren(element);
             }
+            if (element.kind === 'projectsCategory') {
+                return this.projectsCache.get(element.workspaceId) ?? [];
+            }
+            if (element.kind === 'scriptsCategory') {
+                return this.scriptsCache.get(element.workspaceId) ?? [];
+            }
             return [];
         } catch (e) {
             const msg = (e as Error).message;
@@ -205,13 +224,9 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
     private async loadWorkspaceChildren(
         element: Extract<A365Node, { kind: 'workspace' }>
     ): Promise<A365Node[]> {
-        const key = element.info.workspaceId;
-        const cached = this.childrenCache.get(key);
-        if (cached) {
-            return cached;
-        }
+        const workspaceId = element.info.workspaceId;
         const wsToken = await ensureWorkspaceToken(this.ctx, readOAuthConfig(), {
-            workspaceId: element.info.workspaceId,
+            workspaceId,
             authId: element.info.authId,
         });
         const endpoint = this.getEndpoint();
@@ -227,18 +242,32 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
         );
         const projectNodes: A365Node[] = sortedProjects.map((p) => ({
             kind: 'project' as const,
-            workspaceId: element.info.workspaceId,
+            workspaceId,
             project: p,
         }));
         const scriptNodes: A365Node[] = sortedScripts.map((s) => ({
             kind: 'script' as const,
-            workspaceId: element.info.workspaceId,
+            workspaceId,
             workspaceAuthId: element.info.authId,
             workspaceUrl: element.workspaceUrl,
             script: s,
         }));
-        const combined = [...projectNodes, ...scriptNodes];
-        this.childrenCache.set(key, combined);
-        return combined;
+        this.projectsCache.set(workspaceId, projectNodes);
+        this.scriptsCache.set(workspaceId, scriptNodes);
+        return [
+            {
+                kind: 'projectsCategory',
+                workspaceId,
+                workspaceAuthId: element.info.authId,
+                count: projectNodes.length,
+            },
+            {
+                kind: 'scriptsCategory',
+                workspaceId,
+                workspaceAuthId: element.info.authId,
+                workspaceUrl: element.workspaceUrl,
+                count: scriptNodes.length,
+            },
+        ];
     }
 }
