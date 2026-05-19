@@ -61,22 +61,22 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PANEL-01 | Phase 2 | Pending |
-| PANEL-02 | Phase 2 | Pending |
-| PANEL-03 | Phase 2 | Pending |
-| PANEL-04 | Phase 2 | Pending |
-| PANEL-05 | Phase 2 | Pending |
-| PANEL-06 | Phase 2 | Pending |
-| SCRIPT-01 | Phase 2 | Pending |
-| SCRIPT-02 | Phase 3 | Pending |
-| SCRIPT-03 | Phase 3 | Pending |
-| SCRIPT-04 | Phase 3 | Pending |
-| SCRIPT-05 | Phase 3 | Pending |
-| PKG-01 | Phase 1 | Pending |
-| PKG-02 | Phase 1 | Pending |
-| PKG-03 | Phase 1 | Pending |
-| PKG-04 | Phase 1 | Pending |
-| PKG-05 | Phase 1 | Pending |
+| PKG-01 | Phase 1: Packaging | Pending |
+| PKG-02 | Phase 1: Packaging | Pending |
+| PKG-03 | Phase 1: Packaging | Pending |
+| PKG-04 | Phase 1: Packaging | Pending |
+| PKG-05 | Phase 1: Packaging | Pending |
+| PANEL-01 | Phase 2: Side Panel | Pending |
+| PANEL-02 | Phase 2: Side Panel | Pending |
+| PANEL-03 | Phase 2: Side Panel | Pending |
+| PANEL-04 | Phase 2: Side Panel | Pending |
+| PANEL-05 | Phase 2: Side Panel | Pending |
+| PANEL-06 | Phase 2: Side Panel | Pending |
+| SCRIPT-01 | Phase 2: Side Panel | Pending |
+| SCRIPT-02 | Phase 3: Remote Script Operations | Pending |
+| SCRIPT-03 | Phase 3: Remote Script Operations | Pending |
+| SCRIPT-04 | Phase 3: Remote Script Operations | Pending |
+| SCRIPT-05 | Phase 3: Remote Script Operations | Pending |
 
 **Coverage:**
 - v1 requirements: 16 total
