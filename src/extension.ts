@@ -14,6 +14,7 @@ import {
 } from './auth';
 import { pickAndExchangeWorkspace, getSelectedWorkspace, listProjects } from './workspace';
 import { A365Node, A365TreeDataProvider } from './sidePanel';
+import { createStatusBar } from './statusBar';
 
 let outputChannel: vscode.OutputChannel;
 
@@ -38,6 +39,8 @@ export function activate(context: vscode.ExtensionContext) {
         treeDataProvider: treeProvider,
         showCollapseAll: true,
     });
+
+    const statusBar = createStatusBar(context, outputChannel);
 
     context.subscriptions.push(
         outputChannel,
@@ -65,13 +68,38 @@ export function activate(context: vscode.ExtensionContext) {
         onAuthStateChanged(async () => {
             await updateSignedInContext(context);
             treeProvider.refresh();
-        })
+        }),
+        statusBar.item,
+        statusBar.subscription,
+        vscode.commands.registerCommand('altium365.statusBar.click', () => onStatusBarClick())
     );
 
     void updateSignedInContext(context);
 }
 
 export function deactivate() {}
+
+async function onStatusBarClick(): Promise<void> {
+    const items: Array<vscode.QuickPickItem & { command: string }> = [
+        { label: '$(sign-out) Sign Out', command: 'altium365.signOut' },
+        { label: '$(globe) Switch Environment', command: 'altium365.selectEnvironment' },
+        { label: '$(repo) Switch Workspace', command: 'altium365.selectWorkspace' },
+    ];
+    const pick = await vscode.window.showQuickPick(items, {
+        placeHolder: 'Altium 365',
+        ignoreFocusOut: false,
+    });
+    if (!pick) {
+        return;
+    }
+    try {
+        await vscode.commands.executeCommand(pick.command);
+    } catch (e) {
+        const msg = (e as Error).message;
+        vscode.window.showErrorMessage('Altium 365: ' + msg);
+        outputChannel.appendLine('[Altium 365] statusBar action failed: ' + msg);
+    }
+}
 
 async function doSignIn(context: vscode.ExtensionContext) {
     const cfg = readOAuthConfig();
