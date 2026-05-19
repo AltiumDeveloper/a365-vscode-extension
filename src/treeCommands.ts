@@ -62,5 +62,67 @@ export function registerTreeCommands(
                 }
             }
         ),
+        vscode.commands.registerCommand(
+            'altium365.workspace.openInBrowser',
+            async (node?: A365Node) => {
+                if (!node || node.kind !== 'workspace') {
+                    output.appendLine(
+                        '[Altium 365] workspace.openInBrowser: ignored kind=' +
+                            (node?.kind ?? 'undefined')
+                    );
+                    return;
+                }
+                const url = node.url;
+                if (!url) {
+                    vscode.window.showInformationMessage(
+                        'This workspace does not expose a browser URL'
+                    );
+                    return;
+                }
+                try {
+                    await vscode.env.openExternal(vscode.Uri.parse(url));
+                } catch (e) {
+                    const err = e as Error;
+                    vscode.window.showErrorMessage(
+                        'Altium 365: Open in Browser failed: ' + err.message
+                    );
+                    output.appendLine(
+                        '[Altium 365] workspace.openInBrowser failed: ' +
+                            (err.stack ?? err.message)
+                    );
+                }
+            }
+        ),
+        vscode.commands.registerCommand(
+            'altium365.project.openInBrowser',
+            async (node?: A365Node) => {
+                if (!node || node.kind !== 'project') {
+                    output.appendLine(
+                        '[Altium 365] project.openInBrowser: ignored kind=' +
+                            (node?.kind ?? 'undefined')
+                    );
+                    return;
+                }
+                const url = node.url;
+                if (!url) {
+                    vscode.window.showInformationMessage(
+                        'This project does not expose a browser URL'
+                    );
+                    return;
+                }
+                try {
+                    await vscode.env.openExternal(vscode.Uri.parse(url));
+                } catch (e) {
+                    const err = e as Error;
+                    vscode.window.showErrorMessage(
+                        'Altium 365: Open in Browser failed: ' + err.message
+                    );
+                    output.appendLine(
+                        '[Altium 365] project.openInBrowser failed: ' +
+                            (err.stack ?? err.message)
+                    );
+                }
+            }
+        ),
     ];
 }
