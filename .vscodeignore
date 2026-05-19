@@ -6,3 +6,7 @@ tsconfig.json
 **/*.map
 **/*.ts
 node_modules/**
+.planning/**
+AGENTS.md
+.git/**
+scripts/**
