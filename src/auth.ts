@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as crypto from 'crypto';
 import * as http from 'http';
 import { URL, URLSearchParams } from 'url';
+import { AsyncMutex } from './asyncMutex';
 
 export interface OAuthConfig {
     clientId: string;
@@ -36,6 +37,14 @@ export interface AuthState {
 
 // Module-level: auth-state emitter is a singleton broadcast channel (see CONVENTIONS.md exception).
 const authStateEmitter = new vscode.EventEmitter<AuthState>();
+
+/**
+ * Module-level: per-workspaceId mutex that serializes ensureWorkspaceToken's
+ * cache-miss path (D-07). Closes WR-05 (index RMW race) and dedupes concurrent
+ * token-exchange calls for the same workspaceId on cold-start tree expansion.
+ * Single-purpose helper — same CONVENTIONS.md exception as authStateEmitter.
+ */
+const workspaceTokenMutex = new AsyncMutex();
 export const onAuthStateChanged: vscode.Event<AuthState> = authStateEmitter.event;
 export function fireAuthStateChanged(state: AuthState): void {
     authStateEmitter.fire(state);
@@ -292,6 +301,7 @@ export async function ensureWorkspaceToken(
     workspace: { workspaceId: string; authId: string }
 ): Promise<string> {
     const key = SECRET_WS_TOKEN_PREFIX + workspace.workspaceId;
+    // Fast path (lock-free): uncontended cache hits must not pay mutex cost.
     const raw = await context.secrets.get(key);
     if (raw) {
         try {
@@ -303,14 +313,31 @@ export async function ensureWorkspaceToken(
             // fall through to refresh — malformed cache entry will be overwritten
         }
     }
-    const fresh = await exchangeWorkspaceToken(context, cfg, workspace.authId);
-    await context.secrets.store(key, JSON.stringify(fresh));
-    const index = context.globalState.get<string[]>(GLOBAL_WS_TOKEN_INDEX_KEY, []);
-    if (!index.includes(workspace.workspaceId)) {
-        const next = [...index, workspace.workspaceId];
-        await context.globalState.update(GLOBAL_WS_TOKEN_INDEX_KEY, next);
-    }
-    return fresh.access_token;
+    // Slow path: serialize per workspaceId so concurrent callers for the same
+    // workspace coalesce into a single exchange, and the index RMW is race-free.
+    return await workspaceTokenMutex.runExclusive(workspace.workspaceId, async () => {
+        // Double-checked locking: a concurrent caller may have populated the
+        // cache while this one was queued on the lock.
+        const rawAfter = await context.secrets.get(key);
+        if (rawAfter) {
+            try {
+                const parsed = JSON.parse(rawAfter) as TokenSet;
+                if (parsed.access_token && !isExpired(parsed)) {
+                    return parsed.access_token;
+                }
+            } catch {
+                // fall through — malformed entry will be overwritten below
+            }
+        }
+        const fresh = await exchangeWorkspaceToken(context, cfg, workspace.authId);
+        await context.secrets.store(key, JSON.stringify(fresh));
+        const index = context.globalState.get<string[]>(GLOBAL_WS_TOKEN_INDEX_KEY, []);
+        if (!index.includes(workspace.workspaceId)) {
+            const next = [...index, workspace.workspaceId];
+            await context.globalState.update(GLOBAL_WS_TOKEN_INDEX_KEY, next);
+        }
+        return fresh.access_token;
+    });
 }
 
 export async function refreshTokens(
