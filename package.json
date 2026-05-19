@@ -6,7 +6,7 @@
   "publisher": "altium",
   "engines": {
     "vscode": "^1.85.0",
-    "node": ">=18"
+    "node": ">=20"
   },
   "categories": ["Other"],
   "icon": "resources/icon.png",
