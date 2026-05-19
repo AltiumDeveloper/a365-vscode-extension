@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
+status: verifying
 stopped_at: Completed 02.1-01-PLAN.md (G-01 / PANEL-07 — category-grouped workspace children)
-last_updated: "2026-05-19T22:55:34.587Z"
+last_updated: "2026-05-19T22:58:28.840Z"
 last_activity: 2026-05-19
 progress:
   total_phases: 4
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 13
-  completed_plans: 12
-  percent: 50
+  completed_plans: 13
+  percent: 75
 ---
 
 # Project State
@@ -27,10 +27,10 @@ See: .planning/PROJECT.md (updated 2026-05-19)
 
 Phase: 02.1 (side-panel-ux) — EXECUTING
 Plan: 5 of 5
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-05-19
 
-Progress: [█████████░] 92%
+Progress: [██████████] 100%
 
 Wave structure:
 
@@ -70,6 +70,7 @@ Wave structure:
 | Phase 02.1 P02 | 1 min | 1 tasks | 1 files |
 | Phase 02.1 P03 | 3 min | 4 tasks | 3 files |
 | Phase 02.1 P04 | 3 min | 2 tasks | 2 files |
+| Phase 02.1 P05 | 2 min | 4 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -96,6 +97,7 @@ Recent decisions affecting current work:
 - [Phase 02.1-03]: New shared module src/treeCommands.ts hosts tree-generic command handlers per D-11 — registerTreeCommands(ctx, output) factory mirrors registerScriptCommands shape; future plans (Open in Browser) append disposables to the returned array
 - [Phase 02.1-04]: Active workspace = the workspace whose token was most recently exchanged via ensureWorkspaceToken; tracked in globalState 'altium365.activeWorkspaceId', written exchange-path-only, cleared on sign-out
 - [Phase 02.1-04]: Inactive workspace icon uses ThemeIcon('cloud') + ThemeColor('descriptionForeground') because 'cloud-outline' is not in the standard VS Code codicon set
+- [Phase 02.1]: Open in Browser handlers appended to existing registerTreeCommands factory — D-11 keeps tree-generic handlers co-located; Plan 02.1-03 wiring already spreads disposables — no extension.ts changes needed
 
 ### Pending Todos
 
@@ -117,6 +119,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-19T22:55:29.004Z
+Last session: 2026-05-19T22:58:19.146Z
 Stopped at: Completed 02.1-01-PLAN.md (G-01 / PANEL-07 — category-grouped workspace children)
 Resume file: None

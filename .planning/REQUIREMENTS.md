@@ -17,7 +17,7 @@
 - [x] **PANEL-08**: Tree node labels exclude backend GUIDs; a `Copy ID` context menu item exposes the GUID for workspaces, projects, and scripts
 - [x] **PANEL-09**: The active workspace (the one whose token was last exchanged) is visually distinguished from inactive workspaces in the tree
 - [x] **PANEL-10**: The A365 view title bar exposes a globe-icon action that runs `altium365.selectEnvironment`
-- [ ] **PANEL-11**: Workspace and project context menus include `Open in Browser`, which opens the node's A365 URL in the system browser
+- [x] **PANEL-11**: Workspace and project context menus include `Open in Browser`, which opens the node's A365 URL in the system browser
 
 ### Remote Scripts
 
@@ -81,7 +81,7 @@
 | PANEL-08 | Phase 02.1: Side-Panel UX Closure | Complete |
 | PANEL-09 | Phase 02.1: Side-Panel UX Closure | Complete |
 | PANEL-10 | Phase 02.1: Side-Panel UX Closure | Complete |
-| PANEL-11 | Phase 02.1: Side-Panel UX Closure | Pending |
+| PANEL-11 | Phase 02.1: Side-Panel UX Closure | Complete |
 | SCRIPT-01 | Phase 2: Side Panel | Deferred to Phase 3 (BLOCKED on live-workspace endpoint verification) |
 | SCRIPT-02 | Phase 3: Remote Script Operations | Pending |
 | SCRIPT-03 | Phase 3: Remote Script Operations | Pending |
