@@ -108,6 +108,11 @@
         "command": "altium365.script.publish",
         "title": "Altium 365: Publish Script",
         "category": "Altium 365"
+      },
+      {
+        "command": "altium365.tree.copyId",
+        "title": "Altium 365: Copy ID",
+        "category": "Altium 365"
       }
     ],
     "configuration": {
@@ -280,6 +285,21 @@
           "command": "altium365.script.publish",
           "when": "view == altium365.tree && viewItem == scriptNode",
           "group": "2_edit@2"
+        },
+        {
+          "command": "altium365.tree.copyId",
+          "when": "view == altium365.tree && viewItem == workspaceNode",
+          "group": "9_clipboard@1"
+        },
+        {
+          "command": "altium365.tree.copyId",
+          "when": "view == altium365.tree && viewItem == projectNode",
+          "group": "9_clipboard@1"
+        },
+        {
+          "command": "altium365.tree.copyId",
+          "when": "view == altium365.tree && viewItem == scriptNode",
+          "group": "9_clipboard@1"
         }
       ]
     }
