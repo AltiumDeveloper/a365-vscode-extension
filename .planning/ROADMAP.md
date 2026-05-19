@@ -12,7 +12,7 @@ Three phases take the existing brownfield extension (OAuth, local run/debug, wor
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Packaging** - Produce a distributable VSIX with CI pipeline and Marketplace-ready metadata
+- [x] **Phase 1: Packaging** - Produce a distributable VSIX with CI pipeline and Marketplace-ready metadata (completed 2026-05-19)
 - [ ] **Phase 2: Side Panel** - Activity Bar tree showing workspaces, projects, and scripts with context actions
 - [ ] **Phase 3: Remote Script Operations** - Open, edit, publish, and execute server-side scripts from the tree
 
@@ -31,7 +31,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 2 plans
 Plans:
 - [x] 01-01-PLAN.md — Package tooling, metadata, and icon (PKG-01, PKG-02, PKG-03)
-- [ ] 01-02-PLAN.md — README rewrite and GitHub Actions CI pipeline (PKG-04, PKG-05)
+- [x] 01-02-PLAN.md — README rewrite and GitHub Actions CI pipeline (PKG-04, PKG-05)
 
 ### Phase 2: Side Panel
 **Goal**: Users can navigate their A365 workspaces, projects, and scripts via a dedicated Activity Bar side panel without running any commands manually
@@ -66,6 +66,6 @@ Phases execute in numeric order: 1 → 2 → 3
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Packaging | 0/? | Not started | - |
+| 1. Packaging | 2/2 | Complete   | 2026-05-19 |
 | 2. Side Panel | 0/? | Not started | - |
 | 3. Remote Script Operations | 0/? | Not started | - |
