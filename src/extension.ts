@@ -5,16 +5,39 @@ import * as os from 'os';
 import { spawn } from 'child_process';
 import {
     clearAllTokens,
+    fireAuthStateChanged,
     getActiveAccessToken,
+    getStoredTokens,
+    onAuthStateChanged,
     readOAuthConfig,
     signIn,
 } from './auth';
 import { pickAndExchangeWorkspace, getSelectedWorkspace, listProjects } from './workspace';
+import { A365Node, A365TreeDataProvider } from './sidePanel';
 
 let outputChannel: vscode.OutputChannel;
 
+async function updateSignedInContext(context: vscode.ExtensionContext): Promise<void> {
+    try {
+        const tok = await getStoredTokens(context);
+        await vscode.commands.executeCommand('setContext', 'altium365.signedIn', !!tok);
+    } catch {
+        // best-effort — worst case is welcome view stays visible (recoverable)
+    }
+}
+
 export function activate(context: vscode.ExtensionContext) {
     outputChannel = vscode.window.createOutputChannel('Altium 365');
+
+    const treeProvider = new A365TreeDataProvider(
+        context,
+        outputChannel,
+        () => vscode.workspace.getConfiguration('altium365').get<string>('graphqlEndpoint', '')
+    );
+    const treeView = vscode.window.createTreeView('altium365.tree', {
+        treeDataProvider: treeProvider,
+        showCollapseAll: true,
+    });
 
     context.subscriptions.push(
         outputChannel,
@@ -31,8 +54,21 @@ export function activate(context: vscode.ExtensionContext) {
         ),
         vscode.commands.registerCommand('altium365.selectEnvironment', () =>
             doSelectEnvironment(context)
-        )
+        ),
+        treeView,
+        vscode.commands.registerCommand('altium365.tree.refresh', () => treeProvider.refresh()),
+        vscode.commands.registerCommand('altium365.tree.retryNode', (n?: A365Node) => {
+            if (n?.kind === 'error') {
+                treeProvider.refresh(n.parent);
+            }
+        }),
+        onAuthStateChanged(async () => {
+            await updateSignedInContext(context);
+            treeProvider.refresh();
+        })
     );
+
+    void updateSignedInContext(context);
 }
 
 export function deactivate() {}
@@ -56,6 +92,7 @@ async function doSignIn(context: vscode.ExtensionContext) {
             }
         );
         vscode.window.showInformationMessage('Altium 365: signed in.');
+        await updateSignedInContext(context);
         const choice = await vscode.window.showInformationMessage(
             'Pick a workspace now?',
             'Select workspace'
@@ -71,6 +108,7 @@ async function doSignIn(context: vscode.ExtensionContext) {
 async function doSignOut(context: vscode.ExtensionContext) {
     await clearAllTokens(context);
     await context.globalState.update('altium365.selectedWorkspace', undefined);
+    await updateSignedInContext(context);
     vscode.window.showInformationMessage('Altium 365: signed out.');
 }
 
@@ -160,6 +198,13 @@ async function doSelectEnvironment(context: vscode.ExtensionContext) {
     }
     await cfg.update('activeEnvironment', pick.name, target);
 
+    try {
+        const tok = await getStoredTokens(context);
+        fireAuthStateChanged({ signedIn: !!tok, environment: pick.name });
+    } catch {
+        // best-effort broadcast
+    }
+
     outputChannel.appendLine(`[Altium 365] Active environment: ${pick.name}`);
     outputChannel.appendLine(`[Altium 365]   graphql: ${spec.graphqlEndpoint || '(empty)'}`);
     outputChannel.appendLine(`[Altium 365]   auth:    ${spec.authEndpoint || '(empty)'}`);
@@ -175,6 +220,7 @@ async function doSelectEnvironment(context: vscode.ExtensionContext) {
     if (next === 'Sign out & sign in' || next === 'Sign out only') {
         await clearAllTokens(context);
         await context.globalState.update('altium365.selectedWorkspace', undefined);
+        await updateSignedInContext(context);
     }
     if (next === 'Sign out & sign in') {
         await doSignIn(context);
