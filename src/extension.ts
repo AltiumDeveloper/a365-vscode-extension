@@ -15,6 +15,7 @@ import {
 import { pickAndExchangeWorkspace, getSelectedWorkspace, listProjects } from './workspace';
 import { A365Node, A365TreeDataProvider } from './sidePanel';
 import { createStatusBar } from './statusBar';
+import { registerScriptCommands } from './scriptCommands';
 
 let outputChannel: vscode.OutputChannel;
 
@@ -41,6 +42,8 @@ export function activate(context: vscode.ExtensionContext) {
     });
 
     const statusBar = createStatusBar(context, outputChannel);
+
+    const scriptCommandDisposables = registerScriptCommands(context, outputChannel);
 
     context.subscriptions.push(
         outputChannel,
@@ -71,7 +74,8 @@ export function activate(context: vscode.ExtensionContext) {
         }),
         statusBar.item,
         statusBar.subscription,
-        vscode.commands.registerCommand('altium365.statusBar.click', () => onStatusBarClick())
+        vscode.commands.registerCommand('altium365.statusBar.click', () => onStatusBarClick()),
+        ...scriptCommandDisposables
     );
 
     void updateSignedInContext(context);
