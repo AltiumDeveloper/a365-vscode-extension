@@ -160,6 +160,9 @@ async function doSelectWorkspace(context: vscode.ExtensionContext) {
         const tok = await pickAndExchangeWorkspace(context, cfg, endpoint);
         if (tok) {
             vscode.window.showInformationMessage('Altium 365: workspace token acquired.');
+            // WR-02 fix: refresh the side panel so the "(active)" cue follows
+            // the user's explicit selection without waiting for sign-in/out.
+            await vscode.commands.executeCommand('altium365.tree.refresh');
         }
     } catch (e) {
         vscode.window.showErrorMessage(`Workspace token exchange failed: ${(e as Error).message}`);
