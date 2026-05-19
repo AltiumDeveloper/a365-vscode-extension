@@ -4,14 +4,14 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Completed 02-06-PLAN.md (Phase 2 complete; SCRIPT-01/D-09 deferred to Phase 3)
-last_updated: "2026-05-19T17:30:00.000Z"
-last_activity: 2026-05-19
+last_updated: "2026-05-19T22:38:49.797Z"
+last_activity: 2026-05-19 -- Phase 02.1 planning complete
 progress:
-  total_phases: 3
+  total_phases: 4
   completed_phases: 2
-  total_plans: 8
+  total_plans: 13
   completed_plans: 8
-  percent: 67
+  percent: 50
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-19)
 
 **Core value:** A developer can open VS Code, sign in once, and go from browsing their A365 workspace to running or deploying a script — without leaving the editor or hand-crafting API calls.
-**Current focus:** Phase 02 — side-panel
+**Current focus:** Phase 02.1 — side-panel UX closure (gap-close insert)
 
 ## Current Position
 
-Phase: 02 (side-panel) — COMPLETE
-Plan: 6 of 6 done
-Status: Ready for Phase 3 planning
-Last activity: 2026-05-19
+Phase: 02.1 (side-panel-ux) — Ready to plan
+Plan: 0 of 0 — run /gsd-plan-phase 02.1
+Status: Ready to execute
+Last activity: 2026-05-19 -- Phase 02.1 planning complete
 
 Progress: [██████████] 100% of Phase 2 plans; 67% of milestone
 
@@ -68,6 +68,10 @@ Wave structure:
 | Phase 02 P06 | 4 min | 2 tasks | 2 files |
 
 ## Accumulated Context
+
+### Roadmap Evolution
+
+- Phase 02.1 inserted after Phase 02: Side-panel UX closure (G-01..G-05 from human UAT) (URGENT)
 
 ### Decisions
 

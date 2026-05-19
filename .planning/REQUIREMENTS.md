@@ -10,9 +10,14 @@
 - [x] **PANEL-01**: Activity Bar entry point opens the A365 side panel
 - [x] **PANEL-02**: Side panel shows a list of workspaces the user has access to at the top level
 - [x] **PANEL-03**: Each workspace expands to show its projects
-- [x] **PANEL-04**: Each workspace expands to show its scripts (sibling to projects)
+- [x] **PANEL-04**: Each workspace expands to show its scripts (sibling to projects) *(superseded by PANEL-07 in Phase 02.1 — projects and scripts now grouped under category parent nodes based on UAT feedback)*
 - [x] **PANEL-05**: Scripts have context menu actions: Run Script (locally), Edit Script, Execute Remotely, Publish Script
 - [x] **PANEL-06**: Auth status (signed-in user, active environment) is visible in the panel header or status bar
+- [ ] **PANEL-07**: Workspace expansion shows two category parent nodes — `Projects (n)` and `Scripts (n)` — each lazy-loading its real children (reverses PANEL-04 based on Phase 02 UAT)
+- [ ] **PANEL-08**: Tree node labels exclude backend GUIDs; a `Copy ID` context menu item exposes the GUID for workspaces, projects, and scripts
+- [ ] **PANEL-09**: The active workspace (the one whose token was last exchanged) is visually distinguished from inactive workspaces in the tree
+- [ ] **PANEL-10**: The A365 view title bar exposes a globe-icon action that runs `altium365.selectEnvironment`
+- [ ] **PANEL-11**: Workspace and project context menus include `Open in Browser`, which opens the node's A365 URL in the system browser
 
 ### Remote Scripts
 
@@ -69,9 +74,14 @@
 | PANEL-01 | Phase 2: Side Panel | Complete |
 | PANEL-02 | Phase 2: Side Panel | Complete |
 | PANEL-03 | Phase 2: Side Panel | Complete |
-| PANEL-04 | Phase 2: Side Panel | Complete |
+| PANEL-04 | Phase 2: Side Panel | Complete (superseded by PANEL-07) |
 | PANEL-05 | Phase 2: Side Panel | Complete |
 | PANEL-06 | Phase 2: Side Panel | Complete |
+| PANEL-07 | Phase 02.1: Side-Panel UX Closure | Pending |
+| PANEL-08 | Phase 02.1: Side-Panel UX Closure | Pending |
+| PANEL-09 | Phase 02.1: Side-Panel UX Closure | Pending |
+| PANEL-10 | Phase 02.1: Side-Panel UX Closure | Pending |
+| PANEL-11 | Phase 02.1: Side-Panel UX Closure | Pending |
 | SCRIPT-01 | Phase 2: Side Panel | Deferred to Phase 3 (BLOCKED on live-workspace endpoint verification) |
 | SCRIPT-02 | Phase 3: Remote Script Operations | Pending |
 | SCRIPT-03 | Phase 3: Remote Script Operations | Pending |
@@ -79,8 +89,8 @@
 | SCRIPT-05 | Phase 3: Remote Script Operations | Pending |
 
 **Coverage:**
-- v1 requirements: 16 total
-- Mapped to phases: 16
+- v1 requirements: 21 total
+- Mapped to phases: 21
 - Unmapped: 0 ✓
 
 ---
