@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import {
     OAuthConfig,
     ensureWorkspaceToken,
+    getActiveWorkspaceId,
     getStoredTokens,
     readOAuthConfig,
 } from './auth';
@@ -97,7 +98,22 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
                     vscode.TreeItemCollapsibleState.Collapsed
                 );
                 item.contextValue = CTX_WORKSPACE;
-                item.iconPath = new vscode.ThemeIcon('cloud');
+                // Active-workspace cue (D-07): the workspace whose token was most
+                // recently exchanged via ensureWorkspaceToken is rendered with a
+                // filled cloud + "(active)" description; all others get a dimmed
+                // cloud via ThemeColor (no 'cloud-outline' codicon exists in the
+                // standard VS Code icon set, so we use ThemeColor fallback).
+                const activeId = getActiveWorkspaceId(this.ctx);
+                const isActive = activeId === n.info.workspaceId;
+                if (isActive) {
+                    item.iconPath = new vscode.ThemeIcon('cloud');
+                    item.description = '(active)';
+                } else {
+                    item.iconPath = new vscode.ThemeIcon(
+                        'cloud',
+                        new vscode.ThemeColor('descriptionForeground')
+                    );
+                }
                 return item;
             }
             case 'projectsCategory': {
