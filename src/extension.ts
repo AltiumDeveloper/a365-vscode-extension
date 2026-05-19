@@ -286,14 +286,36 @@ async function resolvePythonPath(): Promise<string> {
 }
 
 async function runScript(context: vscode.ExtensionContext, uri?: vscode.Uri) {
-    const prep = await prepareRun(context, uri);
+    let target = uri;
+    if (!target) {
+        const editor = vscode.window.activeTextEditor;
+        if (editor && editor.document.languageId === 'python') {
+            if (editor.document.isDirty) {
+                await editor.document.save();
+            }
+            target = editor.document.uri;
+        }
+    }
+    if (!target) {
+        vscode.window.showErrorMessage('No Python script selected.');
+        return;
+    }
+    return runScriptAtPath(context, target.fsPath);
+}
+
+// Reused by src/scriptCommands.ts to run a fetched A365 script body written to os.tmpdir().
+export async function runScriptAtPath(
+    context: vscode.ExtensionContext,
+    scriptPath: string
+): Promise<void> {
+    const prep = await prepareRun(context, scriptPath);
     if (!prep) {
         return;
     }
-    const { python, runnerPath, scriptPath, scriptDir, args, env, endpoint, paramsPath } = prep;
+    const { python, runnerPath, scriptPath: resolvedPath, scriptDir, args, env, endpoint, paramsPath } = prep;
 
     outputChannel.show(true);
-    outputChannel.appendLine(`\n[Altium 365] Running ${scriptPath}`);
+    outputChannel.appendLine(`\n[Altium 365] Running ${resolvedPath}`);
     outputChannel.appendLine(`[Altium 365] Endpoint: ${endpoint}`);
     outputChannel.appendLine(`[Altium 365] Python:   ${python}`);
     if (paramsPath) {
@@ -360,9 +382,10 @@ interface RunPrep {
 
 async function prepareRun(
     context: vscode.ExtensionContext,
-    uri?: vscode.Uri
+    uriOrPath?: vscode.Uri | string
 ): Promise<RunPrep | undefined> {
-    let target = uri;
+    let target: vscode.Uri | undefined =
+        typeof uriOrPath === 'string' ? vscode.Uri.file(uriOrPath) : uriOrPath;
     if (!target) {
         const editor = vscode.window.activeTextEditor;
         if (editor && editor.document.languageId === 'python') {
