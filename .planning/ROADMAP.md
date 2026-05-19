@@ -53,6 +53,26 @@ Plans:
 - [x] 02-06-PLAN.md — src/scriptCommands.ts: register all four altium365.script.* commands, implement run-local via two-step fetch + tmpdir (PANEL-05, SCRIPT-01, D-09); blocking human checkpoint for A1/A2 — **SCRIPT-01/D-09 deferred to Phase 3 (BLOCKED on live-workspace verification)**
 **UI hint**: yes
 
+### Phase 02.1: Side-Panel UX Closure (INSERTED)
+**Goal**: Close the 5 UX gaps surfaced by Phase 02 human UAT so the side panel is ergonomically usable in day-to-day work (grouped hierarchy, clean labels, active-workspace cue, in-panel env switcher, browser-link shortcuts)
+**Mode:** mvp
+**Depends on**: Phase 2
+**Requirements**: PANEL-07, PANEL-08, PANEL-09, PANEL-10, PANEL-11
+**Success Criteria** (what must be TRUE):
+  1. Expanding a workspace shows two category nodes — `Projects (n)` and `Scripts (n)` — each lazy-loading its real children (reverses Phase 02 D-05/PANEL-04)
+  2. Tree labels for workspaces, projects, and scripts no longer contain backend GUIDs; a `Copy ID` context menu item is available on each node
+  3. The active workspace is visually distinguishable from inactive workspaces in the tree
+  4. The A365 view title exposes a globe-icon action that runs the existing `altium365.switchEnvironment` command
+  5. Workspace and project context menus include `Open in Browser`, which opens the node's A365 URL in the system browser
+**Plans**: 5 plans
+Plans:
+- [ ] 02.1-01-PLAN.md — Category-grouped workspace children (G-01 / PANEL-07)
+- [ ] 02.1-02-PLAN.md — Globe-icon view-title env switcher (G-04 / PANEL-10)
+- [ ] 02.1-03-PLAN.md — Drop GUIDs from labels + Copy ID command (G-02 / PANEL-08)
+- [ ] 02.1-04-PLAN.md — Active-workspace cue in tree (G-03 / PANEL-09)
+- [ ] 02.1-05-PLAN.md — Open in Browser for workspace + project (G-05 / PANEL-11)
+**Source**: `.planning/phases/02-side-panel/02-HUMAN-UAT.md` (gaps G-01..G-05)
+
 ### Phase 3: Remote Script Operations
 **Goal**: Users can open, edit, publish, and trigger execution of remote A365 scripts entirely from within VS Code, with execution output streamed back to the editor
 **Mode:** mvp
