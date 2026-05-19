@@ -70,8 +70,9 @@
       },
       {
         "command": "altium365.selectEnvironment",
-        "title": "Altium 365: Select Environment (Dev / Uat / Prod)",
-        "category": "Altium 365"
+        "title": "Altium 365: Select Environment",
+        "category": "Altium 365",
+        "icon": "$(globe)"
       },
       {
         "command": "altium365.tree.refresh",
