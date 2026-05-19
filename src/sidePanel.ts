@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import {
     OAuthConfig,
     ensureWorkspaceToken,
-    getStoredTokens,
+    getBaseAccessToken,
     readOAuthConfig,
 } from './auth';
 import {
@@ -227,13 +227,12 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
             return this.workspacesCache;
         }
         const cfg: OAuthConfig = readOAuthConfig();
-        void cfg;
-        const base = await getStoredTokens(this.ctx);
-        if (!base?.access_token) {
+        const baseToken = await getBaseAccessToken(this.ctx, cfg);
+        if (!baseToken) {
             return [];
         }
         const endpoint = this.getEndpoint();
-        const list = await listWorkspaces(endpoint, base.access_token);
+        const list = await listWorkspaces(endpoint, baseToken);
         if (list.length === 0) {
             const empty: A365Node[] = [
                 { kind: 'info', label: 'No workspaces available for this account' },
