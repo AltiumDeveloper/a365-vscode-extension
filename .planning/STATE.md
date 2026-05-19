@@ -77,6 +77,7 @@ Wave structure:
 ### Roadmap Evolution
 
 - Phase 02.1 inserted after Phase 02: Side-panel UX closure (G-01..G-05 from human UAT) (URGENT)
+- Phase 02.2 inserted after Phase 02.1: Auth hardening — close carry-forward CR-01/CR-02/WR-01 (02-REVIEW.md) and WR-05 (02.1-REVIEW.md) before Phase 3 remote script mutations (URGENT)
 
 ### Decisions
 

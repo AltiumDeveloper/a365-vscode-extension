@@ -73,6 +73,19 @@ Plans:
 - [x] 02.1-05-PLAN.md — Open in Browser for workspace + project (G-05 / PANEL-11)
 **Source**: `.planning/phases/02-side-panel/02-HUMAN-UAT.md` (gaps G-01..G-05)
 
+### Phase 02.2: Auth Hardening (INSERTED)
+**Goal**: Resolve outstanding auth/security findings carried forward from Phase 02 and Phase 02.1 code reviews — refresh-token flow, expiry-aware token reuse in `pickAndExchangeWorkspace`, and any remaining CR-01/CR-02/WR-05 items before Phase 3 introduces remote script mutations that depend on a hardened auth layer.
+**Mode:** mvp
+**Depends on**: Phase 02.1
+**Requirements**: TBD (derive from 02-REVIEW.md CR-01/CR-02/WR-01 + 02.1-REVIEW.md WR-05)
+**Success Criteria** (what must be TRUE):
+  1. `pickAndExchangeWorkspace` and `ensureWorkspaceToken` honor token expiry and trigger refresh before reuse
+  2. Carry-forward findings CR-01 / CR-02 / WR-01 from `.planning/phases/02-side-panel/02-REVIEW.md` are resolved or explicitly documented as accepted risk
+  3. WR-05 from `.planning/phases/02.1-side-panel-ux/02.1-REVIEW.md` is closed without leaking workspace-scoped tokens into `listWorkspaces`
+  4. No regression in existing OAuth2 PKCE flow or per-workspace token cache (Phase 02 UAT scenarios still pass)
+**Plans**: TBD
+**Source**: 02-REVIEW.md, 02.1-REVIEW.md, 02.1-REVIEW-FIX.md (WR-05 skip rationale)
+
 ### Phase 3: Remote Script Operations
 **Goal**: Users can open, edit, publish, and trigger execution of remote A365 scripts entirely from within VS Code, with execution output streamed back to the editor
 **Mode:** mvp
@@ -88,11 +101,12 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3
+Phases execute in numeric order: 1 → 2 → 02.1 → 02.2 → 3
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Packaging | 2/2 | Complete   | 2026-05-19 |
 | 2. Side Panel | 6/6 | Complete | 2026-05-19 |
 | 02.1 Side-Panel UX Closure | 5/5 | Complete   | 2026-05-19 |
+| 02.2 Auth Hardening | 0/? | Not started | - |
 | 3. Remote Script Operations | 0/? | Not started | - |
