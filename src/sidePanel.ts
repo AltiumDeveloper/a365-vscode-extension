@@ -17,11 +17,26 @@ import {
 export const CTX_WORKSPACE = 'workspaceNode';
 export const CTX_PROJECT = 'projectNode';
 export const CTX_SCRIPT = 'scriptNode';
+export const CTX_PROJECTS_CATEGORY = 'projectsCategoryNode';
+export const CTX_SCRIPTS_CATEGORY = 'scriptsCategoryNode';
 
 const OUTPUT_PREFIX = '[Altium 365] tree:';
 
 export type A365Node =
     | { kind: 'workspace'; info: WorkspaceInfo; workspaceUrl: string }
+    | {
+          kind: 'projectsCategory';
+          workspaceId: string;
+          workspaceAuthId: string;
+          count: number;
+      }
+    | {
+          kind: 'scriptsCategory';
+          workspaceId: string;
+          workspaceAuthId: string;
+          workspaceUrl: string;
+          count: number;
+      }
     | { kind: 'project'; workspaceId: string; project: ProjectInfo }
     | {
           kind: 'script';
@@ -71,6 +86,24 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
                 item.contextValue = CTX_WORKSPACE;
                 item.iconPath = new vscode.ThemeIcon('cloud');
                 item.description = n.info.workspaceId;
+                return item;
+            }
+            case 'projectsCategory': {
+                const item = new vscode.TreeItem(
+                    `Projects (${n.count})`,
+                    vscode.TreeItemCollapsibleState.Collapsed
+                );
+                item.contextValue = CTX_PROJECTS_CATEGORY;
+                item.iconPath = new vscode.ThemeIcon('folder-library');
+                return item;
+            }
+            case 'scriptsCategory': {
+                const item = new vscode.TreeItem(
+                    `Scripts (${n.count})`,
+                    vscode.TreeItemCollapsibleState.Collapsed
+                );
+                item.contextValue = CTX_SCRIPTS_CATEGORY;
+                item.iconPath = new vscode.ThemeIcon('folder-library');
                 return item;
             }
             case 'project': {
