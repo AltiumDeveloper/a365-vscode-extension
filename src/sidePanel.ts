@@ -78,13 +78,27 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
             return;
         }
         if (node.kind === 'projectsCategory') {
+            // WR-03 fix: clearing only the projects cache leaves the parent
+            // workspace's category node (with its baked `count`) intact, so
+            // the row reads "Projects (3)" while getChildren returns []. Bubble
+            // to the parent workspace so loadWorkspaceChildren reruns and
+            // rebuilds both category nodes with fresh counts.
             this.projectsCache.delete(node.workspaceId);
-            this._onDidChange.fire(node);
+            const parent = this.workspacesCache?.find(
+                (w): w is Extract<A365Node, { kind: 'workspace' }> =>
+                    w.kind === 'workspace' && w.info.workspaceId === node.workspaceId
+            );
+            this._onDidChange.fire(parent);
             return;
         }
         if (node.kind === 'scriptsCategory') {
+            // WR-03 fix: see projectsCategory above — same staleness pattern.
             this.scriptsCache.delete(node.workspaceId);
-            this._onDidChange.fire(node);
+            const parent = this.workspacesCache?.find(
+                (w): w is Extract<A365Node, { kind: 'workspace' }> =>
+                    w.kind === 'workspace' && w.info.workspaceId === node.workspaceId
+            );
+            this._onDidChange.fire(parent);
             return;
         }
         this._onDidChange.fire(node);
