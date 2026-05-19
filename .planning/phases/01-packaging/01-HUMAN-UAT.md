@@ -14,7 +14,7 @@ updated: 2026-05-19T15:05:00Z
 
 ### 1. GitHub Actions CI run on push to `main`
 expected: Workflow `CI` succeeds; the `altium365-vsix` artifact is downloadable from the run page and contains `altium365-scripting-0.1.0.vsix`
-result: [pending]
+result: passed (after fix c6a1d2e bumped Node 18 → 20 LTS; initial run failed with undici File ReferenceError on Node 18)
 
 ### 2. Install produced `.vsix` into clean VS Code 1.85+
 expected: Extension installs without error; appears in Extensions sidebar with displayName "Altium 365 Developer Tools", the generated icon, and the 6 Altium 365 commands available in the Command Palette
@@ -31,9 +31,9 @@ result: [pending]
 ## Summary
 
 total: 4
-passed: 0
+passed: 1
 issues: 0
-pending: 4
+pending: 3
 skipped: 0
 blocked: 0
 
