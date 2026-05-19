@@ -72,6 +72,42 @@
         "command": "altium365.selectEnvironment",
         "title": "Altium 365: Select Environment (Dev / Uat / Prod)",
         "category": "Altium 365"
+      },
+      {
+        "command": "altium365.tree.refresh",
+        "title": "Altium 365: Refresh Workspaces",
+        "category": "Altium 365",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "altium365.tree.retryNode",
+        "title": "Altium 365: Retry Tree Node",
+        "category": "Altium 365"
+      },
+      {
+        "command": "altium365.statusBar.click",
+        "title": "Altium 365: Status Bar Menu",
+        "category": "Altium 365"
+      },
+      {
+        "command": "altium365.script.runLocal",
+        "title": "Altium 365: Run Script (Local)",
+        "category": "Altium 365"
+      },
+      {
+        "command": "altium365.script.edit",
+        "title": "Altium 365: Edit Script",
+        "category": "Altium 365"
+      },
+      {
+        "command": "altium365.script.executeRemote",
+        "title": "Altium 365: Execute Script Remotely",
+        "category": "Altium 365"
+      },
+      {
+        "command": "altium365.script.publish",
+        "title": "Altium 365: Publish Script",
+        "category": "Altium 365"
       }
     ],
     "configuration": {
@@ -209,6 +245,35 @@
           "command": "altium365.debugScript",
           "when": "resourceLangId == python",
           "group": "navigation"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "altium365.tree.refresh",
+          "when": "view == altium365.tree",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "altium365.script.runLocal",
+          "when": "view == altium365.tree && viewItem == scriptNode",
+          "group": "1_run@1"
+        },
+        {
+          "command": "altium365.script.executeRemote",
+          "when": "view == altium365.tree && viewItem == scriptNode",
+          "group": "1_run@2"
+        },
+        {
+          "command": "altium365.script.edit",
+          "when": "view == altium365.tree && viewItem == scriptNode",
+          "group": "2_edit@1"
+        },
+        {
+          "command": "altium365.script.publish",
+          "when": "view == altium365.tree && viewItem == scriptNode",
+          "group": "2_edit@2"
         }
       ]
     }
