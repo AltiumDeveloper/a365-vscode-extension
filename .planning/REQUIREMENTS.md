@@ -16,7 +16,7 @@
 
 ### Remote Scripts
 
-- [ ] **SCRIPT-01**: User can list all scripts in the selected workspace via `gloScrScripts` query
+- [x] **SCRIPT-01**: User can list all scripts in the selected workspace via `gloScrScripts` query
 - [ ] **SCRIPT-02**: User can open a remote script's content as a VS Code editor document
 - [ ] **SCRIPT-03**: User can publish edited script content back to A365 via `gloScrUpdateScript` mutation
 - [ ] **SCRIPT-04**: User can trigger remote script execution via `gloScrExecuteScript` mutation
@@ -72,7 +72,7 @@
 | PANEL-04 | Phase 2: Side Panel | Pending |
 | PANEL-05 | Phase 2: Side Panel | Pending |
 | PANEL-06 | Phase 2: Side Panel | Pending |
-| SCRIPT-01 | Phase 2: Side Panel | Pending |
+| SCRIPT-01 | Phase 2: Side Panel | Complete |
 | SCRIPT-02 | Phase 3: Remote Script Operations | Pending |
 | SCRIPT-03 | Phase 3: Remote Script Operations | Pending |
 | SCRIPT-04 | Phase 3: Remote Script Operations | Pending |
