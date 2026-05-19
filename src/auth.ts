@@ -25,6 +25,8 @@ export interface TokenSet {
 
 const SECRET_TOKENS = 'altium365.tokens';
 const SECRET_WORKSPACE_TOKENS = 'altium365.workspaceTokens';
+const SECRET_WS_TOKEN_PREFIX = 'altium365.workspaceTokens.';
+const GLOBAL_WS_TOKEN_INDEX_KEY = 'altium365.workspaceTokenIds';
 
 function b64url(buf: Buffer): string {
     return buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -205,6 +207,40 @@ export async function exchangeWorkspaceToken(
     return stored;
 }
 
+/**
+ * Returns a fresh access token for the given workspace, using a per-workspace
+ * SecretStorage cache keyed by workspaceId. Calls exchangeWorkspaceToken on
+ * cache miss or expiry. Maintains an index in globalState so clearAllTokens
+ * can enumerate and drain every cached entry on sign-out (D-01, RESEARCH.md
+ * §Pattern 4 + §Pitfall 5).
+ */
+export async function ensureWorkspaceToken(
+    context: vscode.ExtensionContext,
+    cfg: OAuthConfig,
+    workspace: { workspaceId: string; authId: string }
+): Promise<string> {
+    const key = SECRET_WS_TOKEN_PREFIX + workspace.workspaceId;
+    const raw = await context.secrets.get(key);
+    if (raw) {
+        try {
+            const parsed = JSON.parse(raw) as TokenSet;
+            if (parsed.access_token && !isExpired(parsed)) {
+                return parsed.access_token;
+            }
+        } catch {
+            // fall through to refresh — malformed cache entry will be overwritten
+        }
+    }
+    const fresh = await exchangeWorkspaceToken(context, cfg, workspace.authId);
+    await context.secrets.store(key, JSON.stringify(fresh));
+    const index = context.globalState.get<string[]>(GLOBAL_WS_TOKEN_INDEX_KEY, []);
+    if (!index.includes(workspace.workspaceId)) {
+        const next = [...index, workspace.workspaceId];
+        await context.globalState.update(GLOBAL_WS_TOKEN_INDEX_KEY, next);
+    }
+    return fresh.access_token;
+}
+
 export async function refreshTokens(
     context: vscode.ExtensionContext,
     cfg: OAuthConfig
@@ -243,6 +279,11 @@ export async function getStoredWorkspaceTokens(
 export async function clearAllTokens(context: vscode.ExtensionContext): Promise<void> {
     await context.secrets.delete(SECRET_TOKENS);
     await context.secrets.delete(SECRET_WORKSPACE_TOKENS);
+    const index = context.globalState.get<string[]>(GLOBAL_WS_TOKEN_INDEX_KEY, []);
+    for (const id of index) {
+        await context.secrets.delete(SECRET_WS_TOKEN_PREFIX + id);
+    }
+    await context.globalState.update(GLOBAL_WS_TOKEN_INDEX_KEY, undefined);
 }
 
 function isExpired(tok: TokenSet): boolean {
