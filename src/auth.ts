@@ -28,6 +28,52 @@ const SECRET_WORKSPACE_TOKENS = 'altium365.workspaceTokens';
 const SECRET_WS_TOKEN_PREFIX = 'altium365.workspaceTokens.';
 const GLOBAL_WS_TOKEN_INDEX_KEY = 'altium365.workspaceTokenIds';
 
+export interface AuthState {
+    user?: string;
+    environment?: string;
+    signedIn: boolean;
+}
+
+// Module-level: auth-state emitter is a singleton broadcast channel (see CONVENTIONS.md exception).
+const authStateEmitter = new vscode.EventEmitter<AuthState>();
+export const onAuthStateChanged: vscode.Event<AuthState> = authStateEmitter.event;
+export function fireAuthStateChanged(state: AuthState): void {
+    authStateEmitter.fire(state);
+}
+
+/** Decode JWT id_token payload claims without verifying signature. Returns undefined on any parse error. */
+function decodeIdTokenClaims(idToken: string | undefined): Record<string, unknown> | undefined {
+    if (!idToken) {
+        return undefined;
+    }
+    try {
+        const parts = idToken.split('.');
+        if (parts.length !== 3) {
+            return undefined;
+        }
+        let b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+        while (b64.length % 4 !== 0) {
+            b64 += '=';
+        }
+        const json = Buffer.from(b64, 'base64').toString('utf-8');
+        const parsed = JSON.parse(json);
+        return parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>) : undefined;
+    } catch {
+        return undefined;
+    }
+}
+
+function userLabelFromClaims(claims: Record<string, unknown> | undefined): string {
+    if (!claims) {
+        return '(signed in)';
+    }
+    const candidate = claims.preferred_username ?? claims.email ?? claims.name;
+    if (typeof candidate === 'string' && candidate.length > 0) {
+        return candidate;
+    }
+    return '(signed in)';
+}
+
 function b64url(buf: Buffer): string {
     return buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
@@ -180,6 +226,12 @@ export async function signIn(
     const stored = withExpiry(tok);
     await context.secrets.store(SECRET_TOKENS, JSON.stringify(stored));
     await context.secrets.delete(SECRET_WORKSPACE_TOKENS);
+    try {
+        const claims = decodeIdTokenClaims(stored.id_token);
+        authStateEmitter.fire({ signedIn: true, user: userLabelFromClaims(claims) });
+    } catch {
+        // emitter failures must not break sign-in
+    }
     return stored;
 }
 
@@ -284,6 +336,28 @@ export async function clearAllTokens(context: vscode.ExtensionContext): Promise<
         await context.secrets.delete(SECRET_WS_TOKEN_PREFIX + id);
     }
     await context.globalState.update(GLOBAL_WS_TOKEN_INDEX_KEY, undefined);
+    try {
+        authStateEmitter.fire({ signedIn: false });
+    } catch {
+        // emitter failures must not break sign-out
+    }
+}
+
+/**
+ * Returns a display label for the currently signed-in user, derived from the
+ * id_token claims (preferred_username, email, or name). Returns '(signed in)'
+ * if a token exists but no usable claim is present, or undefined when signed out.
+ * Never throws.
+ */
+export async function getActiveUserLabel(
+    context: vscode.ExtensionContext
+): Promise<string | undefined> {
+    const tok = await getStoredTokens(context);
+    if (!tok) {
+        return undefined;
+    }
+    const claims = decodeIdTokenClaims(tok.id_token);
+    return userLabelFromClaims(claims);
 }
 
 function isExpired(tok: TokenSet): boolean {
