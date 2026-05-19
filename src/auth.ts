@@ -84,6 +84,22 @@ function pkcePair(): { verifier: string; challenge: string } {
     return { verifier, challenge };
 }
 
+/**
+ * Escape the five HTML-sensitive characters before interpolating untrusted
+ * strings into the loopback OAuth response page (D-11 / WR-01). Not exported —
+ * only the awaitCallback error branch uses it.
+ */
+function escapeHtml(s: string): string {
+    const table: Record<string, string> = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;',
+    };
+    return s.replace(/[&<>"']/g, (ch) => table[ch]);
+}
+
 async function postForm(url: string, form: Record<string, string>): Promise<any> {
     const body = new URLSearchParams(form).toString();
     const res = await fetch(url, {
@@ -96,7 +112,7 @@ async function postForm(url: string, form: Record<string, string>): Promise<any>
     });
     const text = await res.text();
     if (!res.ok) {
-        throw new Error(`Token endpoint returned ${res.status}: ${text}`);
+        throw new Error(`Token endpoint returned ${res.status}: ${text.slice(0, 500)}`);
     }
     try {
         return JSON.parse(text);
@@ -132,7 +148,7 @@ async function awaitCallback(
                 const error = url.searchParams.get('error');
                 if (error) {
                     res.writeHead(400, { 'Content-Type': 'text/html' });
-                    res.end(`<html><body><h3>Authentication failed: ${error}</h3></body></html>`);
+                    res.end(`<html><body><h3>Authentication failed: ${escapeHtml(error)}</h3></body></html>`);
                     cleanup();
                     reject(new Error(`OAuth error: ${error}`));
                     return;
