@@ -27,7 +27,6 @@ const SECRET_TOKENS = 'altium365.tokens';
 const SECRET_WORKSPACE_TOKENS = 'altium365.workspaceTokens';
 const SECRET_WS_TOKEN_PREFIX = 'altium365.workspaceTokens.';
 const GLOBAL_WS_TOKEN_INDEX_KEY = 'altium365.workspaceTokenIds';
-const GLOBAL_ACTIVE_WORKSPACE_KEY = 'altium365.activeWorkspaceId';
 
 export interface AuthState {
     user?: string;
@@ -291,9 +290,6 @@ export async function ensureWorkspaceToken(
         const next = [...index, workspace.workspaceId];
         await context.globalState.update(GLOBAL_WS_TOKEN_INDEX_KEY, next);
     }
-    // Record active workspace (D-06): only on the exchange path, after the index
-    // update so a failed exchange/store never marks a workspace as active.
-    await context.globalState.update(GLOBAL_ACTIVE_WORKSPACE_KEY, workspace.workspaceId);
     return fresh.access_token;
 }
 
@@ -340,7 +336,6 @@ export async function clearAllTokens(context: vscode.ExtensionContext): Promise<
         await context.secrets.delete(SECRET_WS_TOKEN_PREFIX + id);
     }
     await context.globalState.update(GLOBAL_WS_TOKEN_INDEX_KEY, undefined);
-    await context.globalState.update(GLOBAL_ACTIVE_WORKSPACE_KEY, undefined);
     try {
         authStateEmitter.fire({ signedIn: false });
     } catch {
@@ -366,17 +361,11 @@ export async function getActiveUserLabel(
 }
 
 /**
- * Returns the workspaceId of the most-recently-exchanged workspace token (D-06),
- * or undefined when no workspace token has been exchanged in this profile (e.g.
- * fresh install or post-sign-out). Sync because globalState.get is sync.
- */
-export function getActiveWorkspaceId(
-    context: vscode.ExtensionContext
-): string | undefined {
-    return context.globalState.get<string>(GLOBAL_ACTIVE_WORKSPACE_KEY);
-}
-
-function isExpired(tok: TokenSet): boolean {
+ * @deprecated Removed in Phase 02.1 fix WR-01. The "active workspace" cue now
+ * reflects the user's explicit selection via `getSelectedWorkspace` in
+ * `workspace.ts`, not the most-recently-exchanged token. Callers should use
+ * `getSelectedWorkspace(context)?.workspaceId` from `./workspace`.
+ */function isExpired(tok: TokenSet): boolean {
     if (!tok.expires_at) {
         return false;
     }
