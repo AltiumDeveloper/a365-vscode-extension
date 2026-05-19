@@ -30,7 +30,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. GitHub Actions workflow runs compile → package → upload VSIX artifact on every push without manual steps
 **Plans**: 2 plans
 Plans:
-- [ ] 01-01-PLAN.md — Package tooling, metadata, and icon (PKG-01, PKG-02, PKG-03)
+- [x] 01-01-PLAN.md — Package tooling, metadata, and icon (PKG-01, PKG-02, PKG-03)
 - [ ] 01-02-PLAN.md — README rewrite and GitHub Actions CI pipeline (PKG-04, PKG-05)
 
 ### Phase 2: Side Panel

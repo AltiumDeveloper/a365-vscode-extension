@@ -24,9 +24,9 @@
 
 ### Packaging
 
-- [ ] **PKG-01**: `vsce package` produces an installable `.vsix` file
-- [ ] **PKG-02**: Single npm script (`npm run package`) compiles and packages in one step
-- [ ] **PKG-03**: `package.json` contains Marketplace-ready metadata: icon, description, categories, keywords, publisher
+- [x] **PKG-01**: `vsce package` produces an installable `.vsix` file
+- [x] **PKG-02**: Single npm script (`npm run package`) compiles and packages in one step
+- [x] **PKG-03**: `package.json` contains Marketplace-ready metadata: icon, description, categories, keywords, publisher
 - [ ] **PKG-04**: `README.md` contains install instructions and feature overview suitable for Marketplace listing
 - [ ] **PKG-05**: GitHub Actions CI workflow: compile → package → upload VSIX artifact
 
@@ -61,9 +61,9 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PKG-01 | Phase 1: Packaging | Pending |
-| PKG-02 | Phase 1: Packaging | Pending |
-| PKG-03 | Phase 1: Packaging | Pending |
+| PKG-01 | Phase 1: Packaging | Complete |
+| PKG-02 | Phase 1: Packaging | Complete |
+| PKG-03 | Phase 1: Packaging | Complete |
 | PKG-04 | Phase 1: Packaging | Pending |
 | PKG-05 | Phase 1: Packaging | Pending |
 | PANEL-01 | Phase 2: Side Panel | Pending |
