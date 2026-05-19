@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 2 context gathered
-last_updated: "2026-05-19T17:03:42.427Z"
+stopped_at: Completed 02-06-PLAN.md (Phase 2 complete; SCRIPT-01/D-09 deferred to Phase 3)
+last_updated: "2026-05-19T17:30:00.000Z"
 last_activity: 2026-05-19
 progress:
   total_phases: 3
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 8
-  completed_plans: 7
-  percent: 33
+  completed_plans: 8
+  percent: 67
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-05-19)
 
 ## Current Position
 
-Phase: 02 (side-panel) — EXECUTING
-Plan: 6 of 6
-Status: Ready to execute
+Phase: 02 (side-panel) — COMPLETE
+Plan: 6 of 6 done
+Status: Ready for Phase 3 planning
 Last activity: 2026-05-19
 
-Progress: [█████████░] 88%
+Progress: [██████████] 100% of Phase 2 plans; 67% of milestone
 
 Wave structure:
 
@@ -65,6 +65,7 @@ Wave structure:
 | Phase 02 P03 | 2 min | 2 tasks | 1 files |
 | Phase 02 P04 | 2 min | 2 tasks | 2 files |
 | Phase 02 P05 | 3 min | 2 tasks | 2 files |
+| Phase 02 P06 | 4 min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -80,6 +81,7 @@ Recent decisions affecting current work:
 - [Phase 01-packaging]: Generate the 128x128 extension icon programmatically via scripts/generate-icon.js (zero-dependency Node script) rather than committing a hand-drawn asset
 - [Phase 01-packaging]: Bumped extension version 0.0.2 to 0.1.0 to mark the first packaged build
 - [Phase ?]: [Phase 01-packaging]: Use main-only CI trigger with explicit npm run compile before npm run package for fail-fast tsc errors — Per D-08/D-09; redundant compile is acceptable for clearer failure step
+- [Phase 02-side-panel P06]: D-09 / SCRIPT-01 (run-local from tree) deferred to Phase 3 — Task 1 blocking human-verify of the A365 file-download endpoint (Assumption A1) and package format (A2) returned BLOCKED because no live A365 workspace was available for verification. All four altium365.script.* commands registered as Phase 3 placeholders so the right-click menu surfaces consistent UX. The runScriptAtPath refactor shipped anyway and is ready for Phase 3 to consume.
 
 ### Pending Todos
 
@@ -94,10 +96,13 @@ None yet.
 
 | Category | Item | Status | Deferred At |
 |----------|------|--------|-------------|
-| *(none)* | | | |
+| Phase 3 | SCRIPT-01 (run A365 script body locally from tree) | Pending Phase 3 — needs live-workspace endpoint verification | Phase 02 P06 (2026-05-19) |
+| Phase 3 | D-09 (fetch → tmpdir 0o600 → runScriptAtPath → finally unlink) | Pending Phase 3 — same blocker as SCRIPT-01 | Phase 02 P06 (2026-05-19) |
+| Phase 3 | RESEARCH.md Assumption A1 (file-download URL template + auth header) | Unverified — re-run Plan 02-06 Task 1 protocol against a live workspace | Phase 02 P06 (2026-05-19) |
+| Phase 3 | RESEARCH.md Assumption A2 (single .py vs zip archive) | Unverified — `file -b` downloaded body; if archive, add unzip + entry-point rule | Phase 02 P06 (2026-05-19) |
 
 ## Session Continuity
 
-Last session: 2026-05-19T17:03:42.422Z
-Stopped at: Phase 2 context gathered
+Last session: 2026-05-19T17:30:00.000Z
+Stopped at: Completed 02-06-PLAN.md (Phase 2 complete; SCRIPT-01/D-09 deferred to Phase 3)
 Resume file: None
