@@ -44,7 +44,13 @@ Plans:
   3. Expanding a workspace reveals its projects and its scripts as separate child nodes
   4. Right-clicking a script node shows context menu actions: Run Script, Edit Script, Execute Remotely, Publish Script
   5. The panel header or VS Code status bar shows the currently signed-in user and active environment
-**Plans**: TBD
+**Plans**: 6 plans
+- [ ] 02-01-PLAN.md — Add listScripts() + ScriptInfo to src/workspace.ts (SCRIPT-01 GraphQL plumbing)
+- [ ] 02-02-PLAN.md — Per-workspace token cache + auth-state event emitter + getActiveUserLabel in src/auth.ts (PANEL-06 foundation)
+- [ ] 02-03-PLAN.md — package.json contributes: viewsContainers, views, viewsWelcome, 7 commands, view/title + view/item/context menus (PANEL-01, PANEL-05)
+- [ ] 02-04-PLAN.md — src/sidePanel.ts A365TreeDataProvider + extension.ts wiring (PANEL-01..04, D-05, D-07)
+- [ ] 02-05-PLAN.md — src/statusBar.ts factory + altium365.statusBar.click QuickPick (PANEL-06)
+- [ ] 02-06-PLAN.md — src/scriptCommands.ts: register all four altium365.script.* commands, implement run-local via two-step fetch + tmpdir (PANEL-05, SCRIPT-01, D-09); blocking human checkpoint for A1/A2
 **UI hint**: yes
 
 ### Phase 3: Remote Script Operations
