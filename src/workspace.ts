@@ -1,13 +1,12 @@
 import * as vscode from 'vscode';
 import {
     clearAllTokens,
-    exchangeWorkspaceToken,
+    ensureWorkspaceToken,
     getActiveAccessToken,
-    getStoredTokens,
+    getBaseAccessToken,
     OAuthConfig,
     readOAuthConfig,
     signIn,
-    TokenSet,
 } from './auth';
 
 export interface WorkspaceInfo {
@@ -64,15 +63,15 @@ export async function pickAndExchangeWorkspace(
     context: vscode.ExtensionContext,
     cfg: OAuthConfig,
     graphqlEndpoint: string
-): Promise<TokenSet | undefined> {
-    const base = await getStoredTokens(context);
-    if (!base) {
+): Promise<string | undefined> {
+    const baseToken = await getBaseAccessToken(context, cfg);
+    if (!baseToken) {
         vscode.window.showErrorMessage('Sign in first (Altium 365: Sign In).');
         return undefined;
     }
     let workspaces: WorkspaceInfo[];
     try {
-        workspaces = await listWorkspaces(graphqlEndpoint, base.access_token);
+        workspaces = await listWorkspaces(graphqlEndpoint, baseToken);
     } catch (e) {
         vscode.window.showErrorMessage(`Failed to list workspaces: ${(e as Error).message}`);
         return undefined;
@@ -93,7 +92,10 @@ export async function pickAndExchangeWorkspace(
     if (!pick) {
         return undefined;
     }
-    const tok = await exchangeWorkspaceToken(context, cfg, pick.ws.authId);
+    const tok = await ensureWorkspaceToken(context, cfg, {
+        workspaceId: pick.ws.workspaceId,
+        authId: pick.ws.authId,
+    });
     await context.globalState.update('altium365.selectedWorkspace', pick.ws);
     return tok;
 }
