@@ -206,6 +206,7 @@
               "graphqlEndpoint": "https://usw2.dev-365.altium.com/napi/gateway/graphql",
               "authEndpoint": "https://auth.dev1.altium.com/connect/authorize",
               "tokenEndpoint": "https://auth.dev1.altium.com/connect/token",
+              "actionWaitEndpoint": "https://actionwait.dev1.altium.com/await",
               "scopes": "openid profile",
               "audience": ""
             },
@@ -213,6 +214,7 @@
               "graphqlEndpoint": "https://eur.uat-365.altium.com/napi/gateway/graphql",
               "authEndpoint": "https://auth.uat1.altium.com/connect/authorize",
               "tokenEndpoint": "https://auth.uat1.altium.com/connect/token",
+              "actionWaitEndpoint": "https://actionwait.uat1.altium.com/await",
               "scopes": "openid profile",
               "audience": ""
             },
@@ -220,6 +222,7 @@
               "graphqlEndpoint": "https://eur.365.altium.com/napi/gateway/graphql",
               "authEndpoint": "https://auth.altium.com/connect/authorize",
               "tokenEndpoint": "https://auth.altium.com/connect/token",
+              "actionWaitEndpoint": "https://actionwait.altium.com/await",
               "scopes": "openid profile",
               "audience": ""
             }
