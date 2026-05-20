@@ -19,13 +19,18 @@ import { downloadByToken, uploadAndGetToken } from './filesService';
 /**
  * FileSystemProvider for the `altium365:` URI scheme.
  *
- * URI shape (D-01): `altium365://<workspaceId>/<scriptId>/<scriptName>.py`
- * - `authority` carries the workspaceId (host segment) so VS Code's URI
- *   normalisation treats different workspaces as distinct hosts (separate
- *   editor groups, no path collisions across workspaces).
- * - First path segment is the scriptId; remainder is the display name
- *   (`.py` extension drives Python syntax highlighting / language services
- *   automatically — RESEARCH §Don't Hand-Roll).
+ * URI shape (D-01, revised post-UAT 2026-05-20):
+ *   `altium365://<b64url(workspaceId)>/<scriptId>/<scriptName>`
+ * - `authority` carries the workspaceId base64url-encoded. Altium 365 returns
+ *   workspaceId as a GRID (`grid:global::platform:workspace/<uuid>`) which
+ *   contains `:` and `/` — both unsafe in a URI authority. Base64url is a
+ *   single segment with [A-Za-z0-9_-] only, so it round-trips cleanly through
+ *   VS Code's URI normalisation and still gives each workspace a distinct
+ *   "host" for editor-group routing.
+ * - First path segment is the scriptId (UUID). Remainder is the display name
+ *   passed raw to `vscode.Uri.from({...})` — that helper encodes once on
+ *   stringification; pre-encoding here caused `%20` → `%2520` double-encoding
+ *   (UAT 2026-05-20 finding).
  *
  * Decisions:
  * - D-01: this scheme + provider pattern.
@@ -41,7 +46,9 @@ import { downloadByToken, uploadAndGetToken } from './filesService';
  *
  * Threat mitigations:
  * - T-03-02-01 (path traversal): `parseScriptUri` enforces UUID regex on
- *   both workspaceId and scriptId; throws `FileNotFound` on mismatch.
+ *   `scriptId`; throws `FileNotFound` on mismatch. `workspaceId` is opaque
+ *   server-issued GRID, validated by membership in `listWorkspaces` result
+ *   inside `resolveWorkspace` (auth tier check beats charset check).
  * - T-03-02-02 (cross-workspace endpoint leak): the FSP re-resolves the
  *   per-call workspace from the URI's authority and looks up its endpoint /
  *   token freshly; no cross-workspace state survives in the provider.
@@ -52,6 +59,15 @@ import { downloadByToken, uploadAndGetToken } from './filesService';
  */
 
 const UUID_REGEX = /^[0-9a-fA-F-]{36}$/;
+const BASE64URL_REGEX = /^[A-Za-z0-9_-]+$/;
+
+function encodeWorkspaceId(workspaceId: string): string {
+    return Buffer.from(workspaceId, 'utf8').toString('base64url');
+}
+
+function decodeWorkspaceId(encoded: string): string {
+    return Buffer.from(encoded, 'base64url').toString('utf8');
+}
 
 export interface ParsedRemoteUri {
     workspaceId: string;
@@ -63,8 +79,11 @@ export interface ParsedRemoteUri {
 /**
  * Build a canonical `altium365:` URI for a remote script.
  *
- * `authority` = workspaceId, path = `/<scriptId>/<scriptName>` so the
- * built URI stringifies as `altium365://<wsId>/<scriptId>/<encoded-name>`.
+ * `authority` = base64url(workspaceId), path = `/<scriptId>/<scriptName>`.
+ *
+ * The script name is passed raw — `vscode.Uri.from` encodes once on
+ * stringification. Pre-encoding here was a UAT-2026-05-20 bug (`%20` became
+ * `%2520`).
  */
 export function buildScriptUri(
     workspaceId: string,
@@ -73,8 +92,8 @@ export function buildScriptUri(
 ): vscode.Uri {
     return vscode.Uri.from({
         scheme: 'altium365',
-        authority: workspaceId,
-        path: '/' + scriptId + '/' + encodeURIComponent(scriptName),
+        authority: encodeWorkspaceId(workspaceId),
+        path: '/' + scriptId + '/' + scriptName,
     });
 }
 
@@ -89,8 +108,17 @@ export function parseScriptUri(uri: vscode.Uri): ParsedRemoteUri {
     if (uri.scheme !== 'altium365') {
         throw vscode.FileSystemError.FileNotFound(uri);
     }
-    const workspaceId = uri.authority;
-    if (!workspaceId || !UUID_REGEX.test(workspaceId)) {
+    const encoded = uri.authority;
+    if (!encoded || !BASE64URL_REGEX.test(encoded)) {
+        throw vscode.FileSystemError.FileNotFound(uri);
+    }
+    let workspaceId: string;
+    try {
+        workspaceId = decodeWorkspaceId(encoded);
+    } catch {
+        throw vscode.FileSystemError.FileNotFound(uri);
+    }
+    if (!workspaceId) {
         throw vscode.FileSystemError.FileNotFound(uri);
     }
     // path is `/<scriptId>/<scriptName>` — split off leading slash, then by
@@ -106,12 +134,9 @@ export function parseScriptUri(uri: vscode.Uri): ParsedRemoteUri {
     if (!UUID_REGEX.test(scriptId) || rest.length === 0) {
         throw vscode.FileSystemError.FileNotFound(uri);
     }
-    let displayName: string;
-    try {
-        displayName = decodeURIComponent(rest);
-    } catch {
-        throw vscode.FileSystemError.FileNotFound(uri);
-    }
+    // `uri.path` is already percent-decoded by VS Code's URI parser. Display
+    // name is cosmetic only — scriptId is the lookup key.
+    const displayName = rest;
     return { workspaceId, scriptId, displayName };
 }
 
