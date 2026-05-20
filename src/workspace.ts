@@ -9,11 +9,38 @@ import {
     signIn,
 } from './auth';
 
+export interface WorkspaceLocation {
+    apiServiceUrl?: string;
+}
+
 export interface WorkspaceInfo {
     name: string;
     workspaceId: string;
     authId: string;
     url?: string;
+    location?: WorkspaceLocation;
+}
+
+/**
+ * Resolve the GraphQL/API endpoint to use for workspace-scoped queries.
+ *
+ * Phase 02.3 UAT (2026-05-20, D-19) pinned that all post-workspace operations
+ * (projects, scripts, future remote-script ops) MUST target the workspace's
+ * own `DesWorkspaceInfo.location.apiServiceUrl` rather than the env-global
+ * `altium365.graphqlEndpoint`. A workspace can live on a different cluster
+ * than the env-global gateway, and the env-global endpoint will silently
+ * return data for the wrong cluster (or error).
+ *
+ * Falls back to the env-global endpoint when a workspace either was loaded
+ * before the schema bump or has no location.apiServiceUrl populated by the
+ * server (defensive — should not happen with current servers).
+ */
+export function getWorkspaceApiUrl(
+    ws: WorkspaceInfo | undefined,
+    envGlobalEndpoint: string
+): string {
+    const ws_url = ws?.location?.apiServiceUrl?.trim();
+    return ws_url && ws_url.length > 0 ? ws_url : envGlobalEndpoint;
 }
 
 export async function graphqlRequest(
@@ -54,7 +81,7 @@ export async function listWorkspaces(
     const data = await graphqlRequest(
         endpoint,
         accessToken,
-        'query { desWorkspaceInfos { name workspaceId authId url } }'
+        'query { desWorkspaceInfos { name workspaceId authId url location { apiServiceUrl } } }'
     );
     return (data?.desWorkspaceInfos as WorkspaceInfo[]) || [];
 }
@@ -133,8 +160,8 @@ export interface ScriptInfo {
 
 // TODO: paginate if hasNextPage (RESEARCH.md Assumption A3 — 100-item page is sufficient for v1)
 const LIST_SCRIPTS_QUERY = `
-    query ListScripts($first: Int = 100) {
-        gloScrScripts(first: $first) {
+    query ListScripts {
+        gloScrScripts(first: 100) {
             nodes {
                 scriptId
                 name
@@ -148,7 +175,7 @@ export async function listScripts(
     endpoint: string,
     workspaceToken: string
 ): Promise<ScriptInfo[]> {
-    const data = await graphqlRequest(endpoint, workspaceToken, LIST_SCRIPTS_QUERY, { first: 100 });
+    const data = await graphqlRequest(endpoint, workspaceToken, LIST_SCRIPTS_QUERY);
     const nodes = data?.gloScrScripts?.nodes;
     return Array.isArray(nodes) ? (nodes as ScriptInfo[]) : [];
 }

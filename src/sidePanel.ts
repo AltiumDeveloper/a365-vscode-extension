@@ -10,6 +10,7 @@ import {
     ScriptInfo,
     WorkspaceInfo,
     getSelectedWorkspace,
+    getWorkspaceApiUrl,
     listProjects,
     listScripts,
     listWorkspaces,
@@ -259,7 +260,10 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
             workspaceId,
             authId: element.info.authId,
         });
-        const endpoint = this.getEndpoint();
+        // Phase 02.3 D-19: workspace-scoped queries MUST target the workspace's
+        // own apiServiceUrl, not the env-global graphqlEndpoint, since a
+        // workspace can live on a different cluster than the env gateway.
+        const endpoint = getWorkspaceApiUrl(element.info, this.getEndpoint());
         const [projects, scripts] = await Promise.all([
             listProjects(endpoint, wsToken),
             listScripts(endpoint, wsToken),
