@@ -116,14 +116,27 @@ async function doSignIn(context: vscode.ExtensionContext) {
         );
         return;
     }
+    if (!cfg.actionWaitEndpoint || !cfg.redirectUri) {
+        vscode.window.showErrorMessage(
+            "Altium 365: actionWaitEndpoint and redirectUri are not configured. Run 'Altium 365: Select Environment' to populate them from the env defaults."
+        );
+        return;
+    }
+    const controller = new AbortController();
     try {
         await vscode.window.withProgress(
             {
                 location: vscode.ProgressLocation.Notification,
-                title: 'Altium 365 sign-in (complete in browser)...',
+                cancellable: true,
+                title: 'Altium 365: waiting for sign-in...',
             },
-            async () => {
-                await signIn(context, cfg);
+            async (_progress, token) => {
+                const cancelSubscription = token.onCancellationRequested(() => controller.abort());
+                try {
+                    await signIn(context, cfg, 180_000, controller.signal);
+                } finally {
+                    cancelSubscription.dispose();
+                }
             }
         );
         vscode.window.showInformationMessage('Altium 365: signed in.');
@@ -136,7 +149,58 @@ async function doSignIn(context: vscode.ExtensionContext) {
             await doSelectWorkspace(context);
         }
     } catch (e) {
-        vscode.window.showErrorMessage(`Sign-in failed: ${(e as Error).message}`);
+        const msg = (e as Error).message ?? String(e);
+
+        // Silent cancellation per D-12 — the closing progress notification IS the feedback.
+        if (msg === 'Sign-in cancelled.') {
+            return;
+        }
+
+        // CSRF guard (exact match per D-07/D-12)
+        if (msg === 'State mismatch (possible CSRF).') {
+            vscode.window.showErrorMessage(
+                'Altium 365 sign-in failed: state mismatch (possible CSRF).'
+            );
+            return;
+        }
+
+        // Wall-clock timeout
+        if (msg.includes('wall-clock timeout')) {
+            vscode.window.showErrorMessage(
+                'Altium 365 sign-in timed out after 3 minutes. Please try again.'
+            );
+            return;
+        }
+
+        // Network error during poll — message format from plan 04: 'ActionWait network error: <err> (<host>)'
+        if (msg.startsWith('ActionWait network error')) {
+            const hostMatch = msg.match(/\(([^)]+)\)\s*$/);
+            let host = hostMatch ? hostMatch[1] : '';
+            if (!host) {
+                try {
+                    host = new URL(cfg.actionWaitEndpoint).host;
+                } catch {
+                    host = cfg.actionWaitEndpoint;
+                }
+            }
+            vscode.window.showErrorMessage(
+                `Altium 365 sign-in failed: cannot reach ActionWait service (${host}). Check network connectivity.`
+            );
+            return;
+        }
+
+        // ActionWait non-2xx HTTP status — message format from plan 04: 'ActionWait returned <status>: <body>'
+        if (msg.startsWith('ActionWait returned')) {
+            const statusMatch = msg.match(/^ActionWait returned (\d+)/);
+            const status = statusMatch ? statusMatch[1] : '?';
+            vscode.window.showErrorMessage(
+                `Altium 365 sign-in failed: ActionWait returned ${status}.`
+            );
+            return;
+        }
+
+        // Token endpoint failure or anything else — existing pass-through preserved (D-12 final bullet)
+        vscode.window.showErrorMessage(`Sign-in failed: ${msg}`);
     }
 }
 
