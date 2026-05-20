@@ -15,6 +15,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Packaging** - Produce a distributable VSIX with CI pipeline and Marketplace-ready metadata (completed 2026-05-19)
 - [x] **Phase 2: Side Panel** - Activity Bar tree showing workspaces, projects, and scripts with context actions (completed 2026-05-19)
 - [x] **Phase 3: Remote Script Operations** - Open, edit, publish, and execute server-side scripts from the tree (completed 2026-05-21 — partial UAT, Scenarios 3+5 deferred)
+- [ ] **Phase 4: UI Polish** - Trim noise from side-panel UX and workspace picker (command titles, QuickPick, icons, env header, active-workspace cue, Select context menu)
+- [ ] **Phase 5: Progress Feedback for Async Operations** - Consistent `withProgress` UI for every user-triggered network/IO action
 
 ## Phase Details
 
@@ -119,10 +121,40 @@ Plans:
   4. Remote execution output appears in the VS Code Output Channel, streaming in real time
 **Plans**: TBD
 
+### Phase 4: UI Polish — context menus + workspace picker
+**Goal**: Trim noise from the side-panel UX and workspace picker that surfaced during Phase 3 UAT — clean command titles, cleaner QuickPick, differentiated icons, env name in header, stronger active-workspace cue, and a Select action in the workspace context menu.
+**Mode:** mvp
+**Depends on**: Phase 3
+**Requirements**: TBD (derive during /gsd-discuss-phase 04)
+**Success Criteria** (what must be TRUE):
+  1. Command Palette shows commands as `Altium 365: <Title>` (no double prefix); context-menu entries show clean titles without the redundant `Altium 365:` prefix
+  2. Workspace QuickPick no longer exposes the GRID URN; it shows workspace name on line 1 and the raw authId on line 2
+  3. Command Palette only lists user-actionable commands (`signIn`, `signOut`, `selectWorkspace`, `selectEnvironment`, `runScript`, `debugScript`); tree-context commands are hidden from the palette but still wired to context menus
+  4. Projects and Scripts category nodes use visually distinct codicons
+  5. The A365 tree view header shows the current environment name as `treeView.description`
+  6. The active workspace is visually distinguishable from inactive workspaces by more than dimmed color alone
+  7. Workspace tree nodes expose a `Select` context menu entry that activates the workspace directly (hidden on the already-active workspace)
+**Plans**: TBD (run /gsd-plan-phase 04 to break down)
+**Source**: Promoted from backlog 999.1 (7 items, captured 2026-05-21 post Phase 3 closure)
+**UI hint**: yes
+
+### Phase 5: Progress Feedback for Async Operations
+**Goal**: Provide consistent visual feedback whenever a user-triggered action does network/IO work that takes more than ~200ms, so the user never wonders "is anything happening?"
+**Mode:** mvp
+**Depends on**: Phase 3
+**Requirements**: TBD (derive during /gsd-discuss-phase 05)
+**Success Criteria** (what must be TRUE):
+  1. `altium365.script.edit` wraps the `openTextDocument` + language-set + `showTextDocument` sequence in `vscode.window.withProgress` so the user sees a spinner during the GraphQL fetch
+  2. `altium365.script.publish` and the setup phase of remote execution (`remoteExecution.ts` Block A) also show progress affordance before their network round-trip
+  3. A single `ProgressLocation` convention (Notification vs Window) is chosen and applied consistently across all remote-script commands
+  4. Where appropriate (e.g. Edit), progress is `cancellable: true` and cancellation aborts the in-flight GraphQL request
+**Plans**: TBD (run /gsd-plan-phase 05 to break down)
+**Source**: Promoted from backlog 999.3 (3 items + 3 open questions, captured 2026-05-21 post Phase 3 closure)
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 02.1 → 02.2 → 3
+Phases execute in numeric order: 1 → 2 → 02.1 → 02.2 → 02.3 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -132,32 +164,12 @@ Phases execute in numeric order: 1 → 2 → 02.1 → 02.2 → 3
 | 02.2 Auth Hardening | done | Complete | 2026-05-20 |
 | 02.3 ActionWait Auth Flow | 5/5 | Complete (partial UAT) | 2026-05-20 |
 | 3. Remote Script Operations | 5/5 | Complete (partial UAT) | 2026-05-21 |
+| 4. UI Polish | 0/0 | Pending — promoted from 999.1 | — |
+| 5. Progress Feedback for Async Ops | 0/0 | Pending — promoted from 999.3 | — |
 
 ## Backlog
 
 Unsequenced items parked for a future milestone. Promote with `/gsd-review-backlog` when ready to plan.
-
-### Phase 999.1: UI polish — context menus + workspace picker (BACKLOG)
-
-**Goal:** Trim noise from the side-panel UX and workspace picker that surfaced during Phase 3 UAT.
-
-**Captured items:**
-
-1. **Drop the `Altium 365: ` prefix from command titles (fixes double-prefix bug)** — every command in `package.json` contributes.commands[] sets both `category: "Altium 365"` AND `title: "Altium 365: ..."`. VS Code automatically prepends the category in the Command Palette, so commands currently render as `Altium 365: Altium 365: Select Workspace` (double prefix). In tree-node context menus only the `title` is shown, so they render as `Altium 365: Select Workspace` (single but redundant prefix). **Fix:** strip the literal `Altium 365: ` from every `title` and keep `category`. Result — Command Palette shows `Altium 365: Select Workspace` (category prepended); context menus show clean `Select Workspace`. Applies to all ~10 commands in package.json.
-2. **Workspace selection QuickPick: drop GRID line, show authId clean** — current picker renders workspace name + full GRID (`grid:global::platform:workspace/<uuid>`) on the first line and `authId: <guid>` on the second. Replace with workspace name on line 1 and the raw authId (no `authId: ` prefix) on line 2. GRID is internal plumbing and shouldn't be user-visible. Likely in `src/extension.ts` or `src/workspace.ts` where the QuickPick items are built.
-3. **Audit which commands need palette registration vs context-menu only** — all 17 commands in `package.json` `contributes.commands[]` are currently Command Palette–discoverable, but most make no sense without tree-node context (e.g., `altium365.tree.copyId`, `altium365.script.edit`, `altium365.script.publish` do nothing useful when invoked from the palette). **Keep palette-visible:** `signIn`, `signOut`, `selectWorkspace`, `selectEnvironment`, `runScript`, `debugScript`. **Hide from palette (keep handlers via `commands.registerCommand` so context menus still work):** `tree.copyId`, `tree.refresh`, `tree.retryNode`, `tree.openInBrowser`, all `script.*` commands (`edit`, `publish`, `executeRemote`, `runLocal`), `workspace.openInBrowser`, `project.openInBrowser`, `statusBar.click`. **Implementation options:** (a) remove from `contributes.commands[]` entirely (cleanest), or (b) keep them registered but add `menus.commandPalette` entries with `when: false` to suppress. Option (a) is simpler; option (b) preserves the title/category metadata if needed elsewhere. Decide during planning.
-4. **Differentiate Projects vs Scripts folder icons** — currently both category nodes in the side panel use the same `folder-library` codicon (`src/sidePanel.ts:143` for Projects, `src/sidePanel.ts:152` for Scripts), making them visually indistinguishable. Pick distinct codicons that telegraph the content type — e.g., `project` or `package` for Projects, and `file-code` or `code` for Scripts. Keep both consistent with VS Code's built-in icon vocabulary so theme customization keeps working. Quick fix, two lines.
-5. **Surface current environment name in the side-panel header** — the globe icon in the view title (`package.json:286-298`, action `altium365.selectEnvironment`) is icon-only; users can't tell which environment is active without hovering or checking the status bar. **Fix:** set `treeView.description = currentEnvironment.name` on the existing `vscode.window.createTreeView('altium365.tree', …)` call at `src/extension.ts:41`. VS Code renders the description as dimmed text immediately after the view title (e.g. `ALTIUM 365 · Production`), matching the status-bar visual cue. Update `treeView.description` whenever the environment changes (re-use the same listener that refreshes the tree). Trivial change — one assignment plus a refresh hook.
-6. **Strengthen active-workspace visual cue (use a different icon, not just dimmed color)** — current implementation at `src/sidePanel.ts:124-134` uses the same `cloud` codicon for both active and inactive workspaces, differing only by ThemeColor (active = default foreground, inactive = `descriptionForeground`). The contrast is too subtle and the `(active)` description label is the only reliable signal. **Constraint already documented in code comment:** no `cloud-outline` codicon exists in VS Code's built-in set, so a true filled/outline pair isn't available. **Implementation options:** (a) keep `cloud` for inactive, use a distinctly different codicon for active — candidates: `pass-filled`, `circle-filled`, `pinned`, `bookmark`, `star-full`, `verified-filled`, `record` — pick whichever reads most as "this one is selected" without overloading other semantics; (b) keep `cloud` for both but apply a high-contrast ThemeColor (`charts.blue`, `gitDecoration.modifiedResourceForeground`, or `terminal.ansiBlue`) to active so it pops against the default workspace cloud color; (c) ship a custom SVG codicon pair (filled + outline cloud) via `contributes.icons` in `package.json` — most work but truest to the "black cloud vs white cloud" intent. Option (a) is simplest and respects theme customization; option (c) matches the user's exact mental model. Decide during planning. Coordinates with 999.2 workspace favorites — both features stack icon cues on the workspace node, so resolve their interaction together.
-7. **Add "Select" context menu item on workspace nodes** — currently the only way to change the active workspace is via the Command Palette or the status-bar QuickPick (`altium365.selectWorkspace`, registered at `package.json:67`). Workspace tree nodes have no direct affordance — right-clicking a workspace doesn't offer a way to activate it. The contextValue plumbing is already in place: `CTX_WORKSPACE = 'workspaceNode'` (`src/sidePanel.ts:19`) is assigned at `src/sidePanel.ts:115`, and two existing `view/item/context` entries at `package.json:322` and `:337` already target `viewItem == workspaceNode`, so the menu-registration pattern is established. **Fix:** add a third `view/item/context` entry wiring a `Select` command. Likely needs a new wrapper command (e.g. `altium365.workspace.selectFromNode`) that takes the clicked `A365Node` directly and sets it active without going through the QuickPick — same pattern as the tree-aware `altium365.script.edit`. Hide the menu item on the workspace that's already active (e.g. `when: viewItem == workspaceNode && !altium365.activeWorkspace` — verify a suitable context key exists, or introduce one via `vscode.commands.executeCommand('setContext', …)` when the active workspace changes). Coordinates with item #6 (active-workspace icon) and 999.2 (workspace favorites) — all three features layer behavior on the same workspace context menu, so resolve their interaction together during planning.
-
-**Requirements:** TBD
-**Plans:** 0 plans
-
-Plans:
-- [ ] TBD — promote with `/gsd-review-backlog` when ready
-
-**Captured at:** 2026-05-21 (post Phase 3 closure)
 
 ### Phase 999.2: Workspace favorites (BACKLOG)
 
@@ -187,26 +199,3 @@ Plans:
 
 **Captured at:** 2026-05-21 (post Phase 3 closure)
 
-### Phase 999.3: Progress feedback for async operations (BACKLOG)
-
-**Goal:** Provide consistent visual feedback whenever a user-triggered action does network/IO work that takes more than ~200ms, so the user never wonders "is anything happening?"
-
-**Captured items:**
-
-1. **Remote script Edit shows no progress during download** — when the user picks `altium365.script.edit` from the context menu, `src/scriptCommands.ts:143-173` calls `vscode.workspace.openTextDocument(uri)` which triggers the custom-URI content provider to do a GraphQL fetch of the script body. This fetch takes several seconds for large scripts and runs silently — no spinner, no status-bar message, no "Loading script…" indicator. User can't tell whether the click registered. **Fix:** wrap the `openTextDocument` + `setTextDocumentLanguage` + `showTextDocument` sequence in `vscode.window.withProgress({ location: ProgressLocation.Notification, title: "Loading script…" })` (matches the existing pattern at `src/extension.ts:140` and `:657`). Alternatively use `ProgressLocation.Window` for a subtler status-bar spinner.
-2. **Audit all remote-script operations for missing progress UI** — same gap likely exists for `publishScript` (`src/scriptCommands.ts:175+`) and possibly remote `executeRemote`. `remoteExecution.ts` already wraps the poll loop in `withProgress` (`:187`) but the setup phase (`:88` "Block A: setup (outside withProgress)") deliberately runs without it — review whether that gap also leaves the user staring at a frozen UI. Standardize: every command that makes a GraphQL call should show some progress affordance before the network round-trip starts.
-3. **Pick a consistent ProgressLocation convention** — decide once whether script ops use `Notification` (modal toast, more obvious) or `Window` (status-bar spinner, less intrusive) so the extension feels coherent. Confirm what `extension.ts:140` and `:657` use today and align.
-
-**Open questions (resolve during /gsd-discuss-phase):**
-
-- Notification vs Window progress location for script ops?
-- Should progress be cancellable (`cancellable: true`)? `editScript` arguably should be — abort GraphQL on user cancel. `publishScript` probably shouldn't (mid-mutation cancel is messy).
-- Threshold for showing progress at all — always, or only when operation exceeds N ms? VS Code doesn't have a built-in delay; showing instantly is simplest.
-
-**Requirements:** TBD
-**Plans:** 0 plans
-
-Plans:
-- [ ] TBD — promote with `/gsd-review-backlog` when ready
-
-**Captured at:** 2026-05-21 (post Phase 3 closure)
