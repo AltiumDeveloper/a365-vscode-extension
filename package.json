@@ -159,16 +159,6 @@
           "default": "",
           "description": "Optional 'audience' parameter (Auth0-style providers)."
         },
-        "altium365.redirectPort": {
-          "type": "number",
-          "default": 8080,
-          "description": "Loopback port for the OAuth2 redirect."
-        },
-        "altium365.redirectPath": {
-          "type": "string",
-          "default": "/oauth/v2/callback",
-          "description": "Loopback path for the OAuth2 redirect (must match what the IdP has registered)."
-        },
         "altium365.pythonPath": {
           "type": "string",
           "default": "",
@@ -207,6 +197,7 @@
               "authEndpoint": "https://auth.dev1.altium.com/connect/authorize",
               "tokenEndpoint": "https://auth.dev1.altium.com/connect/token",
               "actionWaitEndpoint": "https://actionwait.dev1.altium.com/await",
+              "redirectUri": "https://auth.dev1.altium.com/authCompleted",
               "scopes": "openid profile",
               "audience": ""
             },
@@ -215,6 +206,7 @@
               "authEndpoint": "https://auth.uat1.altium.com/connect/authorize",
               "tokenEndpoint": "https://auth.uat1.altium.com/connect/token",
               "actionWaitEndpoint": "https://actionwait.uat1.altium.com/await",
+              "redirectUri": "https://auth.uat1.altium.com/authCompleted",
               "scopes": "openid profile",
               "audience": ""
             },
@@ -223,17 +215,20 @@
               "authEndpoint": "https://auth.altium.com/connect/authorize",
               "tokenEndpoint": "https://auth.altium.com/connect/token",
               "actionWaitEndpoint": "https://actionwait.altium.com/await",
+              "redirectUri": "https://auth.altium.com/authCompleted",
               "scopes": "openid profile",
               "audience": ""
             }
           },
-          "description": "Named environments. Each entry can override graphqlEndpoint, authEndpoint, tokenEndpoint, scopes, audience. Use 'Altium 365: Select Environment' to switch.",
+          "description": "Named environments. Each entry can override graphqlEndpoint, authEndpoint, tokenEndpoint, actionWaitEndpoint, redirectUri, scopes, audience. Use 'Altium 365: Select Environment' to switch.",
           "additionalProperties": {
             "type": "object",
             "properties": {
               "graphqlEndpoint": { "type": "string" },
               "authEndpoint": { "type": "string" },
               "tokenEndpoint": { "type": "string" },
+              "actionWaitEndpoint": { "type": "string" },
+              "redirectUri": { "type": "string" },
               "scopes": { "type": "string" },
               "audience": { "type": "string" }
             }
