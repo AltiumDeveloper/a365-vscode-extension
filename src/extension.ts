@@ -173,6 +173,8 @@ interface EnvironmentSpec {
     graphqlEndpoint?: string;
     authEndpoint?: string;
     tokenEndpoint?: string;
+    actionWaitEndpoint?: string;
+    redirectUri?: string;
     scopes?: string;
     audience?: string;
 }
@@ -228,6 +230,12 @@ async function doSelectEnvironment(context: vscode.ExtensionContext) {
     await cfg.update('graphqlEndpoint', spec.graphqlEndpoint ?? '', target);
     await cfg.update('authEndpoint', spec.authEndpoint ?? '', target);
     await cfg.update('tokenEndpoint', spec.tokenEndpoint ?? '', target);
+    if (spec.actionWaitEndpoint !== undefined) {
+        await cfg.update('actionWaitEndpoint', spec.actionWaitEndpoint, target);
+    }
+    if (spec.redirectUri !== undefined) {
+        await cfg.update('redirectUri', spec.redirectUri, target);
+    }
     if (spec.scopes !== undefined) {
         await cfg.update('scopes', spec.scopes, target);
     }
@@ -247,6 +255,8 @@ async function doSelectEnvironment(context: vscode.ExtensionContext) {
     outputChannel.appendLine(`[Altium 365]   graphql: ${spec.graphqlEndpoint || '(empty)'}`);
     outputChannel.appendLine(`[Altium 365]   auth:    ${spec.authEndpoint || '(empty)'}`);
     outputChannel.appendLine(`[Altium 365]   token:   ${spec.tokenEndpoint || '(empty)'}`);
+    outputChannel.appendLine(`[Altium 365]   actionWait: ${spec.actionWaitEndpoint || '(empty)'}`);
+    outputChannel.appendLine(`[Altium 365]   redirect:   ${spec.redirectUri || '(empty)'}`);
 
     // Tokens and selected workspace are environment-bound — offer to clear them.
     const next = await vscode.window.showInformationMessage(
