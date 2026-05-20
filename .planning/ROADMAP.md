@@ -132,3 +132,24 @@ Phases execute in numeric order: 1 → 2 → 02.1 → 02.2 → 3
 | 02.2 Auth Hardening | done | Complete | 2026-05-20 |
 | 02.3 ActionWait Auth Flow | 5/5 | Complete (partial UAT) | 2026-05-20 |
 | 3. Remote Script Operations | 5/5 | Complete (partial UAT) | 2026-05-21 |
+
+## Backlog
+
+Unsequenced items parked for a future milestone. Promote with `/gsd-review-backlog` when ready to plan.
+
+### Phase 999.1: UI polish — context menus + workspace picker (BACKLOG)
+
+**Goal:** Trim noise from the side-panel UX and workspace picker that surfaced during Phase 3 UAT.
+
+**Captured items:**
+
+1. **Drop the `Altium 365: ` prefix from context menu titles** — all script-node context menu options currently render as `Altium 365: Edit Script`, `Altium 365: Publish Script`, etc. The category prefix is redundant inside a menu rooted on an `altium365`-scoped tree node and adds visual noise. Fix is in `package.json` `contributes.commands[].title` strings. Decide separately whether the Command Palette (which has no tree context) should keep some form of namespace prefix — VS Code convention is `Category: Title` via the `category` field, not embedded in title.
+2. **Workspace selection QuickPick: drop GRID line, show authId clean** — current picker renders workspace name + full GRID (`grid:global::platform:workspace/<uuid>`) on the first line and `authId: <guid>` on the second. Replace with workspace name on line 1 and the raw authId (no `authId: ` prefix) on line 2. GRID is internal plumbing and shouldn't be user-visible. Likely in `src/extension.ts` or `src/workspace.ts` where the QuickPick items are built.
+
+**Requirements:** TBD
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD — promote with `/gsd-review-backlog` when ready
+
+**Captured at:** 2026-05-21 (post Phase 3 closure)
