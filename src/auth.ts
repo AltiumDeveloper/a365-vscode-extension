@@ -176,6 +176,31 @@ async function postForm(url: string, form: Record<string, string>): Promise<any>
     });
     const text = await res.text();
     if (!res.ok) {
+        // RFC 6749 §5.2 OAuth error response is JSON with `error` (required)
+        // and optional `error_description` / `error_uri`. Surface those fields
+        // in a structured prefix so the caller (doSignIn) can map well-known
+        // codes (invalid_grant, invalid_client, ...) to user-friendly messages
+        // while preserving the full body for the OutputChannel.
+        let oauthError = '';
+        let oauthDesc = '';
+        try {
+            const parsed = JSON.parse(text);
+            if (parsed && typeof parsed === 'object') {
+                oauthError = typeof parsed.error === 'string' ? parsed.error : '';
+                oauthDesc =
+                    typeof parsed.error_description === 'string'
+                        ? parsed.error_description
+                        : '';
+            }
+        } catch {
+            // Non-JSON body — fall through to legacy error format.
+        }
+        if (oauthError) {
+            const descSuffix = oauthDesc ? ` — ${oauthDesc}` : '';
+            throw new Error(
+                `Token endpoint ${res.status} ${oauthError}${descSuffix} (body: ${text.slice(0, 500)})`
+            );
+        }
         throw new Error(`Token endpoint returned ${res.status}: ${text.slice(0, 500)}`);
     }
     try {

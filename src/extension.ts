@@ -199,7 +199,42 @@ async function doSignIn(context: vscode.ExtensionContext) {
             return;
         }
 
-        // Token endpoint failure or anything else — existing pass-through preserved (D-12 final bullet)
+        // Token endpoint OAuth error (RFC 6749 §5.2) — postForm formats these as
+        // 'Token endpoint <status> <error>[ — <description>] (body: ...)'. Map the
+        // well-known error codes to friendly messages; fall back to a generic
+        // friendly message for unknown codes. The full technical detail still goes
+        // to OutputChannel so debugging is possible. D-12 final bullet superseded
+        // by this branch for 'Token endpoint' messages with a parseable OAuth code.
+        const tokenOAuthMatch = msg.match(
+            /^Token endpoint (\d+) ([a-z_]+)(?: — ([^(]*))?\s*\(body:/
+        );
+        if (tokenOAuthMatch) {
+            const [, status, oauthError, oauthDesc] = tokenOAuthMatch;
+            outputChannel.appendLine(`[Altium 365] sign-in token-endpoint error: ${msg}`);
+            const friendly: Record<string, string> = {
+                invalid_grant:
+                    'the authorization was rejected (the code may be expired, already used, or the redirect_uri / PKCE verifier did not match). Please try signing in again.',
+                invalid_client:
+                    'the configured client_id was not recognised by the auth server. Check altium365.clientId.',
+                invalid_request:
+                    'the token request was malformed. This is likely an extension bug — please report it.',
+                unauthorized_client:
+                    'this client is not allowed to use the authorization-code grant. Check the Altium auth client configuration.',
+                unsupported_grant_type:
+                    'the auth server does not support the authorization-code grant. Check the Altium auth client configuration.',
+                invalid_scope:
+                    'one or more requested scopes were rejected. Check altium365.scopes.',
+            };
+            const desc = (friendly[oauthError] || (oauthDesc?.trim() ?? '')).trim();
+            const detail = desc ? `: ${desc}` : ` (${oauthError}).`;
+            vscode.window.showErrorMessage(
+                `Altium 365 sign-in failed${detail} (HTTP ${status} ${oauthError}; see Output → Altium 365 for details.)`
+            );
+            return;
+        }
+
+        // Token endpoint failure without a parseable OAuth error, or anything else —
+        // existing pass-through preserved (D-12 final bullet)
         vscode.window.showErrorMessage(`Sign-in failed: ${msg}`);
     }
 }
