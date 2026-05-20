@@ -66,17 +66,22 @@ export interface ExecuteRemoteArgs {
 const POLL_INTERVAL_MS = 1500;
 const LOG_PAGE_LIMIT = 500;
 const MAX_WALLCLOCK_MS = 10 * 60 * 1000;
-// Case-folded terminal status set per RESEARCH §Pitfall 5. Expand
-// fix-forward if UAT observes a status value that should be terminal but
-// isn't in this set — every observed value is logged via the `status=...`
-// line so missing terminals surface immediately.
+// Status values are `String!` per schema (not an enum) — terminal set
+// curated empirically. Observed during UAT 2026-05-20:
+//   non-terminal: "Pending" (queued), "Running" (active)
+//   terminal:     "Stopped" (normal completion path observed)
+// Other strings below are defensive guesses for failure / cancel modes
+// we have not yet exercised — they cost nothing if the server never emits
+// them. Every observed status is logged via `[Altium 365] status=...` so
+// any unknown terminal surfaces immediately and we can tighten this set
+// fix-forward.
 const TERMINAL_STATUSES = new Set<string>([
-    'succeeded',
-    'failed',
-    'cancelled',
-    'stopped',
-    'completed',
-    'error',
+    'stopped',     // observed UAT 2026-05-20
+    'succeeded',   // defensive
+    'failed',      // defensive
+    'cancelled',   // defensive
+    'completed',   // defensive
+    'error',       // defensive
 ]);
 
 export async function executeRemoteScript(args: ExecuteRemoteArgs): Promise<void> {
