@@ -19,18 +19,27 @@ import { downloadByToken, uploadAndGetToken } from './filesService';
 /**
  * FileSystemProvider for the `altium365:` URI scheme.
  *
- * URI shape (D-01, revised post-UAT 2026-05-20):
- *   `altium365://<b64url(workspaceId)>/<scriptId>/<scriptName>`
- * - `authority` carries the workspaceId base64url-encoded. Altium 365 returns
- *   workspaceId as a GRID (`grid:global::platform:workspace/<uuid>`) which
- *   contains `:` and `/` — both unsafe in a URI authority. Base64url is a
- *   single segment with [A-Za-z0-9_-] only, so it round-trips cleanly through
- *   VS Code's URI normalisation and still gives each workspace a distinct
- *   "host" for editor-group routing.
- * - First path segment is the scriptId (UUID). Remainder is the display name
- *   passed raw to `vscode.Uri.from({...})` — that helper encodes once on
- *   stringification; pre-encoding here caused `%20` → `%2520` double-encoding
- *   (UAT 2026-05-20 finding).
+ * URI shape (D-01, revised post-UAT 2026-05-20 round 2):
+ *   `altium365:/grid:workspace:<authId>:scripts:script/<scriptId>/<displayName>`
+ *
+ * The path is an Altium GRID (Global Resource ID) — the canonical identifier
+ * format used across the Altium 365 API. Once `GloScrScript.id: ID!` is
+ * exposed by the server, the URI path will match it verbatim. We construct
+ * it manually for now from `workspaceAuthId` + `scriptId`.
+ *
+ * Notes:
+ * - VS Code scheme stays `altium365:` so the FSP registration and menu
+ *   `when` clauses (`resourceScheme == altium365`) work unchanged.
+ * - Colons (`:`) are valid `pchar` per RFC 3986 — VS Code preserves them
+ *   in path segments without encoding.
+ * - Trailing `<displayName>` is cosmetic: it gives the editor tab a human
+ *   label. It is NOT part of the GRID and is ignored when looking up the
+ *   script — `scriptId` is the lookup key.
+ * - Identifier in URI = `authId` (the workspace's friendly slug used in
+ *   GRIDs), NOT the GRID-form `workspaceId` (`grid:global::platform:
+ *   workspace/<uuid>`). `resolveWorkspace` looks up `WorkspaceInfo` by
+ *   matching `authId` in `listWorkspaces`. The full `workspaceId` is then
+ *   obtained from that lookup for token storage (D-08).
  *
  * Decisions:
  * - D-01: this scheme + provider pattern.
@@ -59,41 +68,44 @@ import { downloadByToken, uploadAndGetToken } from './filesService';
  */
 
 const UUID_REGEX = /^[0-9a-fA-F-]{36}$/;
-const BASE64URL_REGEX = /^[A-Za-z0-9_-]+$/;
-
-function encodeWorkspaceId(workspaceId: string): string {
-    return Buffer.from(workspaceId, 'utf8').toString('base64url');
-}
-
-function decodeWorkspaceId(encoded: string): string {
-    return Buffer.from(encoded, 'base64url').toString('utf8');
-}
+const GRID_PATH_REGEX = /^\/grid:workspace:([^:/]+):scripts:script\/([0-9a-fA-F-]{36})(?:\/(.*))?$/;
 
 export interface ParsedRemoteUri {
-    workspaceId: string;
+    /** Workspace `authId` (friendly slug, e.g. `my-team`). NOT the GRID-form workspaceId. */
+    authId: string;
     scriptId: string;
-    /** `.py` filename for display only; not part of the lookup key. */
+    /** Cosmetic display name from the tail of the path; not used for lookup. */
     displayName: string;
 }
 
 /**
  * Build a canonical `altium365:` URI for a remote script.
  *
- * `authority` = base64url(workspaceId), path = `/<scriptId>/<scriptName>`.
- *
- * The script name is passed raw — `vscode.Uri.from` encodes once on
- * stringification. Pre-encoding here was a UAT-2026-05-20 bug (`%20` became
- * `%2520`).
+ * The path is the GRID `grid:workspace:<authId>:scripts:script/<scriptId>`
+ * followed by `/<displayName>` for tab readability. Pass values raw —
+ * `vscode.Uri.from` handles encoding once on stringification.
  */
 export function buildScriptUri(
-    workspaceId: string,
+    workspaceAuthId: string,
     scriptId: string,
     scriptName: string
 ): vscode.Uri {
+    if (!workspaceAuthId || /[/:]/.test(workspaceAuthId)) {
+        // authId must be a single GRID-safe segment (no `:` or `/`); fail
+        // loudly so we catch any caller that passes the wrong field.
+        throw new Error(
+            'buildScriptUri: workspaceAuthId must be a single segment (got: ' + workspaceAuthId + ')'
+        );
+    }
     return vscode.Uri.from({
         scheme: 'altium365',
-        authority: encodeWorkspaceId(workspaceId),
-        path: '/' + scriptId + '/' + scriptName,
+        path:
+            '/grid:workspace:' +
+            workspaceAuthId +
+            ':scripts:script/' +
+            scriptId +
+            '/' +
+            scriptName,
     });
 }
 
@@ -108,36 +120,18 @@ export function parseScriptUri(uri: vscode.Uri): ParsedRemoteUri {
     if (uri.scheme !== 'altium365') {
         throw vscode.FileSystemError.FileNotFound(uri);
     }
-    const encoded = uri.authority;
-    if (!encoded || !BASE64URL_REGEX.test(encoded)) {
+    // `uri.path` is already percent-decoded by VS Code's URI parser.
+    const m = GRID_PATH_REGEX.exec(uri.path);
+    if (!m) {
         throw vscode.FileSystemError.FileNotFound(uri);
     }
-    let workspaceId: string;
-    try {
-        workspaceId = decodeWorkspaceId(encoded);
-    } catch {
+    const authId = m[1];
+    const scriptId = m[2];
+    const displayName = m[3] ?? '';
+    if (!authId || !UUID_REGEX.test(scriptId)) {
         throw vscode.FileSystemError.FileNotFound(uri);
     }
-    if (!workspaceId) {
-        throw vscode.FileSystemError.FileNotFound(uri);
-    }
-    // path is `/<scriptId>/<scriptName>` — split off leading slash, then by
-    // the first remaining slash so display names containing `/` (unlikely
-    // but possible after decode) survive the round-trip via the second arg.
-    const trimmed = uri.path.replace(/^\/+/, '');
-    const slash = trimmed.indexOf('/');
-    if (slash < 0) {
-        throw vscode.FileSystemError.FileNotFound(uri);
-    }
-    const scriptId = trimmed.slice(0, slash);
-    const rest = trimmed.slice(slash + 1);
-    if (!UUID_REGEX.test(scriptId) || rest.length === 0) {
-        throw vscode.FileSystemError.FileNotFound(uri);
-    }
-    // `uri.path` is already percent-decoded by VS Code's URI parser. Display
-    // name is cosmetic only — scriptId is the lookup key.
-    const displayName = rest;
-    return { workspaceId, scriptId, displayName };
+    return { authId, scriptId, displayName };
 }
 
 /**
@@ -194,8 +188,8 @@ export class AltiumRemoteScriptFs implements vscode.FileSystemProvider {
     }
 
     async readFile(uri: vscode.Uri): Promise<Uint8Array> {
-        const { workspaceId, scriptId } = parseScriptUri(uri);
-        const ws = await this.resolveWorkspace(uri, workspaceId);
+        const { authId, scriptId } = parseScriptUri(uri);
+        const ws = await this.resolveWorkspace(uri, authId);
         const cfg = readOAuthConfig();
         const wsToken = await ensureWorkspaceToken(this.ctx, cfg, {
             workspaceId: ws.workspaceId,
@@ -245,8 +239,8 @@ export class AltiumRemoteScriptFs implements vscode.FileSystemProvider {
         // `_options.create` / `_options.overwrite` are ignored — the
         // `altium365:` URI form addresses an existing remote script by ID, so
         // there is no "create" semantic in v1 (SCRIPT-V2-01 deferred).
-        const { workspaceId, scriptId } = parseScriptUri(uri);
-        const ws = await this.resolveWorkspace(uri, workspaceId);
+        const { authId, scriptId } = parseScriptUri(uri);
+        const ws = await this.resolveWorkspace(uri, authId);
         const cfg = readOAuthConfig();
         const wsToken = await ensureWorkspaceToken(this.ctx, cfg, {
             workspaceId: ws.workspaceId,
@@ -305,18 +299,18 @@ export class AltiumRemoteScriptFs implements vscode.FileSystemProvider {
     }
 
     /**
-     * Resolve a `WorkspaceInfo` for the given URI authority. Prefers the
-     * cached selected workspace when its `workspaceId` matches; otherwise
-     * fetches a fresh list via `listWorkspaces` (using the base token).
+     * Resolve a `WorkspaceInfo` for the given URI's `authId`. Prefers the
+     * cached selected workspace when its `authId` matches; otherwise fetches
+     * a fresh list via `listWorkspaces` (using the base token).
      * Throws `FileNotFound` if the workspace no longer exists for the
      * signed-in user.
      */
     private async resolveWorkspace(
         uri: vscode.Uri,
-        workspaceId: string
+        authId: string
     ): Promise<WorkspaceInfo> {
         const selected = getSelectedWorkspace(this.ctx);
-        if (selected && selected.workspaceId === workspaceId) {
+        if (selected && selected.authId === authId) {
             return selected;
         }
         const cfg = readOAuthConfig();
@@ -334,7 +328,7 @@ export class AltiumRemoteScriptFs implements vscode.FileSystemProvider {
                 'Open Script failed: ' + (e as Error).message
             );
         }
-        const ws = list.find((w) => w.workspaceId === workspaceId);
+        const ws = list.find((w) => w.authId === authId);
         if (!ws) {
             throw vscode.FileSystemError.FileNotFound(uri);
         }
