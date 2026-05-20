@@ -50,6 +50,30 @@ Switching environments clears the active workspace and workspace token. Run **Al
 
 You can define additional environments under the `altium365.environments` setting; each entry may override `graphqlEndpoint`, `authEndpoint`, `tokenEndpoint`, `scopes`, and `audience`.
 
+## Remote scripts
+
+From the Altium 365 side panel, right-click any script to **Edit**, **Publish**, or **Execute Remotely**. Scripts open as virtual VS Code documents under the `altium365:` scheme — saving the document publishes the new version back to A365.
+
+### Open + Edit + Publish
+
+- Right-click a script in the side panel → **Edit Script** opens the live script body in a Python editor.
+- Press `Ctrl+S` / `Cmd+S` (or right-click → **Publish Script**) to save **and** publish the new version. The publish comment is recorded as _"Updated via VS Code extension"_.
+- When an `altium365:` document is the active editor, **Publish Script** and **Execute Remotely** also appear in the editor title bar.
+
+> **Last-write-wins caveat.** Publishing uses last-write-wins. If two clients edit the same script, the most recent save wins — coordinate edits out-of-band. A diff/conflict UI is planned but is not in this release.
+
+### Execute Remotely
+
+- Right-click a script → **Execute Remotely** kicks off a server-side execution. A cancellable progress notification appears, and log lines stream into the **Altium 365** Output channel as they arrive (polled every 1.5 s).
+- Parameters are read from the per-workspace state key `altium365.scriptParams.<scriptId>` (reserved for a future Set Parameters UI). Values are passed to the server as strings.
+- The `altium365.promptForProjectId` setting controls whether a `projectId` input box appears for executions that need one.
+
+> **Cancellation caveat.** Cancelling the progress notification stops the local poll loop, but the server-side execution continues. The Output channel will print `Remote execution cancelled (server-side execution continues)` to make this explicit. There is currently no server-side cancel API.
+
+### Authentication + workspaces
+
+Remote scripts use a workspace-scoped token obtained automatically the first time you act on a script in that workspace. Switching environments (e.g. **Prod** ↔ **Dev**) invalidates any open `altium365:` editors — close and reopen them after the switch to pick up tokens from the new environment.
+
 ## Commands Reference
 
 | Command | Description |

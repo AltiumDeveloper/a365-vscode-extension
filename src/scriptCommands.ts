@@ -76,6 +76,32 @@ interface ScriptContext {
     scriptName: string;
 }
 
+/**
+ * Map a known A365 GraphQL error code to a user-friendly toast message.
+ * Unknown / undefined codes fall through to the raw message — better to leak
+ * an internal code than to misclassify a failure (D-11, T-03-05-01).
+ *
+ * Curated from RESEARCH §Common Pitfalls + Phase 02 OAuth-error pattern
+ * (commit a00dcc0). Codes confirmed during 03-UAT may be added later.
+ */
+function mapGraphQLErrorToUserMessage(
+    code: string | undefined,
+    rawMessage: string
+): string {
+    switch ((code || '').toUpperCase()) {
+        case 'AUTH_NOT_AUTHENTICATED':
+            return 'Altium 365 session expired. Sign out and sign in again, then retry.';
+        case 'UNAUTHORIZED':
+            return 'Altium 365: not authorized for this workspace. Switch workspace and retry.';
+        case 'BAD_USER_INPUT':
+            return 'Altium 365 rejected the input. Check parameter values and try again.';
+        case 'NOT_FOUND':
+            return 'Altium 365: resource not found (it may have been deleted). Refresh the side panel.';
+        default:
+            return rawMessage;
+    }
+}
+
 function resolveScriptContext(node?: A365Node): ScriptContext | undefined {
     if (node && node.kind === 'script') {
         return {
@@ -123,12 +149,16 @@ async function editScript(
         const doc = await vscode.workspace.openTextDocument(uri);
         await vscode.window.showTextDocument(doc);
     } catch (e) {
-        const err = e as Error;
-        output.appendLine('[Altium 365] Open Script failed: ' + err.message);
+        const err = e as Error & { code?: string };
+        const code = (err as { code?: string }).code;
+        const userMsg = mapGraphQLErrorToUserMessage(code, err.message);
+        output.appendLine(
+            '[Altium 365] Open Script failed: ' + err.message + (code ? ' (code=' + code + ')' : '')
+        );
         if (err.stack) {
             output.appendLine(err.stack);
         }
-        vscode.window.showErrorMessage('Altium 365: Open Script failed: ' + err.message);
+        vscode.window.showErrorMessage('Altium 365: ' + userMsg);
     }
 }
 
@@ -163,14 +193,18 @@ async function publishScript(
         // D-03: save = publish; FSP.writeFile performs the upload.
         await doc.save();
     } catch (e) {
-        const err = e as Error;
-        output.appendLine('[Altium 365] Publish Script failed: ' + err.message);
+        const err = e as Error & { code?: string };
+        const code = (err as { code?: string }).code;
+        const userMsg = mapGraphQLErrorToUserMessage(code, err.message);
+        output.appendLine(
+            '[Altium 365] Publish Script failed: ' +
+                err.message +
+                (code ? ' (code=' + code + ')' : '')
+        );
         if (err.stack) {
             output.appendLine(err.stack);
         }
-        vscode.window.showErrorMessage(
-            'Altium 365: Publish Script failed: ' + err.message
-        );
+        vscode.window.showErrorMessage('Altium 365: ' + userMsg);
     }
 }
 
@@ -219,13 +253,17 @@ async function executeRemoteFromUi(
             envGlobalEndpoint,
         });
     } catch (e) {
-        const err = e as Error;
-        output.appendLine('[Altium 365] Execute Remotely failed: ' + err.message);
+        const err = e as Error & { code?: string };
+        const code = (err as { code?: string }).code;
+        const userMsg = mapGraphQLErrorToUserMessage(code, err.message);
+        output.appendLine(
+            '[Altium 365] Execute Remotely failed: ' +
+                err.message +
+                (code ? ' (code=' + code + ')' : '')
+        );
         if (err.stack) {
             output.appendLine(err.stack);
         }
-        vscode.window.showErrorMessage(
-            'Altium 365: Execute Remotely failed: ' + err.message
-        );
+        vscode.window.showErrorMessage('Altium 365: ' + userMsg);
     }
 }
