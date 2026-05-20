@@ -156,7 +156,7 @@
         },
         "altium365.redirectUri": {
           "type": "string",
-          "default": "https://auth.dev1.altium.com/authCompleted",
+          "default": "https://auth.dev1.altium.com/api/AuthComplete",
           "description": "Fixed OAuth redirect URI registered with the Altium auth client (Altium-hosted authCompleted page). Must match the URI sent in both /connect/authorize and /connect/token. Populated automatically by 'Altium 365: Select Environment'."
         },
         "altium365.scopes": {
@@ -207,7 +207,7 @@
               "authEndpoint": "https://auth.dev1.altium.com/connect/authorize",
               "tokenEndpoint": "https://auth.dev1.altium.com/connect/token",
               "actionWaitEndpoint": "https://actionwait.dev1.altium.com/await",
-              "redirectUri": "https://auth.dev1.altium.com/authCompleted",
+              "redirectUri": "https://auth.dev1.altium.com/api/AuthComplete",
               "scopes": "openid profile",
               "audience": ""
             },
@@ -215,8 +215,8 @@
               "graphqlEndpoint": "https://eur.uat-365.altium.com/napi/gateway/graphql",
               "authEndpoint": "https://auth.uat1.altium.com/connect/authorize",
               "tokenEndpoint": "https://auth.uat1.altium.com/connect/token",
-              "actionWaitEndpoint": "https://actionwait.uat1.altium.com/await",
-              "redirectUri": "https://auth.uat1.altium.com/authCompleted",
+              "actionWaitEndpoint": "https://actionwait.uat.altium.com/await",
+              "redirectUri": "https://auth.uat1.altium.com/api/AuthComplete",
               "scopes": "openid profile",
               "audience": ""
             },
@@ -225,7 +225,7 @@
               "authEndpoint": "https://auth.altium.com/connect/authorize",
               "tokenEndpoint": "https://auth.altium.com/connect/token",
               "actionWaitEndpoint": "https://actionwait.altium.com/await",
-              "redirectUri": "https://auth.altium.com/authCompleted",
+              "redirectUri": "https://auth.altium.com/api/AuthComplete",
               "scopes": "openid profile",
               "audience": ""
             }

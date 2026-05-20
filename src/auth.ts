@@ -1,7 +1,79 @@
 import * as vscode from 'vscode';
 import * as crypto from 'crypto';
+import * as https from 'https';
+import * as http from 'http';
 import { URL, URLSearchParams } from 'url';
 import { AsyncMutex } from './asyncMutex';
+
+/**
+ * Minimal POST helper using Node's http/https module. We CANNOT use
+ * globalThis.fetch for ActionWait long-poll because the VS Code Extension
+ * Host runtime consumes response bodies before user code can read them
+ * (empirically observed: res.bodyUsed === true on the response line, before
+ * any .text()/.json() call). See Phase 02.3 D-17 amendment.
+ *
+ * Honors AbortSignal. Buffers full response into a string.
+ */
+function postJson(
+    endpoint: string,
+    bodyObj: unknown,
+    signal: AbortSignal
+): Promise<{ status: number; body: string }> {
+    return new Promise((resolve, reject) => {
+        let url: URL;
+        try {
+            url = new URL(endpoint);
+        } catch (e) {
+            reject(new Error(`Invalid endpoint: ${endpoint}`));
+            return;
+        }
+        const payload = Buffer.from(JSON.stringify(bodyObj), 'utf8');
+        const isHttps = url.protocol === 'https:';
+        const lib = isHttps ? https : http;
+        const req = lib.request(
+            {
+                method: 'POST',
+                protocol: url.protocol,
+                hostname: url.hostname,
+                port: url.port || (isHttps ? 443 : 80),
+                path: url.pathname + url.search,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Content-Length': payload.length,
+                },
+            },
+            (res) => {
+                const chunks: Buffer[] = [];
+                res.on('data', (c: Buffer) => chunks.push(c));
+                res.on('end', () => {
+                    resolve({
+                        status: res.statusCode ?? 0,
+                        body: Buffer.concat(chunks).toString('utf8'),
+                    });
+                });
+                res.on('error', (e) => reject(e));
+            }
+        );
+        req.on('error', (e) => {
+            const err = e as NodeJS.ErrnoException;
+            if (err.code === 'ABORT_ERR' || signal.aborted) {
+                const a = new Error('Aborted');
+                (a as any).name = 'AbortError';
+                reject(a);
+                return;
+            }
+            reject(e);
+        });
+        const onAbort = () => req.destroy(Object.assign(new Error('Aborted'), { name: 'AbortError' }));
+        if (signal.aborted) {
+            req.destroy(Object.assign(new Error('Aborted'), { name: 'AbortError' }));
+        } else {
+            signal.addEventListener('abort', onAbort, { once: true });
+        }
+        req.write(payload);
+        req.end();
+    });
+}
 
 export interface OAuthConfig {
     clientId: string;
@@ -129,9 +201,14 @@ function withExpiry(tok: TokenSet): TokenSet {
  * that aggregates both sources (manual wiring rather than AbortSignal.any so we
  * stay portable on the AGENTS.md Node>=18 baseline).
  *
- * Response body field-name working assumption per D-05: `code` and `state`. If
- * empirical UAT reveals different names, adjust this parser and document in the
- * plan's SUMMARY.
+ * Response body shape (D-05, confirmed empirically 2026-05-20): the
+ * authorization code and OAuth state are nested under a `data` envelope —
+ * `{ data: { code, state, ... } }`.
+ *
+ * Transport (D-17 amendment, 2026-05-20): uses Node's https module via
+ * `postJson` rather than globalThis.fetch. The VS Code Extension Host's fetch
+ * implementation consumes response bodies before user code can read them
+ * (`res.bodyUsed === true` on arrival), making fetch unusable here.
  */
 async function pollActionWait(
     endpoint: string,
@@ -160,14 +237,13 @@ async function pollActionWait(
                 throw new Error('Sign-in cancelled.');
             }
 
-            let res: Response;
+            let res: { status: number; body: string };
             try {
-                res = await fetch(endpoint, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ token: connectionToken }),
-                    signal: internalController.signal,
-                });
+                res = await postJson(
+                    endpoint,
+                    { token: connectionToken },
+                    internalController.signal
+                );
             } catch (err) {
                 const e = err as Error;
                 if (e.name === 'AbortError') {
@@ -181,27 +257,6 @@ async function pollActionWait(
                 );
             }
 
-            if (res.status === 200) {
-                const text = await res.text();
-                let parsed: any;
-                try {
-                    parsed = JSON.parse(text);
-                } catch {
-                    throw new Error(
-                        `ActionWait returned 200 but body is not JSON: ${text.slice(0, 500)}`
-                    );
-                }
-                const code = parsed?.code;
-                const state = parsed?.state;
-                if (typeof code !== 'string' || code.length === 0 ||
-                    typeof state !== 'string' || state.length === 0) {
-                    throw new Error(
-                        `ActionWait returned 200 but response body is missing code or state: ${text.slice(0, 500)}`
-                    );
-                }
-                return { code, state };
-            }
-
             if (res.status === 408) {
                 // Server-side per-request timeout — reconnect with same connection_token.
                 continue;
@@ -211,8 +266,29 @@ async function pollActionWait(
                 throw new Error('Sign-in cancelled.');
             }
 
-            const text = await res.text();
-            throw new Error(`ActionWait returned ${res.status}: ${text.slice(0, 500)}`);
+            if (res.status === 200) {
+                let parsed: any;
+                try {
+                    parsed = JSON.parse(res.body);
+                } catch {
+                    throw new Error(
+                        `ActionWait returned 200 but body is not JSON: ${res.body.slice(0, 500)}`
+                    );
+                }
+                // D-05 confirmed empirically (2026-05-20): ActionWait wraps the
+                // authorization code + state in a `data` envelope.
+                const code = parsed?.data?.code;
+                const state = parsed?.data?.state;
+                if (typeof code !== 'string' || code.length === 0 ||
+                    typeof state !== 'string' || state.length === 0) {
+                    throw new Error(
+                        `ActionWait returned 200 but response body is missing data.code or data.state: ${res.body.slice(0, 500)}`
+                    );
+                }
+                return { code, state };
+            }
+
+            throw new Error(`ActionWait returned ${res.status}: ${res.body.slice(0, 500)}`);
         }
     } finally {
         clearTimeout(timeoutHandle);
