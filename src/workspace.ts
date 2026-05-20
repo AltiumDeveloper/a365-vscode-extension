@@ -11,6 +11,14 @@ import {
 
 export interface WorkspaceLocation {
     apiServiceUrl?: string;
+    /**
+     * Per-workspace Files Service base URL — Phase 3 D-19 carry-over for the
+     * Files Service tier (mirrors `apiServiceUrl`). Populated by
+     * `listWorkspaces` after the 03-01 schema bump. Older cached
+     * `WorkspaceInfo` blobs may lack this field — `getWorkspaceFilesUrl`
+     * throws actionably so callers surface a "refresh workspaces" message.
+     */
+    filesServiceUrl?: string;
 }
 
 export interface WorkspaceInfo {
@@ -43,6 +51,66 @@ export function getWorkspaceApiUrl(
     return ws_url && ws_url.length > 0 ? ws_url : envGlobalEndpoint;
 }
 
+/**
+ * Resolve the Files Service base URL for a workspace-scoped REST call.
+ *
+ * Phase 3 (Plan 03-01) carries the D-19 per-workspace endpoint pattern from
+ * GraphQL (`apiServiceUrl`) over to the Files Service tier. Unlike GraphQL
+ * there is no env-global Files Service URL configured in `package.json`, so
+ * the helper accepts an optional `fallback` argument — callers typically pass
+ * `''`. If neither the workspace nor the fallback yields a usable URL the
+ * helper throws an actionable error: the user's resolution is
+ * `Altium 365: Refresh` on the side panel, which calls `listWorkspaces`
+ * again and repopulates `filesServiceUrl`. We deliberately do NOT silently
+ * fall back to the apiServiceUrl host (the two services live on distinct
+ * hostnames) — silent misroute is worse than an explicit failure (Pitfall 3
+ * / threat T-03-01-04).
+ */
+export function getWorkspaceFilesUrl(
+    ws: WorkspaceInfo | undefined,
+    fallback?: string
+): string {
+    const ws_url = ws?.location?.filesServiceUrl?.trim();
+    if (ws_url && ws_url.length > 0) {
+        return ws_url;
+    }
+    const fb = (fallback ?? '').trim();
+    if (fb.length > 0) {
+        return fb;
+    }
+    throw new Error(
+        'Workspace filesServiceUrl unavailable — refresh the workspace list'
+    );
+}
+
+/**
+ * Typed GraphQL error surfaced by `graphqlRequest` when the response body
+ * carries a non-empty `errors[]` array. Mirrors the OAuth-error mapping
+ * pattern landed in `doSignIn` (commit `a00dcc0`) — D-11. The legacy
+ * full-fidelity JSON blob is preserved as `rawErrors` so callers can append
+ * it to OutputChannel for diagnosis without losing the readable message.
+ */
+export class GraphQLError extends Error {
+    public readonly code: string | undefined;
+    public readonly path: ReadonlyArray<string | number> | undefined;
+    public readonly rawErrors: unknown[];
+
+    constructor(
+        message: string,
+        opts: {
+            code?: string;
+            path?: ReadonlyArray<string | number>;
+            rawErrors: unknown[];
+        }
+    ) {
+        super(message);
+        this.name = 'GraphQLError';
+        this.code = opts.code;
+        this.path = opts.path;
+        this.rawErrors = opts.rawErrors;
+    }
+}
+
 export async function graphqlRequest(
     endpoint: string,
     accessToken: string,
@@ -69,7 +137,26 @@ export async function graphqlRequest(
         throw new Error(`GraphQL non-JSON response: ${text.slice(0, 500)}`);
     }
     if (payload.errors) {
-        throw new Error(`GraphQL errors: ${JSON.stringify(payload.errors)}`);
+        // D-11: typed throw so command-boundary handlers can map well-known
+        // codes to friendly messages while still appending the full body to
+        // OutputChannel via `err.rawErrors`. Transport-tier failures (HTTP /
+        // non-JSON branches above) remain plain `Error`.
+        const rawErrors = Array.isArray(payload.errors) ? payload.errors : [payload.errors];
+        const first = (rawErrors[0] ?? {}) as {
+            message?: string;
+            path?: ReadonlyArray<string | number>;
+            extensions?: { code?: string };
+        };
+        const code = first?.extensions?.code;
+        const message =
+            typeof first?.message === 'string' && first.message.length > 0
+                ? first.message
+                : 'GraphQL error';
+        throw new GraphQLError(message, {
+            code,
+            path: first?.path,
+            rawErrors,
+        });
     }
     return payload.data;
 }
@@ -78,10 +165,14 @@ export async function listWorkspaces(
     endpoint: string,
     accessToken: string
 ): Promise<WorkspaceInfo[]> {
+    // Phase 3 (Plan 03-01) bumped this selection set to also pull
+    // `filesServiceUrl` so per-workspace Files Service REST calls
+    // (download/upload script bodies) can resolve a workspace-scoped base URL
+    // — D-19 carry-over to the Files Service tier.
     const data = await graphqlRequest(
         endpoint,
         accessToken,
-        'query { desWorkspaceInfos { name workspaceId authId url location { apiServiceUrl } } }'
+        'query { desWorkspaceInfos { name workspaceId authId url location { apiServiceUrl filesServiceUrl } } }'
     );
     return (data?.desWorkspaceInfos as WorkspaceInfo[]) || [];
 }
