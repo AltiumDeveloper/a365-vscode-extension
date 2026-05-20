@@ -185,3 +185,27 @@ Plans:
 - [ ] TBD — promote with `/gsd-review-backlog` when ready
 
 **Captured at:** 2026-05-21 (post Phase 3 closure)
+
+### Phase 999.3: Progress feedback for async operations (BACKLOG)
+
+**Goal:** Provide consistent visual feedback whenever a user-triggered action does network/IO work that takes more than ~200ms, so the user never wonders "is anything happening?"
+
+**Captured items:**
+
+1. **Remote script Edit shows no progress during download** — when the user picks `altium365.script.edit` from the context menu, `src/scriptCommands.ts:143-173` calls `vscode.workspace.openTextDocument(uri)` which triggers the custom-URI content provider to do a GraphQL fetch of the script body. This fetch takes several seconds for large scripts and runs silently — no spinner, no status-bar message, no "Loading script…" indicator. User can't tell whether the click registered. **Fix:** wrap the `openTextDocument` + `setTextDocumentLanguage` + `showTextDocument` sequence in `vscode.window.withProgress({ location: ProgressLocation.Notification, title: "Loading script…" })` (matches the existing pattern at `src/extension.ts:140` and `:657`). Alternatively use `ProgressLocation.Window` for a subtler status-bar spinner.
+2. **Audit all remote-script operations for missing progress UI** — same gap likely exists for `publishScript` (`src/scriptCommands.ts:175+`) and possibly remote `executeRemote`. `remoteExecution.ts` already wraps the poll loop in `withProgress` (`:187`) but the setup phase (`:88` "Block A: setup (outside withProgress)") deliberately runs without it — review whether that gap also leaves the user staring at a frozen UI. Standardize: every command that makes a GraphQL call should show some progress affordance before the network round-trip starts.
+3. **Pick a consistent ProgressLocation convention** — decide once whether script ops use `Notification` (modal toast, more obvious) or `Window` (status-bar spinner, less intrusive) so the extension feels coherent. Confirm what `extension.ts:140` and `:657` use today and align.
+
+**Open questions (resolve during /gsd-discuss-phase):**
+
+- Notification vs Window progress location for script ops?
+- Should progress be cancellable (`cancellable: true`)? `editScript` arguably should be — abort GraphQL on user cancel. `publishScript` probably shouldn't (mid-mutation cancel is messy).
+- Threshold for showing progress at all — always, or only when operation exceeds N ms? VS Code doesn't have a built-in delay; showing instantly is simplest.
+
+**Requirements:** TBD
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD — promote with `/gsd-review-backlog` when ready
+
+**Captured at:** 2026-05-21 (post Phase 3 closure)
