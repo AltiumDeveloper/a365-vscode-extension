@@ -136,7 +136,7 @@
         },
         "altium365.clientId": {
           "type": "string",
-          "default": "20C490ED-58EF-11EF-9194-02A5C34CA889",
+          "default": "4BA91DBF-BF57-4B0C-8D67-5E76CEC51A9D",
           "description": "OAuth2 client_id of the desktop application."
         },
         "altium365.authEndpoint": {
@@ -247,6 +247,18 @@
       }
     },
     "menus": {
+      "editor/title": [
+        {
+          "command": "altium365.script.publish",
+          "when": "resourceScheme == altium365 && resourceExtname == .py",
+          "group": "navigation@1"
+        },
+        {
+          "command": "altium365.script.executeRemote",
+          "when": "resourceScheme == altium365 && resourceExtname == .py",
+          "group": "navigation@2"
+        }
+      ],
       "editor/title/run": [
         {
           "command": "altium365.runScript",
