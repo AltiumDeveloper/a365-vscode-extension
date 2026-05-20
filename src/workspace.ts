@@ -459,10 +459,12 @@ const GET_EXEC_RESULT_QUERY = `
         gloScrScriptExecutionResult(scriptExecutionId: $id) {
             scriptExecutionId
             status
-            exitCode
-            startedAt
-            completedAt
             failureReason
+            createdAt
+            updatedAt
+            executionResult {
+                exitCode
+            }
         }
     }
 `;
@@ -484,12 +486,17 @@ export async function getExecutionResult(
             'getExecutionResult: execution not found: ' + scriptExecutionId
         );
     }
+    // Schema gotcha: Query.gloScrScriptExecutionResult returns the umbrella
+    // GloScrScriptExecution type, NOT GloScrScriptExecutionResult. The
+    // exitCode lives nested under .executionResult (which is non-null per
+    // schema but may carry a placeholder value before completion).
+    // Schema also has no startedAt/completedAt — only createdAt/updatedAt.
     return {
         scriptExecutionId: r.scriptExecutionId,
         status: r.status,
-        exitCode: r.exitCode ?? null,
-        startedAt: r.startedAt ?? null,
-        completedAt: r.completedAt ?? null,
+        exitCode: r.executionResult?.exitCode ?? null,
+        startedAt: r.createdAt ?? null,
+        completedAt: r.updatedAt ?? null,
         failureReason: r.failureReason ?? null,
     };
 }

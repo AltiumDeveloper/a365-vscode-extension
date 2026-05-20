@@ -161,7 +161,7 @@
         },
         "altium365.scopes": {
           "type": "string",
-          "default": "openid profile",
+          "default": "openid profile workspace:scripts.manage workspace:scripts.execute",
           "description": "Space-delimited OAuth2 scopes."
         },
         "altium365.audience": {
@@ -208,7 +208,7 @@
               "tokenEndpoint": "https://auth.dev1.altium.com/connect/token",
               "actionWaitEndpoint": "https://actionwait.dev1.altium.com/await",
               "redirectUri": "https://auth.dev1.altium.com/api/AuthComplete",
-              "scopes": "openid profile",
+              "scopes": "openid profile workspace:scripts.manage workspace:scripts.execute",
               "audience": ""
             },
             "Uat": {
@@ -217,7 +217,7 @@
               "tokenEndpoint": "https://auth.uat1.altium.com/connect/token",
               "actionWaitEndpoint": "https://actionwait.uat.altium.com/await",
               "redirectUri": "https://auth.uat1.altium.com/api/AuthComplete",
-              "scopes": "openid profile",
+              "scopes": "openid profile workspace:scripts.manage workspace:scripts.execute",
               "audience": ""
             },
             "Prod": {
@@ -226,7 +226,7 @@
               "tokenEndpoint": "https://auth.altium.com/connect/token",
               "actionWaitEndpoint": "https://actionwait.altium.com/await",
               "redirectUri": "https://auth.altium.com/api/AuthComplete",
-              "scopes": "openid profile",
+              "scopes": "openid profile workspace:scripts.manage workspace:scripts.execute",
               "audience": ""
             }
           },
