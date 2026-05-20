@@ -17,6 +17,7 @@ import { A365Node, A365TreeDataProvider } from './sidePanel';
 import { createStatusBar } from './statusBar';
 import { registerScriptCommands } from './scriptCommands';
 import { registerTreeCommands } from './treeCommands';
+import { AltiumRemoteScriptFs } from './remoteScriptFs';
 
 let outputChannel: vscode.OutputChannel;
 
@@ -44,11 +45,23 @@ export function activate(context: vscode.ExtensionContext) {
 
     const statusBar = createStatusBar(context, outputChannel);
 
+    const remoteFs = new AltiumRemoteScriptFs(
+        context,
+        () => vscode.workspace.getConfiguration('altium365').get<string>('graphqlEndpoint', ''),
+        outputChannel
+    );
+    const fsRegistration = vscode.workspace.registerFileSystemProvider(
+        'altium365',
+        remoteFs,
+        { isCaseSensitive: true, isReadonly: false }
+    );
+
     const scriptCommandDisposables = registerScriptCommands(context, outputChannel);
     const treeCommandDisposables = registerTreeCommands(context, outputChannel);
 
     context.subscriptions.push(
         outputChannel,
+        fsRegistration,
         vscode.commands.registerCommand('altium365.signIn', () => doSignIn(context)),
         vscode.commands.registerCommand('altium365.signOut', () => doSignOut(context)),
         vscode.commands.registerCommand('altium365.selectWorkspace', () =>
