@@ -59,7 +59,7 @@ export function registerScriptCommands(
         ),
         vscode.commands.registerCommand(
             'altium365.script.publish',
-            (node?: A365Node) => publishScript(output, node)
+            (node?: A365Node) => publishScript(context, output, node)
         ),
     ];
 }
@@ -102,7 +102,10 @@ function mapGraphQLErrorToUserMessage(
     }
 }
 
-function resolveScriptContext(node?: A365Node): ScriptContext | undefined {
+function resolveScriptContext(
+    context: vscode.ExtensionContext,
+    node?: A365Node
+): ScriptContext | undefined {
     if (node && node.kind === 'script') {
         return {
             workspaceId: node.workspaceId,
@@ -117,12 +120,18 @@ function resolveScriptContext(node?: A365Node): ScriptContext | undefined {
     }
     try {
         const parsed = parseScriptUri(active);
-        // workspaceAuthId is not encoded in the URI — recover from the
-        // selected workspace if it matches; else leave blank (callers that
-        // need it will surface an actionable error).
+        // URI carries `authId` (per the GRID format). Recover the GRID-form
+        // workspaceId from the selected workspace iff its authId matches;
+        // otherwise leave blank — executeRemote surfaces an actionable
+        // error if it actually needs the workspaceId.
+        const selected = getSelectedWorkspace(context);
+        const workspaceId =
+            selected && selected.authId === parsed.authId
+                ? selected.workspaceId
+                : '';
         return {
-            workspaceId: parsed.workspaceId,
-            workspaceAuthId: '',
+            workspaceId,
+            workspaceAuthId: parsed.authId,
             scriptId: parsed.scriptId,
             scriptName: parsed.displayName,
         };
@@ -136,7 +145,7 @@ async function editScript(
     output: vscode.OutputChannel,
     node?: A365Node
 ): Promise<void> {
-    const sc = resolveScriptContext(node);
+    const sc = resolveScriptContext(context, node);
     if (!sc) {
         vscode.window.showErrorMessage(
             'Altium 365: Open Script — no script selected. Right-click a script in the side panel.'
@@ -145,8 +154,9 @@ async function editScript(
     }
     void context;
     try {
-        const uri = buildScriptUri(sc.workspaceId, sc.scriptId, sc.scriptName);
+        const uri = buildScriptUri(sc.workspaceAuthId, sc.scriptId, sc.scriptName);
         const doc = await vscode.workspace.openTextDocument(uri);
+        await vscode.languages.setTextDocumentLanguage(doc, 'python');
         await vscode.window.showTextDocument(doc);
     } catch (e) {
         const err = e as Error & { code?: string };
@@ -163,10 +173,11 @@ async function editScript(
 }
 
 async function publishScript(
+    context: vscode.ExtensionContext,
     output: vscode.OutputChannel,
     node?: A365Node
 ): Promise<void> {
-    const sc = resolveScriptContext(node);
+    const sc = resolveScriptContext(context, node);
     if (!sc) {
         vscode.window.showErrorMessage(
             'Altium 365: Publish Script — no script selected.'
@@ -174,7 +185,7 @@ async function publishScript(
         return;
     }
     try {
-        const uri = buildScriptUri(sc.workspaceId, sc.scriptId, sc.scriptName);
+        const uri = buildScriptUri(sc.workspaceAuthId, sc.scriptId, sc.scriptName);
         const doc = vscode.workspace.textDocuments.find(
             (d) => d.uri.toString() === uri.toString()
         );
@@ -214,7 +225,7 @@ async function executeRemoteFromUi(
     envGlobalEndpoint: string,
     node?: A365Node
 ): Promise<void> {
-    const sc = resolveScriptContext(node);
+    const sc = resolveScriptContext(context, node);
     if (!sc) {
         vscode.window.showErrorMessage(
             'Altium 365: Execute Remotely — no script selected.'
