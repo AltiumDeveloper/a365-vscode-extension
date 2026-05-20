@@ -1,6 +1,5 @@
 import * as vscode from 'vscode';
 import * as crypto from 'crypto';
-import * as http from 'http';
 import { URL, URLSearchParams } from 'url';
 import { AsyncMutex } from './asyncMutex';
 
@@ -10,8 +9,8 @@ export interface OAuthConfig {
     tokenEndpoint: string;
     scopes: string;
     audience?: string;
-    redirectPort: number;
-    redirectPath: string;
+    actionWaitEndpoint: string;
+    redirectUri: string;
 }
 
 export interface TokenSet {
@@ -93,22 +92,6 @@ function pkcePair(): { verifier: string; challenge: string } {
     return { verifier, challenge };
 }
 
-/**
- * Escape the five HTML-sensitive characters before interpolating untrusted
- * strings into the loopback OAuth response page (D-11 / WR-01). Not exported —
- * only the awaitCallback error branch uses it.
- */
-function escapeHtml(s: string): string {
-    const table: Record<string, string> = {
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#39;',
-    };
-    return s.replace(/[&<>"']/g, (ch) => table[ch]);
-}
-
 async function postForm(url: string, form: Record<string, string>): Promise<any> {
     const body = new URLSearchParams(form).toString();
     const res = await fetch(url, {
@@ -137,96 +120,130 @@ function withExpiry(tok: TokenSet): TokenSet {
     return tok;
 }
 
-async function awaitCallback(
-    port: number,
-    expectedPath: string,
-    expectedState: string,
+/**
+ * Long-poll Altium's ActionWait service for the OAuth authorization-code callback,
+ * replacing the loopback HTTP listener (D-10/D-11). POSTs {token: connectionToken}
+ * to the endpoint and treats 200 as completion, 408 as reconnect, 410 as user
+ * cancellation, anything else as fatal. Honours an AbortSignal (caller cancellation)
+ * and a wall-clock timeoutMs cap simultaneously via an internal AbortController
+ * that aggregates both sources (manual wiring rather than AbortSignal.any so we
+ * stay portable on the AGENTS.md Node>=18 baseline).
+ *
+ * Response body field-name working assumption per D-05: `code` and `state`. If
+ * empirical UAT reveals different names, adjust this parser and document in the
+ * plan's SUMMARY.
+ */
+async function pollActionWait(
+    endpoint: string,
+    connectionToken: string,
+    signal: AbortSignal,
     timeoutMs: number
-): Promise<{ code: string }> {
-    return new Promise((resolve, reject) => {
-        const server = http.createServer((req, res) => {
-            try {
-                const url = new URL(req.url || '/', `http://127.0.0.1:${port}`);
-                if (url.pathname !== expectedPath) {
-                    res.writeHead(404, { 'Content-Type': 'text/plain' });
-                    res.end('Not found');
-                    return;
-                }
-                const code = url.searchParams.get('code');
-                const state = url.searchParams.get('state');
-                const error = url.searchParams.get('error');
-                if (error) {
-                    res.writeHead(400, { 'Content-Type': 'text/html' });
-                    res.end(`<html><body><h3>Authentication failed: ${escapeHtml(error)}</h3></body></html>`);
-                    cleanup();
-                    reject(new Error(`OAuth error: ${error}`));
-                    return;
-                }
-                if (!code) {
-                    res.writeHead(400, { 'Content-Type': 'text/plain' });
-                    res.end('Missing code');
-                    return;
-                }
-                if (state !== expectedState) {
-                    res.writeHead(400, { 'Content-Type': 'text/plain' });
-                    res.end('State mismatch');
-                    cleanup();
-                    reject(new Error('State mismatch (possible CSRF).'));
-                    return;
-                }
-                res.writeHead(200, { 'Content-Type': 'text/html' });
-                res.end(
-                    '<html><body><h3>Authentication complete.</h3>You can close this window.</body></html>'
-                );
-                cleanup();
-                resolve({ code });
-            } catch (e) {
-                cleanup();
-                reject(e as Error);
+): Promise<{ code: string; state: string }> {
+    const deadline = Date.now() + timeoutMs;
+    const internalController = new AbortController();
+
+    // Aggregate caller signal + wall-clock timeout into one signal for fetch.
+    if (signal.aborted) {
+        internalController.abort();
+    } else {
+        signal.addEventListener('abort', () => internalController.abort(), { once: true });
+    }
+    const timeoutHandle = setTimeout(() => internalController.abort(), timeoutMs);
+
+    try {
+        // eslint-disable-next-line no-constant-condition
+        while (true) {
+            if (Date.now() >= deadline) {
+                throw new Error(`ActionWait poll exceeded ${timeoutMs}ms wall-clock timeout.`);
             }
-        });
+            if (signal.aborted) {
+                throw new Error('Sign-in cancelled.');
+            }
 
-        const timer = setTimeout(() => {
-            cleanup();
-            reject(new Error(`Timed out waiting for OAuth redirect on port ${port}`));
-        }, timeoutMs);
+            let res: Response;
+            try {
+                res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: connectionToken }),
+                    signal: internalController.signal,
+                });
+            } catch (err) {
+                const e = err as Error;
+                if (e.name === 'AbortError') {
+                    if (signal.aborted) {
+                        throw new Error('Sign-in cancelled.');
+                    }
+                    throw new Error(`ActionWait poll exceeded ${timeoutMs}ms wall-clock timeout.`);
+                }
+                throw new Error(
+                    `ActionWait network error: ${e.message} (${new URL(endpoint).host})`
+                );
+            }
 
-        const cleanup = () => {
-            clearTimeout(timer);
-            server.close();
-        };
+            if (res.status === 200) {
+                const text = await res.text();
+                let parsed: any;
+                try {
+                    parsed = JSON.parse(text);
+                } catch {
+                    throw new Error(
+                        `ActionWait returned 200 but body is not JSON: ${text.slice(0, 500)}`
+                    );
+                }
+                const code = parsed?.code;
+                const state = parsed?.state;
+                if (typeof code !== 'string' || code.length === 0 ||
+                    typeof state !== 'string' || state.length === 0) {
+                    throw new Error(
+                        `ActionWait returned 200 but response body is missing code or state: ${text.slice(0, 500)}`
+                    );
+                }
+                return { code, state };
+            }
 
-        server.listen(port, '127.0.0.1');
-        server.on('error', (err) => {
-            cleanup();
-            reject(err);
-        });
-    });
+            if (res.status === 408) {
+                // Server-side per-request timeout — reconnect with same connection_token.
+                continue;
+            }
+
+            if (res.status === 410) {
+                throw new Error('Sign-in cancelled.');
+            }
+
+            const text = await res.text();
+            throw new Error(`ActionWait returned ${res.status}: ${text.slice(0, 500)}`);
+        }
+    } finally {
+        clearTimeout(timeoutHandle);
+    }
 }
 
 export async function signIn(
     context: vscode.ExtensionContext,
     cfg: OAuthConfig,
-    timeoutMs = 180_000
+    timeoutMs = 180_000,
+    signal?: AbortSignal
 ): Promise<TokenSet> {
-    // D-05: drain any prior identity's base + per-workspace token cache before
-    // starting a new OAuth dance so an account switch can't leave stale
-    // per-workspace tokens around. D-06: silent — suppress the transient
+    // D-05 / Phase 02.3 D-13 invariant: drain any prior identity's base + per-workspace
+    // token cache before starting a new OAuth dance so an account switch can't leave
+    // stale per-workspace tokens around. D-06: silent — suppress the transient
     // signedIn:false event the drain would otherwise broadcast mid-sign-in.
     await clearAllTokens(context, { silent: true });
 
     const { verifier, challenge } = pkcePair();
-    const state = b64url(crypto.randomBytes(24));
-    const redirectUri = `http://localhost:${cfg.redirectPort}${cfg.redirectPath}`;
+    // D-06/D-07: a single connection_token doubles as the OAuth `state` parameter.
+    // Unifies the loopback-era separate `state` value with the ActionWait connection id.
+    const connectionToken = crypto.randomUUID();
 
     const params = new URLSearchParams({
         response_type: 'code',
         client_id: cfg.clientId,
-        redirect_uri: redirectUri,
+        redirect_uri: cfg.redirectUri,
         scope: cfg.scopes,
         code_challenge: challenge,
         code_challenge_method: 'S256',
-        state,
+        state: connectionToken,
     });
     if (cfg.audience) {
         params.set('audience', cfg.audience);
@@ -234,22 +251,31 @@ export async function signIn(
 
     const authUrl = `${cfg.authEndpoint}?${params.toString()}`;
 
-    // Start loopback listener BEFORE opening the browser.
-    const callbackPromise = awaitCallback(
-        cfg.redirectPort,
-        cfg.redirectPath,
-        state,
+    // Start the long-poll BEFORE opening the browser so a fast UnifiedLogin can't race
+    // the listener (D-09). When no caller signal is supplied, hand pollActionWait a
+    // never-aborting fallback signal so its parameter can stay non-optional.
+    const effectiveSignal = signal ?? new AbortController().signal;
+    const pollPromise = pollActionWait(
+        cfg.actionWaitEndpoint,
+        connectionToken,
+        effectiveSignal,
         timeoutMs
     );
 
     await vscode.env.openExternal(vscode.Uri.parse(authUrl));
 
-    const { code } = await callbackPromise;
+    const { code, state } = await pollPromise;
+
+    // D-07 CSRF guard: the state returned via ActionWait MUST match the
+    // connectionToken we minted. Reject before attempting token exchange.
+    if (state !== connectionToken) {
+        throw new Error('State mismatch (possible CSRF).');
+    }
 
     const tok = (await postForm(cfg.tokenEndpoint, {
         grant_type: 'authorization_code',
         code,
-        redirect_uri: redirectUri,
+        redirect_uri: cfg.redirectUri,
         code_verifier: verifier,
         client_id: cfg.clientId,
     })) as TokenSet;
@@ -481,7 +507,7 @@ export function readOAuthConfig(): OAuthConfig {
         tokenEndpoint: cfg.get<string>('tokenEndpoint') || '',
         scopes: cfg.get<string>('scopes') || 'openid profile',
         audience: cfg.get<string>('audience') || undefined,
-        redirectPort: cfg.get<number>('redirectPort') || 8080,
-        redirectPath: cfg.get<string>('redirectPath') || '/oauth/v2/callback',
+        actionWaitEndpoint: cfg.get<string>('actionWaitEndpoint') || '',
+        redirectUri: cfg.get<string>('redirectUri') || '',
     };
 }
