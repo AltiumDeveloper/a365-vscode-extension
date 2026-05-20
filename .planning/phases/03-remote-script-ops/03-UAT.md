@@ -35,11 +35,9 @@ to fill in during the UAT session. Sign-off goes at the bottom.
 
 **Observed Outcome**
 
-> _operator fills in_
+> Edit Script opened the remote body in a read/write editor with Python syntax highlighting active. URI shape was the GRID form `altium365:/grid:workspace:<authId>:scripts:script/<scriptId>/<displayName>` (final form after the in-phase URI fix — superseded the URI shape described in the original Expected Outcome). Content matched the portal.
 
-**Pass / Fail**
-
-> _operator fills in_
+**Pass** — confirmed in session 2026-05-20.
 
 ---
 
@@ -65,11 +63,9 @@ to fill in during the UAT session. Sign-off goes at the bottom.
 
 **Observed Outcome**
 
-> _operator fills in_
+> Save published a new version; OutputChannel logged the writeFile line; reopening showed the touched content. New version appeared in the portal.
 
-**Pass / Fail**
-
-> _operator fills in_
+**Pass** — confirmed in session 2026-05-20.
 
 ---
 
@@ -126,11 +122,9 @@ to fill in during the UAT session. Sign-off goes at the bottom.
 
 **Observed Outcome**
 
-> _operator fills in. Record EVERY distinct `status` value seen (intermediate + terminal) — feeds Pitfall 5 follow-up._
+> Execute Remotely streamed logs incrementally to OutputChannel. Status progressed `Pending` → `Running` → `Stopped` (terminal). Footer line `Remote execution finished (status=Stopped, exit=...)` appeared at the end. Note: observed status values are PascalCase (`Pending`, `Running`, `Stopped`), not the lowercase set listed in Expected Outcome — the `TERMINAL_STATUSES` set in `src/remoteExecution.ts` is case-insensitive so the lowercase entries continue to match. See Observations below.
 
-**Pass / Fail**
-
-> _operator fills in_
+**Pass** — confirmed in session 2026-05-20.
 
 ---
 
@@ -167,11 +161,18 @@ to fill in during the UAT session. Sign-off goes at the bottom.
 
 ### Terminal `status` values observed during UAT
 
-> _List every distinct value seen in the `status=` field across Scenarios 4 + 5.
-> If any value falls **outside** the curated set
-> `{succeeded, failed, cancelled, stopped, completed, error}`, raise it as a
-> follow-up — the curated set in `src/remoteExecution.ts` (TERMINAL_STATUSES)
-> needs to grow._
+Observed during session 2026-05-20 (dev1 workspace):
+
+- Non-terminal: `Pending` (queued), `Running` (active)
+- Terminal: `Stopped` (normal completion)
+
+Server returns PascalCase. `TERMINAL_STATUSES` in `src/remoteExecution.ts` matches case-insensitively and contains `stopped`, `succeeded`, `failed`, `cancelled`, `completed`, `error` — only `stopped` was empirically observed; the others remain defensive entries pending observation against failure/cancel scenarios (Scenarios 3 + 5 deferred — see Sign-off).
+
+### UAT-discovered bugs fixed in-phase
+
+1. **URI shape (GRID semantics)** — original URI shape `altium365://<workspaceId>/<scriptId>/<encodedName>.py` caused double-encoding via `vscode.Uri.from`. Fixed to the GRID-form path `altium365:/grid:workspace:<authId>:scripts:script/<scriptId>/<displayName>`. Python language explicitly set after open (no `.py` suffix in URI). `editor/title` menu `when` clause simplified to `resourceScheme == altium365`. Commits `893452a` → `85f0fb6`.
+2. **`gloScrScriptExecutionResult` schema mismatch** — the Query field returns the umbrella `GloScrScriptExecution` type. `exitCode` lives under `executionResult.exitCode` (Int!), not at top level. `startedAt`/`completedAt` do not exist — use `createdAt`/`updatedAt`. Commit `90cc30b`.
+3. **OAuth scopes rejected by UAT/Prod auth servers** — `workspace:scripts.manage workspace:scripts.execute` are not yet registered with UAT/Prod auth clients; sign-in failed with scope-not-recognized. Reduced UAT/Prod to `openid profile` until the scopes are provisioned. Dev1 scopes unchanged (working). Tracked as follow-up: re-add scopes once registered server-side.
 
 ### Deviations from expected outcome
 
@@ -192,11 +193,12 @@ to fill in during the UAT session. Sign-off goes at the bottom.
 
 | Field             | Value                       |
 | ----------------- | --------------------------- |
-| Signed off by:    | _____________               |
-| Date:             | _____________               |
-| Phase result:     | **PASS** / **FAIL** _(circle one)_ |
-| Failing scenarios | _list IDs if FAIL, else "none"_ |
-| Notes for follow-up | _free-form_               |
+| Signed off by:    | Dmitry Kolomiets             |
+| Date:             | 2026-05-21                  |
+| Phase result:     | **PASS (partial)**          |
+| Passing scenarios | 1 (Open), 2 (Edit+Publish), 4 (Execute+stream) |
+| Deferred scenarios | 3 (network-failure publish), 5 (cancel mid-exec) — deferred to follow-up; require deliberate failure injection not exercised this session |
+| Failing scenarios | none                        |
+| Notes for follow-up | (a) Re-run Scenarios 3 + 5 once a failure-injection harness is available. (b) Re-register `workspace:scripts.manage` + `workspace:scripts.execute` scopes on UAT/Prod auth clients, then restore them in `package.json`. (c) Trim `TERMINAL_STATUSES` once cancel/fail paths are observed and the unused defensive entries are confirmed dead. |
 
-When `Phase result: PASS` is recorded, type `approved` in the GSD checkpoint
-prompt to commit phase completion.
+Phase 3 closed with partial UAT acceptance — mirrors the Phase 02.3 closure pattern.

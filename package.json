@@ -217,7 +217,7 @@
               "tokenEndpoint": "https://auth.uat1.altium.com/connect/token",
               "actionWaitEndpoint": "https://actionwait.uat.altium.com/await",
               "redirectUri": "https://auth.uat1.altium.com/api/AuthComplete",
-              "scopes": "openid profile workspace:scripts.manage workspace:scripts.execute",
+              "scopes": "openid profile",
               "audience": ""
             },
             "Prod": {
@@ -226,7 +226,7 @@
               "tokenEndpoint": "https://auth.altium.com/connect/token",
               "actionWaitEndpoint": "https://actionwait.altium.com/await",
               "redirectUri": "https://auth.altium.com/api/AuthComplete",
-              "scopes": "openid profile workspace:scripts.manage workspace:scripts.execute",
+              "scopes": "openid profile",
               "audience": ""
             }
           },

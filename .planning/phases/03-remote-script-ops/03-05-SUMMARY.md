@@ -2,8 +2,8 @@
 phase: 03-remote-script-ops
 plan: 05
 slug: uat-readme-error-map
-status: awaiting-uat-sign-off
-completed: pending
+status: complete
+completed: 2026-05-21
 requirements: [SCRIPT-02, SCRIPT-03, SCRIPT-04, SCRIPT-05]
 provides:
   - friendly-graphql-error-mapping
@@ -102,4 +102,32 @@ After sign-off, this SUMMARY will be amended with:
 
 ## Next
 
-Awaiting operator UAT sign-off. No further executor work until `approved` is signalled or fix-forward items are listed.
+Phase 3 closed 2026-05-21 with **partial UAT acceptance** (mirrors Phase 02.3 closure pattern).
+
+### UAT result
+
+- **Passed:** Scenario 1 (Open remote script — SCRIPT-02), Scenario 2 (Edit + Save Publish — SCRIPT-03 happy path), Scenario 4 (Execute Remotely + log streaming — SCRIPT-04 + SCRIPT-05).
+- **Deferred:** Scenario 3 (publish under network failure — D-03 + D-11) and Scenario 5 (execute cancellation — D-10). Both require deliberate failure injection that was not exercised in the 2026-05-20 session; deferred to a follow-up validation pass.
+
+### Terminal `status` values observed
+
+Server returns PascalCase. Observed values:
+
+- Non-terminal: `Pending`, `Running`
+- Terminal: `Stopped`
+
+`TERMINAL_STATUSES` in `src/remoteExecution.ts` is case-insensitive and retains the original defensive set (`stopped`, `succeeded`, `failed`, `cancelled`, `completed`, `error`). Only `stopped` was empirically observed; trimming is deferred until cancel + failure scenarios are run.
+
+### UAT-discovered bugs fixed in-phase
+
+1. **URI shape (GRID semantics)** — `altium365:/grid:workspace:<authId>:scripts:script/<scriptId>/<displayName>`; Python language set explicitly; menu `when` clause simplified. Commits `893452a` → `85f0fb6`.
+2. **`gloScrScriptExecutionResult` schema mismatch** — `exitCode` nested under `executionResult`; `createdAt`/`updatedAt` instead of `startedAt`/`completedAt`. Commit `90cc30b`.
+3. **OAuth scopes rejected by UAT/Prod auth servers** — `workspace:scripts.manage workspace:scripts.execute` not yet registered on UAT/Prod auth clients. Reduced UAT/Prod to `openid profile` in `package.json`; Dev1 unchanged. Re-add once provisioned server-side.
+
+### Follow-ups carried out of phase
+
+- Re-run Scenarios 3 + 5 once failure injection is available.
+- Re-register `workspace:scripts.manage` + `workspace:scripts.execute` scopes on UAT/Prod auth clients, then restore them in `package.json`.
+- Trim `TERMINAL_STATUSES` once cancel/fail paths are observed.
+
+Phase 3 (Remote Script Operations) complete — SCRIPT-02..05 closed.

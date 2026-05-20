@@ -13,8 +13,8 @@ Three phases take the existing brownfield extension (OAuth, local run/debug, wor
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Packaging** - Produce a distributable VSIX with CI pipeline and Marketplace-ready metadata (completed 2026-05-19)
-- [ ] **Phase 2: Side Panel** - Activity Bar tree showing workspaces, projects, and scripts with context actions
-- [ ] **Phase 3: Remote Script Operations** - Open, edit, publish, and execute server-side scripts from the tree
+- [x] **Phase 2: Side Panel** - Activity Bar tree showing workspaces, projects, and scripts with context actions (completed 2026-05-19)
+- [x] **Phase 3: Remote Script Operations** - Open, edit, publish, and execute server-side scripts from the tree (completed 2026-05-21 — partial UAT, Scenarios 3+5 deferred)
 
 ## Phase Details
 
@@ -129,5 +129,6 @@ Phases execute in numeric order: 1 → 2 → 02.1 → 02.2 → 3
 | 1. Packaging | 2/2 | Complete   | 2026-05-19 |
 | 2. Side Panel | 6/6 | Complete | 2026-05-19 |
 | 02.1 Side-Panel UX Closure | 5/5 | Complete   | 2026-05-19 |
-| 02.2 Auth Hardening | 0/? | Not started | - |
-| 3. Remote Script Operations | 0/? | Not started | - |
+| 02.2 Auth Hardening | done | Complete | 2026-05-20 |
+| 02.3 ActionWait Auth Flow | 5/5 | Complete (partial UAT) | 2026-05-20 |
+| 3. Remote Script Operations | 5/5 | Complete (partial UAT) | 2026-05-21 |
