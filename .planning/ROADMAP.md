@@ -86,6 +86,16 @@ Plans:
 **Plans**: TBD
 **Source**: 02-REVIEW.md, 02.1-REVIEW.md, 02.1-REVIEW-FIX.md (WR-05 skip rationale)
 
+### Phase 02.2.1: actionwait auth (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Requirements**: TBD
+**Depends on:** Phase 2.2
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 02.2.1 to break down)
+
 ### Phase 3: Remote Script Operations
 **Goal**: Users can open, edit, publish, and trigger execution of remote A365 scripts entirely from within VS Code, with execution output streamed back to the editor
 **Mode:** mvp
