@@ -1,4 +1,20 @@
 import * as vscode from 'vscode';
+import {
+    ensureWorkspaceToken,
+    getBaseAccessToken,
+    readOAuthConfig,
+} from './auth';
+import {
+    GraphQLError,
+    getScript,
+    getSelectedWorkspace,
+    getWorkspaceApiUrl,
+    getWorkspaceFilesUrl,
+    listWorkspaces,
+    updateScript,
+    WorkspaceInfo,
+} from './workspace';
+import { downloadByToken, uploadAndGetToken } from './filesService';
 
 /**
  * FileSystemProvider for the `altium365:` URI scheme.
@@ -153,27 +169,175 @@ export class AltiumRemoteScriptFs implements vscode.FileSystemProvider {
     }
 
     async readFile(uri: vscode.Uri): Promise<Uint8Array> {
-        // STUB — Plan 03-03 replaces this body with the two-step
-        // (GraphQL `gloScrScript` → fileToken → Files Service GET) flow.
-        // Validate URI shape early so a malformed URI returns FileNotFound
-        // even from the stub.
-        parseScriptUri(uri);
-        throw vscode.FileSystemError.Unavailable(
-            'readFile not yet implemented (Plan 03-03)'
+        const { workspaceId, scriptId } = parseScriptUri(uri);
+        const ws = await this.resolveWorkspace(uri, workspaceId);
+        const cfg = readOAuthConfig();
+        const wsToken = await ensureWorkspaceToken(this.ctx, cfg, {
+            workspaceId: ws.workspaceId,
+            authId: ws.authId,
+        });
+        const apiUrl = getWorkspaceApiUrl(ws, this.getEnvGlobalEndpoint());
+
+        let detail;
+        try {
+            detail = await getScript(apiUrl, wsToken, scriptId);
+        } catch (e) {
+            this.logFsError('readFile getScript', uri, e);
+            if (e instanceof GraphQLError && this.isAuthCode(e.code)) {
+                throw vscode.FileSystemError.NoPermissions(uri);
+            }
+            throw vscode.FileSystemError.Unavailable(
+                'Open Script failed: ' + (e as Error).message
+            );
+        }
+
+        const filesUrl = getWorkspaceFilesUrl(ws);
+        let bytes: Uint8Array;
+        try {
+            bytes = await downloadByToken(filesUrl, detail.latestFileToken, wsToken);
+        } catch (e) {
+            this.logFsError('readFile downloadByToken', uri, e);
+            throw vscode.FileSystemError.Unavailable(
+                'Open Script failed: ' + (e as Error).message
+            );
+        }
+
+        // Token-hygiene: log only an 8-char prefix of the fileToken, never the
+        // bearer (T-03-03-02). The full token would be unique-per-version and
+        // is not in itself a credential, but we keep prefixes only out of
+        // caution to avoid log-spam if it ever changes shape.
+        this.output.appendLine(
+            `[Altium 365] readFile ${uri.toString()}: ${bytes.length} bytes via fileToken ${detail.latestFileToken.slice(0, 8)}...`
         );
+        return bytes;
     }
 
     async writeFile(
         uri: vscode.Uri,
-        _content: Uint8Array,
+        content: Uint8Array,
         _options: { create: boolean; overwrite: boolean }
     ): Promise<void> {
-        // STUB — Plan 03-03 replaces this body with the two-step
-        // (Files Service POST → `gloScrUpdateScript` mutation) flow.
-        parseScriptUri(uri);
-        throw vscode.FileSystemError.Unavailable(
-            'writeFile not yet implemented (Plan 03-03)'
+        // `_options.create` / `_options.overwrite` are ignored — the
+        // `altium365:` URI form addresses an existing remote script by ID, so
+        // there is no "create" semantic in v1 (SCRIPT-V2-01 deferred).
+        const { workspaceId, scriptId } = parseScriptUri(uri);
+        const ws = await this.resolveWorkspace(uri, workspaceId);
+        const cfg = readOAuthConfig();
+        const wsToken = await ensureWorkspaceToken(this.ctx, cfg, {
+            workspaceId: ws.workspaceId,
+            authId: ws.authId,
+        });
+        const apiUrl = getWorkspaceApiUrl(ws, this.getEnvGlobalEndpoint());
+        const filesUrl = getWorkspaceFilesUrl(ws);
+
+        let fileToken: string;
+        try {
+            fileToken = await uploadAndGetToken(filesUrl, wsToken, content);
+        } catch (e) {
+            this.logFsError('writeFile uploadAndGetToken', uri, e);
+            throw vscode.FileSystemError.Unavailable(
+                'Publish failed: ' + (e as Error).message
+            );
+        }
+
+        let version;
+        try {
+            version = await updateScript(
+                apiUrl,
+                wsToken,
+                scriptId,
+                fileToken,
+                'Updated via VS Code extension'
+            );
+        } catch (e) {
+            this.logFsError('writeFile updateScript', uri, e);
+            if (e instanceof GraphQLError) {
+                if (this.isAuthCode(e.code)) {
+                    throw vscode.FileSystemError.NoPermissions(uri);
+                }
+                if (e.code === 'BAD_USER_INPUT') {
+                    throw vscode.FileSystemError.Unavailable(
+                        'Publish failed: server rejected input (' +
+                            (e.message || e.code || 'BAD_USER_INPUT') +
+                            ')'
+                    );
+                }
+            }
+            throw vscode.FileSystemError.Unavailable(
+                'Publish failed: ' + (e as Error).message
+            );
+        }
+
+        // Defensive — fire change so any other open editors of the same URI
+        // re-pull. v1 has no realistic multi-editor flow, but free.
+        this._onDidChangeFile.fire([
+            { type: vscode.FileChangeType.Changed, uri },
+        ]);
+
+        this.output.appendLine(
+            `[Altium 365] writeFile ${uri.toString()}: published ${content.length} bytes → scriptVersionId=${version.scriptVersionId}`
         );
+    }
+
+    /**
+     * Resolve a `WorkspaceInfo` for the given URI authority. Prefers the
+     * cached selected workspace when its `workspaceId` matches; otherwise
+     * fetches a fresh list via `listWorkspaces` (using the base token).
+     * Throws `FileNotFound` if the workspace no longer exists for the
+     * signed-in user.
+     */
+    private async resolveWorkspace(
+        uri: vscode.Uri,
+        workspaceId: string
+    ): Promise<WorkspaceInfo> {
+        const selected = getSelectedWorkspace(this.ctx);
+        if (selected && selected.workspaceId === workspaceId) {
+            return selected;
+        }
+        const cfg = readOAuthConfig();
+        const baseToken = await getBaseAccessToken(this.ctx, cfg);
+        if (!baseToken) {
+            throw vscode.FileSystemError.NoPermissions(uri);
+        }
+        const envGlobal = this.getEnvGlobalEndpoint();
+        let list: WorkspaceInfo[];
+        try {
+            list = await listWorkspaces(envGlobal, baseToken);
+        } catch (e) {
+            this.logFsError('resolveWorkspace listWorkspaces', uri, e);
+            throw vscode.FileSystemError.Unavailable(
+                'Open Script failed: ' + (e as Error).message
+            );
+        }
+        const ws = list.find((w) => w.workspaceId === workspaceId);
+        if (!ws) {
+            throw vscode.FileSystemError.FileNotFound(uri);
+        }
+        return ws;
+    }
+
+    private isAuthCode(code: string | undefined): boolean {
+        return code === 'AUTH_NOT_AUTHENTICATED' || code === 'UNAUTHORIZED';
+    }
+
+    private logFsError(stage: string, uri: vscode.Uri, e: unknown): void {
+        const err = e as Error & { rawErrors?: unknown[]; code?: string };
+        this.output.appendLine(
+            `[Altium 365] ${stage} ${uri.toString()}: ${err.message}`
+        );
+        if (err instanceof GraphQLError && err.rawErrors) {
+            try {
+                this.output.appendLine(
+                    '[Altium 365]   GraphQL errors: ' +
+                        JSON.stringify(err.rawErrors).slice(0, 1000)
+                );
+            } catch {
+                // ignore stringify issues
+            }
+        }
+        if (err.stack) {
+            this.output.appendLine(err.stack);
+        }
     }
 
     /**
