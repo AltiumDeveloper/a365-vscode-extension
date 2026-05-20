@@ -149,6 +149,16 @@
           "default": "https://auth.dev1.altium.com/connect/token",
           "description": "OAuth2 token endpoint."
         },
+        "altium365.actionWaitEndpoint": {
+          "type": "string",
+          "default": "https://actionwait.dev1.altium.com/await",
+          "description": "Altium ActionWait long-poll endpoint used to receive the OAuth authorization code from the browser callback. Populated automatically by 'Altium 365: Select Environment'."
+        },
+        "altium365.redirectUri": {
+          "type": "string",
+          "default": "https://auth.dev1.altium.com/authCompleted",
+          "description": "Fixed OAuth redirect URI registered with the Altium auth client (Altium-hosted authCompleted page). Must match the URI sent in both /connect/authorize and /connect/token. Populated automatically by 'Altium 365: Select Environment'."
+        },
         "altium365.scopes": {
           "type": "string",
           "default": "openid profile",
