@@ -153,3 +153,31 @@ Plans:
 - [ ] TBD — promote with `/gsd-review-backlog` when ready
 
 **Captured at:** 2026-05-21 (post Phase 3 closure)
+
+### Phase 999.2: Workspace favorites (BACKLOG)
+
+**Goal:** Let users star frequently-used workspaces. Favorites render at the top of the tree, sorted alphabetically by name; non-favorites render below, current ordering preserved.
+
+**Captured items:**
+
+1. **Storage** — persist starred workspace IDs in `context.globalState` under a key like `altium365.favoriteWorkspaces` (array of `workspaceId` GRIDs or `authId` strings — decide during planning, but GRID is more durable since `authId` can theoretically change). Keep it strictly user-scoped (globalState, not secrets) — it's preference, not credential.
+2. **Commands** — register `altium365.workspace.favorite` and `altium365.workspace.unfavorite` (or a single toggle). Wire into `view/item/context` menu in `package.json` with `when: viewItem == workspace && !altium365.isFavorite` / `viewItem == workspace && altium365.isFavorite` (or use a contextValue suffix like `workspace-fav` vs `workspace`).
+3. **Tree rendering** — in `src/sidePanel.ts` `A365TreeDataProvider.getChildren(root)`, partition workspaces into `favorites` and `rest`. Sort favorites alphabetically by `displayName`. Concatenate. Consider an optional `TreeItem` separator or just rely on the star icon for visual grouping.
+4. **Visual cue** — star icon on favorited workspaces. Reuse VS Code codicon `$(star-full)` for favorites and either omit or use `$(star-empty)` for non-favorites. Combines with existing active-workspace cue (Phase 02.1-04) — needs a design decision: does active-workspace styling override or combine with the favorite star?
+5. **Migration** — none needed (additive feature; empty favorites set = current behavior).
+
+**Open questions (resolve during /gsd-discuss-phase):**
+
+- Key by `workspaceId` (GRID) or `authId`? GRID is durable but ugly; authId is human-readable but Altium docs don't guarantee immutability.
+- Single toggle command vs. two commands (favorite + unfavorite)? Two is more explicit; one is less menu clutter.
+- Sort favorites alphabetically (per user spec) — confirm case-insensitive.
+- Behavior when a favorited workspace disappears from the user's access (revoked, deleted)? Silent prune on next list, or surface as ghost?
+- Interaction with active-workspace cue from Phase 02.1-04 — combine icons, or favorite takes precedence?
+
+**Requirements:** TBD (likely PANEL-12 — Workspace favorites)
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD — promote with `/gsd-review-backlog` when ready
+
+**Captured at:** 2026-05-21 (post Phase 3 closure)
