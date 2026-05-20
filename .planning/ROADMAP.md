@@ -86,15 +86,26 @@ Plans:
 **Plans**: TBD
 **Source**: 02-REVIEW.md, 02.1-REVIEW.md, 02.1-REVIEW-FIX.md (WR-05 skip rationale)
 
-### Phase 02.2.1: actionwait auth (INSERTED)
+### Phase 02.3: ActionWait Auth Flow (INSERTED)
 
-**Goal:** [Urgent work - to be planned]
-**Requirements**: TBD
-**Depends on:** Phase 2.2
-**Plans:** 0 plans
-
-Plans:
-- [ ] TBD (run /gsd-plan-phase 02.2.1 to break down)
+**Goal:** Replace the loopback HTTP-server OAuth callback with Altium's ActionWait long-poll service. Desktop app opens a long-poll connection to `actionWaitEndpoint` keyed by a `connection_token` (also used as the OAuth `state` param) and uses a fixed `redirect_uri=https://auth.altium.com/authCompleted`. UnifiedLogin POSTs the authorization code to ActionWait, which releases the long-poll. Extension then exchanges the code at `/connect/token` using its `code_verifier`. Loopback flow is removed entirely.
+**Mode:** mvp
+**Requirements:**
+- AUTH-AW-01: Replace loopback HTTP server with ActionWait long-poll callback
+- AUTH-AW-02: Use fixed redirect_uri per environment; remove dynamic port allocation
+- AUTH-AW-03: Use `connection_token` (GUID) as OAuth `state` and ActionWait connection key
+- AUTH-AW-04: Honour env-specific `actionWaitEndpoint` settings already in package.json
+- AUTH-AW-05: Remove all loopback-related code (no opt-in fallback per discuss decision)
+**Success Criteria:**
+1. Sign-in works end-to-end against dev/uat/prod environments via ActionWait
+2. No local HTTP server is started during sign-in; no port permission prompt
+3. `redirect_uri` registered in Altium auth client matches the fixed `authCompleted` URL
+4. Long-poll handles timeout/reconnect, network errors, and user-cancellation cleanly
+5. Existing Phase 02.2 auth hardening (token routing, mutex, hygiene) remains intact
+6. Manual UAT covers happy path, cancel, network failure, timeout, and state-mismatch (CSRF)
+**Depends on:** Phase 02.2
+**Plans:** TBD (run /gsd-plan-phase 02.3 to break down)
+**Source:** ActionWait flow spec provided by user (2026-05-20 session)
 
 ### Phase 3: Remote Script Operations
 **Goal**: Users can open, edit, publish, and trigger execution of remote A365 scripts entirely from within VS Code, with execution output streamed back to the editor
