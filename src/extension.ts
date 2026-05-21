@@ -5,6 +5,7 @@ import * as os from 'os';
 import { spawn } from 'child_process';
 import {
     clearAllTokens,
+    ensureWorkspaceToken,
     fireAuthStateChanged,
     getActiveAccessToken,
     getStoredTokens,
@@ -12,7 +13,7 @@ import {
     readOAuthConfig,
     signIn,
 } from './auth';
-import { pickAndExchangeWorkspace, getSelectedWorkspace, getWorkspaceApiUrl, listProjects } from './workspace';
+import { pickWorkspace, getSelectedWorkspace, getWorkspaceApiUrl, listProjects, WorkspaceInfo } from './workspace';
 import { A365Node, A365TreeDataProvider } from './sidePanel';
 import { createStatusBar } from './statusBar';
 import { registerScriptCommands } from './scriptCommands';
@@ -291,16 +292,48 @@ async function doSelectWorkspace(context: vscode.ExtensionContext) {
         vscode.window.showErrorMessage('Set altium365.graphqlEndpoint first.');
         return;
     }
+    const ws = await pickWorkspace(context, cfg, endpoint);
+    if (!ws) {
+        return;
+    }
+    await applyWorkspaceSelection(context, ws);
+}
+
+/**
+ * Activate a workspace: exchange the base token for a workspace-scoped token,
+ * persist the selection to `globalState['altium365.selectedWorkspace']`,
+ * surface success/failure UI, and refresh the side panel.
+ *
+ * Plan 04-04 (D-14, D-16): factored out of `doSelectWorkspace` +
+ * `pickAndExchangeWorkspace` so the tree-context-menu command
+ * `altium365.workspace.selectFromNode` can reuse the exact same activation
+ * path (token exchange, globalState write, tree refresh, status bar refresh)
+ * without going through a QuickPick. The globalState key
+ * (`altium365.selectedWorkspace`) is preserved verbatim per D-16.
+ *
+ * Errors are caught + surfaced + swallowed (no rethrow) to match the
+ * pre-refactor `doSelectWorkspace` behavior — callers should not see
+ * exceptions from this helper.
+ */
+export async function applyWorkspaceSelection(
+    context: vscode.ExtensionContext,
+    workspace: WorkspaceInfo
+): Promise<void> {
     try {
-        const tok = await pickAndExchangeWorkspace(context, cfg, endpoint);
-        if (tok) {
-            vscode.window.showInformationMessage('Altium 365: workspace token acquired.');
-            // WR-02 fix: refresh the side panel so the "(active)" cue follows
-            // the user's explicit selection without waiting for sign-in/out.
-            await vscode.commands.executeCommand('altium365.tree.refresh');
-        }
+        await ensureWorkspaceToken(context, readOAuthConfig(), {
+            workspaceId: workspace.workspaceId,
+            authId: workspace.authId,
+        });
+        await context.globalState.update('altium365.selectedWorkspace', workspace);
+        vscode.window.showInformationMessage('Altium 365: workspace token acquired.');
+        // WR-02 fix: refresh the side panel so the active-workspace cue
+        // (Plan 04-02 icon swap + Plan 04-04 contextValue split) follows the
+        // user's explicit selection without waiting for sign-in/out.
+        await vscode.commands.executeCommand('altium365.tree.refresh');
     } catch (e) {
-        vscode.window.showErrorMessage(`Workspace token exchange failed: ${(e as Error).message}`);
+        vscode.window.showErrorMessage(
+            `Workspace token exchange failed: ${(e as Error).message}`
+        );
     }
 }
 
