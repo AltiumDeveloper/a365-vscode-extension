@@ -44,13 +44,17 @@ export function activate(context: vscode.ExtensionContext) {
         showCollapseAll: true,
     });
 
-    // D-07: Show the active environment name in the tree view header so users
-    // can see which env they're on without opening a context menu. Sourced
-    // from the canonical `altium365.activeEnvironment` configuration value
-    // (the same value driving the status bar). When unset (e.g. first launch
+    // D-07 (revised after UAT): Show the active environment name directly in
+    // the tree view title (e.g. "Altium 365 — Production") so users can see
+    // which env is active at a glance without scanning for dimmed description
+    // text. Sourced from the canonical `altium365.activeEnvironment` config
+    // (same value driving the status bar). When unset (e.g. first launch
     // before the user explicitly runs "Select Environment"), fall back to the
-    // first configured environment name — mirrors statusBar's fallback so the
-    // header is never blank when at least one environment is configured.
+    // first configured environment name. The base title "Altium 365" is the
+    // package.json `views` contribution; `treeView.title` overrides it at
+    // runtime. `treeView.description` is left empty so the env name is not
+    // duplicated.
+    const BASE_TITLE = 'Altium 365';
     const resolveEnvLabel = (): string | undefined => {
         const cfg = vscode.workspace.getConfiguration('altium365');
         const active = cfg.get<string>('activeEnvironment', '');
@@ -61,7 +65,11 @@ export function activate(context: vscode.ExtensionContext) {
         const names = Object.keys(envs);
         return names.length > 0 ? names[0] : undefined;
     };
-    treeView.description = resolveEnvLabel();
+    const applyTreeTitle = () => {
+        const env = resolveEnvLabel();
+        treeView.title = env ? `${BASE_TITLE} — ${env}` : BASE_TITLE;
+    };
+    applyTreeTitle();
 
     const statusBar = createStatusBar(context, outputChannel);
 
@@ -107,17 +115,17 @@ export function activate(context: vscode.ExtensionContext) {
             await updateSignedInContext(context);
             treeProvider.refresh();
         }),
-        // D-07: Refresh tree header description when active environment
-        // changes. TreeView.description is not re-read by provider refresh,
-        // so we listen to the canonical configuration event — this keeps
-        // wiring decoupled from `doSelectEnvironment` which mutates the
+        // D-07 (revised after UAT): Refresh tree view title when the active
+        // environment changes. TreeView.title is not re-read by provider
+        // refresh, so we listen to the canonical configuration event — this
+        // keeps wiring decoupled from `doSelectEnvironment` which mutates the
         // configuration value directly.
         vscode.workspace.onDidChangeConfiguration((e) => {
             if (
                 e.affectsConfiguration('altium365.activeEnvironment') ||
                 e.affectsConfiguration('altium365.environments')
             ) {
-                treeView.description = resolveEnvLabel();
+                applyTreeTitle();
             }
         }),
         statusBar.item,
