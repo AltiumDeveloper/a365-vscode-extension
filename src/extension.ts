@@ -43,6 +43,16 @@ export function activate(context: vscode.ExtensionContext) {
         showCollapseAll: true,
     });
 
+    // D-07: Show the active environment name in the tree view header so users
+    // can see which env they're on without opening a context menu. Sourced
+    // from the canonical `altium365.activeEnvironment` configuration value
+    // (the same value driving the status bar). Use `undefined` for empty so
+    // VS Code hides the description gracefully rather than rendering "".
+    const activeEnv = vscode.workspace
+        .getConfiguration('altium365')
+        .get<string>('activeEnvironment', '');
+    treeView.description = activeEnv || undefined;
+
     const statusBar = createStatusBar(context, outputChannel);
 
     const remoteFs = new AltiumRemoteScriptFs(
@@ -86,6 +96,19 @@ export function activate(context: vscode.ExtensionContext) {
         onAuthStateChanged(async () => {
             await updateSignedInContext(context);
             treeProvider.refresh();
+        }),
+        // D-07: Refresh tree header description when active environment
+        // changes. TreeView.description is not re-read by provider refresh,
+        // so we listen to the canonical configuration event — this keeps
+        // wiring decoupled from `doSelectEnvironment` which mutates the
+        // configuration value directly.
+        vscode.workspace.onDidChangeConfiguration((e) => {
+            if (e.affectsConfiguration('altium365.activeEnvironment')) {
+                treeView.description =
+                    vscode.workspace
+                        .getConfiguration('altium365')
+                        .get<string>('activeEnvironment', '') || undefined;
+            }
         }),
         statusBar.item,
         statusBar.subscription,
