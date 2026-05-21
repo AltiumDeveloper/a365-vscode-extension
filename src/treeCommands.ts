@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { A365Node } from './sidePanel';
+import { applyWorkspaceSelection } from './extension';
 
 /**
  * Safely open an http(s) URL supplied by the GraphQL backend in the user's
@@ -46,8 +47,6 @@ export function registerTreeCommands(
     context: vscode.ExtensionContext,
     output: vscode.OutputChannel
 ): vscode.Disposable[] {
-    void context;
-
     return [
         vscode.commands.registerCommand(
             'altium365.tree.copyId',
@@ -121,6 +120,30 @@ export function registerTreeCommands(
                     );
                     output.appendLine(
                         '[Altium 365] workspace.openInBrowser failed: ' +
+                            (err.stack ?? err.message)
+                    );
+                }
+            }
+        ),
+        vscode.commands.registerCommand(
+            'altium365.workspace.selectFromNode',
+            async (node?: A365Node) => {
+                if (!node || node.kind !== 'workspace') {
+                    output.appendLine(
+                        '[Altium 365] workspace.selectFromNode: ignored kind=' +
+                            (node?.kind ?? 'undefined')
+                    );
+                    return;
+                }
+                try {
+                    await applyWorkspaceSelection(context, node.info);
+                } catch (e) {
+                    const err = e as Error;
+                    vscode.window.showErrorMessage(
+                        'Altium 365: Select Workspace failed: ' + err.message
+                    );
+                    output.appendLine(
+                        '[Altium 365] workspace.selectFromNode failed: ' +
                             (err.stack ?? err.message)
                     );
                 }
