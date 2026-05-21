@@ -20,6 +20,7 @@ import { registerScriptCommands } from './scriptCommands';
 import { registerTreeCommands } from './treeCommands';
 import { AltiumRemoteScriptFs } from './remoteScriptFs';
 import { ensureSandboxDeps, getSandboxPythonPath } from './sandboxDeps';
+import { registerLocalScriptSaveBridge } from './localScriptCache';
 
 let outputChannel: vscode.OutputChannel;
 
@@ -87,6 +88,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     const scriptCommandDisposables = registerScriptCommands(context, outputChannel);
     const treeCommandDisposables = registerTreeCommands(context, outputChannel);
+    const localScriptSaveBridge = registerLocalScriptSaveBridge(outputChannel);
 
     context.subscriptions.push(
         outputChannel,
@@ -142,7 +144,8 @@ export function activate(context: vscode.ExtensionContext) {
         statusBar.subscription,
         vscode.commands.registerCommand('altium365.statusBar.click', () => onStatusBarClick()),
         ...scriptCommandDisposables,
-        ...treeCommandDisposables
+        ...treeCommandDisposables,
+        localScriptSaveBridge
     );
 
     void updateSignedInContext(context);

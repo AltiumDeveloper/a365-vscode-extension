@@ -297,13 +297,18 @@
       "editor/title": [
         {
           "command": "altium365.script.publish",
-          "when": "resourceScheme == altium365",
+          "when": "resourceScheme == altium365 || resourceFilename =~ /^altium365-/",
           "group": "navigation@1"
         },
         {
           "command": "altium365.script.executeRemote",
-          "when": "resourceScheme == altium365",
+          "when": "resourceScheme == altium365 || resourceFilename =~ /^altium365-/",
           "group": "navigation@2"
+        },
+        {
+          "command": "altium365.debugScript",
+          "when": "resourceFilename =~ /^altium365-/",
+          "group": "navigation@3"
         }
       ],
       "editor/title/run": [
