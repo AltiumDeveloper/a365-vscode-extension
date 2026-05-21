@@ -47,12 +47,21 @@ export function activate(context: vscode.ExtensionContext) {
     // D-07: Show the active environment name in the tree view header so users
     // can see which env they're on without opening a context menu. Sourced
     // from the canonical `altium365.activeEnvironment` configuration value
-    // (the same value driving the status bar). Use `undefined` for empty so
-    // VS Code hides the description gracefully rather than rendering "".
-    const activeEnv = vscode.workspace
-        .getConfiguration('altium365')
-        .get<string>('activeEnvironment', '');
-    treeView.description = activeEnv || undefined;
+    // (the same value driving the status bar). When unset (e.g. first launch
+    // before the user explicitly runs "Select Environment"), fall back to the
+    // first configured environment name — mirrors statusBar's fallback so the
+    // header is never blank when at least one environment is configured.
+    const resolveEnvLabel = (): string | undefined => {
+        const cfg = vscode.workspace.getConfiguration('altium365');
+        const active = cfg.get<string>('activeEnvironment', '');
+        if (active) {
+            return active;
+        }
+        const envs = cfg.get<Record<string, unknown>>('environments') || {};
+        const names = Object.keys(envs);
+        return names.length > 0 ? names[0] : undefined;
+    };
+    treeView.description = resolveEnvLabel();
 
     const statusBar = createStatusBar(context, outputChannel);
 
@@ -104,11 +113,11 @@ export function activate(context: vscode.ExtensionContext) {
         // wiring decoupled from `doSelectEnvironment` which mutates the
         // configuration value directly.
         vscode.workspace.onDidChangeConfiguration((e) => {
-            if (e.affectsConfiguration('altium365.activeEnvironment')) {
-                treeView.description =
-                    vscode.workspace
-                        .getConfiguration('altium365')
-                        .get<string>('activeEnvironment', '') || undefined;
+            if (
+                e.affectsConfiguration('altium365.activeEnvironment') ||
+                e.affectsConfiguration('altium365.environments')
+            ) {
+                treeView.description = resolveEnvLabel();
             }
         }),
         statusBar.item,
