@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { buildScriptUri } from './remoteScriptFs';
+import { buildScriptUri, AltiumRemoteScriptFs } from './remoteScriptFs';
 
 /**
  * In-memory mapping from local tmp file path -> remote script identity.
@@ -68,9 +68,17 @@ export function findLocalScriptByRemoteId(
 /**
  * Wire the save-back listener. Returns a Disposable to be added to
  * `context.subscriptions`. Idempotent registration is the caller's job.
+ *
+ * Bypasses `vscode.workspace.fs.writeFile` (which probes parent
+ * directories via stat and trips on the FSP's flat URI model — it
+ * surfaced as "Unable to create folder ... that already exists but is
+ * not a directory" during UAT-7). Calls the FSP's `writeFile` directly
+ * with `create:true, overwrite:true`, matching the contract used when
+ * VS Code saves a doc opened on the altium365: URI.
  */
 export function registerLocalScriptSaveBridge(
-    output: vscode.OutputChannel
+    output: vscode.OutputChannel,
+    remoteFs: AltiumRemoteScriptFs
 ): vscode.Disposable {
     return vscode.workspace.onDidSaveTextDocument(async (doc) => {
         if (doc.uri.scheme !== 'file') {
@@ -87,7 +95,10 @@ export function registerLocalScriptSaveBridge(
         );
         try {
             const bytes = Buffer.from(doc.getText(), 'utf-8');
-            await vscode.workspace.fs.writeFile(remoteUri, bytes);
+            await remoteFs.writeFile(remoteUri, bytes, {
+                create: true,
+                overwrite: true,
+            });
             output.appendLine(
                 `[Altium 365] Published ${doc.uri.fsPath} -> ${remoteUri.toString()} (${bytes.length} bytes)`
             );
