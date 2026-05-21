@@ -16,7 +16,8 @@ import {
     listWorkspaces,
 } from './workspace';
 
-export const CTX_WORKSPACE = 'workspaceNode';
+export const CTX_WORKSPACE_ACTIVE = 'workspaceNode-active';
+export const CTX_WORKSPACE_INACTIVE = 'workspaceNode-inactive';
 export const CTX_PROJECT = 'projectNode';
 export const CTX_SCRIPT = 'scriptNode';
 export const CTX_PROJECTS_CATEGORY = 'projectsCategoryNode';
@@ -112,10 +113,9 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
                     n.info.name,
                     vscode.TreeItemCollapsibleState.Collapsed
                 );
-                item.contextValue = CTX_WORKSPACE;
                 // Active-workspace cue (D-08, D-09, D-10): reflects the user's
                 // explicit selection via `Altium 365: Select Workspace`
-                // (persisted in globalState by `pickAndExchangeWorkspace`).
+                // (persisted in globalState by `applyWorkspaceSelection`).
                 // Icon strategy: active = $(circle-filled), inactive = $(cloud)
                 // + descriptionForeground. The `(active)` text suffix has been
                 // dropped — the icon swap carries the signal alone.
@@ -124,15 +124,22 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
                 // `star-full`/`pinned`; the two cues can stack without
                 // semantic collision — do not swap this back to a star/pin
                 // glyph without first revisiting the favorites design.
+                //
+                // contextValue (Plan 04-04, D-11/D-12/D-13): split into
+                // -active vs -inactive so package.json view/item/context can
+                // surface the "Select Workspace" entry ONLY on inactive
+                // workspaces (hiding the self-action on the already-active one).
                 const selected = getSelectedWorkspace(this.ctx);
                 const isActive = selected?.workspaceId === n.info.workspaceId;
                 if (isActive) {
                     item.iconPath = new vscode.ThemeIcon('circle-filled');
+                    item.contextValue = CTX_WORKSPACE_ACTIVE;
                 } else {
                     item.iconPath = new vscode.ThemeIcon(
                         'cloud',
                         new vscode.ThemeColor('descriptionForeground')
                     );
+                    item.contextValue = CTX_WORKSPACE_INACTIVE;
                 }
                 return item;
             }
