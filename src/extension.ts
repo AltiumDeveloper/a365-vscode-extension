@@ -88,7 +88,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     const scriptCommandDisposables = registerScriptCommands(context, outputChannel);
     const treeCommandDisposables = registerTreeCommands(context, outputChannel);
-    const localScriptSaveBridge = registerLocalScriptSaveBridge(outputChannel);
+    const localScriptSaveBridge = registerLocalScriptSaveBridge(outputChannel, remoteFs);
 
     context.subscriptions.push(
         outputChannel,
