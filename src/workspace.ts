@@ -201,8 +201,7 @@ export async function pickAndExchangeWorkspace(
     const pick = await vscode.window.showQuickPick(
         workspaces.map((w) => ({
             label: w.name,
-            description: w.workspaceId,
-            detail: `authId: ${w.authId}`,
+            description: w.authId,
             ws: w,
         })),
         { placeHolder: 'Select Altium 365 workspace' }
