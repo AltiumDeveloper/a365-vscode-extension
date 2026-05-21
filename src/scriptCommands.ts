@@ -1,21 +1,27 @@
 import * as vscode from 'vscode';
+import * as fs from 'fs/promises';
+import * as os from 'os';
+import * as path from 'path';
 import { A365Node } from './sidePanel';
 import { getSelectedWorkspace } from './workspace';
 import { buildScriptUri, parseScriptUri } from './remoteScriptFs';
 import { executeRemoteScript } from './remoteExecution';
+import { runScriptAtPath } from './extension';
 
 /**
  * Registers the four `altium365.script.*` commands declared in package.json.
  *
- * Phase 3 status:
- * - `altium365.script.runLocal` — STILL a placeholder (Phase 02 BLOCKED per
- *   the original P02-06 protocol; SCRIPT-01 is deferred to a later plan
- *   that re-runs the file-download endpoint smoke-probe against a live
- *   workspace). DO NOT touch — out of scope for Phase 3.
+ * Status:
+ * - `altium365.script.runLocal` — LIVE (UAT-3 fix following Phase 04). The
+ *   Phase 02 BLOCKED dependency on the script-download endpoint was
+ *   resolved when Plan 03-03 shipped the `altium365:` FileSystemProvider
+ *   readFile path. `runLocal` now: (1) reads the script body via the FSP,
+ *   (2) writes it to `os.tmpdir()/altium365-<scriptId>-<basename>.py`,
+ *   (3) hands off to `runScriptAtPath` (the same machinery that runs
+ *   on-disk Python files via `python/_runner.py` with the A365 helper).
  * - `altium365.script.edit`, `altium365.script.publish`,
  *   `altium365.script.executeRemote` — LIVE handlers, wired in Plan 03-02
- *   on top of the new `altium365:` FileSystemProvider (Plan 03-03 lands the
- *   real readFile/writeFile; Plan 03-04 lands the real execute).
+ *   on top of the `altium365:` FileSystemProvider.
  *
  * Resolution patterns:
  *   - When invoked from the tree context menu the command receives an
@@ -35,18 +41,15 @@ export function registerScriptCommands(
         vscode.window.showInformationMessage(
             `Altium 365: ${label} — coming in Phase 3.`
         );
+    void placeholder; // retained for future deferred commands
 
     const getEnvGlobalEndpoint = () =>
         vscode.workspace.getConfiguration('altium365').get<string>('graphqlEndpoint', '');
 
     return [
-        // BLOCKED branch: runLocal is a placeholder until the file-download
-        // endpoint (RESEARCH.md A1) and package format (A2) are confirmed
-        // against a live workspace. Phase 02 BLOCKED — out of scope for
-        // Phase 3 per 03-CONTEXT scoping.
         vscode.commands.registerCommand(
             'altium365.script.runLocal',
-            placeholder('Run Script (Local)')
+            (node?: A365Node) => runLocalFromScriptNode(context, output, node)
         ),
         vscode.commands.registerCommand(
             'altium365.script.edit',
@@ -209,6 +212,70 @@ async function publishScript(
         const userMsg = mapGraphQLErrorToUserMessage(code, err.message);
         output.appendLine(
             '[Altium 365] Publish Script failed: ' +
+                err.message +
+                (code ? ' (code=' + code + ')' : '')
+        );
+        if (err.stack) {
+            output.appendLine(err.stack);
+        }
+        vscode.window.showErrorMessage('Altium 365: ' + userMsg);
+    }
+}
+
+/**
+ * UAT-3 fix: implement Run Script (Local) for remote scripts.
+ *
+ * Pipeline:
+ *  1. Resolve `ScriptContext` from the tree node (or active editor URI).
+ *  2. Read the script body via the `altium365:` FileSystemProvider — this
+ *     is the same readFile path Edit Script uses, so any auth/network
+ *     errors surface here with the same friendly mapping.
+ *  3. Persist to `os.tmpdir()/altium365-<scriptId>-<basename>.py`. The
+ *     scriptId prefix avoids collisions across scripts; the .py extension
+ *     ensures the runner / debugger pick the right language. The temp
+ *     file is overwritten on subsequent runs of the same script (no
+ *     manual cleanup — OS-level tmpdir hygiene applies).
+ *  4. Hand off to `runScriptAtPath` — reuses the existing `_runner.py`
+ *     subprocess, A365 helper injection, and OutputChannel streaming.
+ *
+ * Note: this writes to disk so the user can also debug the script later
+ * (debugpy needs a real file path). Save-back to A365 is intentionally
+ * out of scope — Edit + save-on-publish remains the editing path.
+ */
+async function runLocalFromScriptNode(
+    context: vscode.ExtensionContext,
+    output: vscode.OutputChannel,
+    node?: A365Node
+): Promise<void> {
+    const sc = resolveScriptContext(context, node);
+    if (!sc) {
+        vscode.window.showErrorMessage(
+            'Altium 365: Run Script (Local) — no script selected. Right-click a script in the side panel.'
+        );
+        return;
+    }
+    try {
+        const uri = buildScriptUri(sc.workspaceAuthId, sc.scriptId, sc.scriptName);
+        const bytes = await vscode.workspace.fs.readFile(uri);
+        const safeBase = sc.scriptName.replace(/[^\w.-]+/g, '_') || 'script.py';
+        const baseWithExt = safeBase.toLowerCase().endsWith('.py')
+            ? safeBase
+            : `${safeBase}.py`;
+        const tmpPath = path.join(
+            os.tmpdir(),
+            `altium365-${sc.scriptId}-${baseWithExt}`
+        );
+        await fs.writeFile(tmpPath, bytes);
+        output.appendLine(
+            `[Altium 365] Run Script (Local): wrote ${bytes.byteLength} bytes to ${tmpPath}`
+        );
+        await runScriptAtPath(context, tmpPath);
+    } catch (e) {
+        const err = e as Error & { code?: string };
+        const code = (err as { code?: string }).code;
+        const userMsg = mapGraphQLErrorToUserMessage(code, err.message);
+        output.appendLine(
+            '[Altium 365] Run Script (Local) failed: ' +
                 err.message +
                 (code ? ' (code=' + code + ')' : '')
         );
