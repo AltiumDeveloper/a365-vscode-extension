@@ -73,6 +73,52 @@
         "command": "altium365.debugScript",
         "title": "Debug Python Script",
         "category": "Altium 365"
+      },
+      {
+        "command": "altium365.tree.refresh",
+        "title": "Refresh Workspaces",
+        "category": "Altium 365",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "altium365.tree.copyId",
+        "title": "Copy ID",
+        "category": "Altium 365"
+      },
+      {
+        "command": "altium365.script.runLocal",
+        "title": "Run Script (Local)",
+        "category": "Altium 365"
+      },
+      {
+        "command": "altium365.script.edit",
+        "title": "Edit Script",
+        "category": "Altium 365"
+      },
+      {
+        "command": "altium365.script.executeRemote",
+        "title": "Execute Script Remotely",
+        "category": "Altium 365"
+      },
+      {
+        "command": "altium365.script.publish",
+        "title": "Publish Script",
+        "category": "Altium 365"
+      },
+      {
+        "command": "altium365.workspace.openInBrowser",
+        "title": "Open Workspace in Browser",
+        "category": "Altium 365"
+      },
+      {
+        "command": "altium365.workspace.selectFromNode",
+        "title": "Select Workspace",
+        "category": "Altium 365"
+      },
+      {
+        "command": "altium365.project.openInBrowser",
+        "title": "Open Project in Browser",
+        "category": "Altium 365"
       }
     ],
     "configuration": {
@@ -196,6 +242,44 @@
       }
     },
     "menus": {
+      "commandPalette": [
+        {
+          "command": "altium365.tree.refresh",
+          "when": "false"
+        },
+        {
+          "command": "altium365.tree.copyId",
+          "when": "false"
+        },
+        {
+          "command": "altium365.script.runLocal",
+          "when": "false"
+        },
+        {
+          "command": "altium365.script.edit",
+          "when": "false"
+        },
+        {
+          "command": "altium365.script.executeRemote",
+          "when": "false"
+        },
+        {
+          "command": "altium365.script.publish",
+          "when": "false"
+        },
+        {
+          "command": "altium365.workspace.openInBrowser",
+          "when": "false"
+        },
+        {
+          "command": "altium365.workspace.selectFromNode",
+          "when": "false"
+        },
+        {
+          "command": "altium365.project.openInBrowser",
+          "when": "false"
+        }
+      ],
       "editor/title": [
         {
           "command": "altium365.script.publish",
