@@ -119,6 +119,11 @@
         "command": "altium365.project.openInBrowser",
         "title": "Open Project in Browser",
         "category": "Altium 365"
+      },
+      {
+        "command": "altium365.installScriptDependencies",
+        "title": "Install Script Dependencies",
+        "category": "Altium 365"
       }
     ],
     "configuration": {

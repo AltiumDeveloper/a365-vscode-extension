@@ -10,3 +10,9 @@ node_modules/**
 AGENTS.md
 .git/**
 scripts/**
+python/SandboxProcess/.deps/**
+python/SandboxProcess/__pycache__/**
+python/SandboxProcess/**/__pycache__/**
+python/SandboxProcess/test*.py
+python/SandboxProcess/test*.params.json
+**/.DS_Store

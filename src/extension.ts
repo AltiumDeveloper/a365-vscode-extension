@@ -19,6 +19,7 @@ import { createStatusBar } from './statusBar';
 import { registerScriptCommands } from './scriptCommands';
 import { registerTreeCommands } from './treeCommands';
 import { AltiumRemoteScriptFs } from './remoteScriptFs';
+import { ensureSandboxDeps, getSandboxPythonPath } from './sandboxDeps';
 
 let outputChannel: vscode.OutputChannel;
 
@@ -104,6 +105,15 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand('altium365.selectEnvironment', () =>
             doSelectEnvironment(context)
         ),
+        vscode.commands.registerCommand('altium365.installScriptDependencies', async () => {
+            const python = await resolvePythonPath();
+            const ok = await ensureSandboxDeps(context, python, outputChannel, true);
+            if (ok) {
+                vscode.window.showInformationMessage(
+                    'Altium 365: script dependencies installed.'
+                );
+            }
+        }),
         treeView,
         vscode.commands.registerCommand('altium365.tree.refresh', () => treeProvider.refresh()),
         vscode.commands.registerCommand('altium365.tree.retryNode', (n?: A365Node) => {
@@ -643,6 +653,14 @@ async function prepareRun(
     }
 
     const python = await resolvePythonPath();
+    // Ensure the vendored SandboxProcess deps are installed before
+    // launching the runner — otherwise user scripts fail at import time
+    // with `ModuleNotFoundError: No module named 'altium'` (or 'gql', etc).
+    // ensureSandboxDeps surfaces its own user-facing errors / cancel.
+    const depsReady = await ensureSandboxDeps(context, python, outputChannel);
+    if (!depsReady) {
+        return undefined;
+    }
     const scriptPath = target.fsPath;
     const scriptDir = path.dirname(scriptPath);
     const pythonDir = context.asAbsolutePath('python');
@@ -702,7 +720,13 @@ async function prepareRun(
     }
     if (injectHelper) {
         const sep = process.platform === 'win32' ? ';' : ':';
-        env.PYTHONPATH = env.PYTHONPATH ? `${pythonDir}${sep}${env.PYTHONPATH}` : pythonDir;
+        // Prepend SandboxProcess/ and SandboxProcess/.deps/ so user
+        // scripts can `import altium` / `import altium_api` / `import gql`
+        // / `import requests`. `pythonDir` (which hosts _runner.py and
+        // a365.py) is added last so the legacy helper still resolves.
+        const sandboxPaths = getSandboxPythonPath(context);
+        const prefix = [...sandboxPaths, pythonDir].join(sep);
+        env.PYTHONPATH = env.PYTHONPATH ? `${prefix}${sep}${env.PYTHONPATH}` : prefix;
     }
 
     const args = [scriptPath];

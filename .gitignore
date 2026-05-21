@@ -1,3 +1,6 @@
 out/
 node_modules/
 *.vsix
+__pycache__/
+python/SandboxProcess/.deps/
+.DS_Store
