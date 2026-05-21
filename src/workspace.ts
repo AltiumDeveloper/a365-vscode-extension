@@ -177,11 +177,30 @@ export async function listWorkspaces(
     return (data?.desWorkspaceInfos as WorkspaceInfo[]) || [];
 }
 
-export async function pickAndExchangeWorkspace(
+/**
+ * Show a QuickPick of the user's workspaces and return the picked
+ * `WorkspaceInfo` (or `undefined` if the user cancelled / no workspaces
+ * available / sign-in missing).
+ *
+ * Plan 04-04 (D-14, D-16): this function previously performed
+ * `ensureWorkspaceToken` + `globalState.update('altium365.selectedWorkspace')`
+ * inline. Those side effects now live in
+ * `applyWorkspaceSelection(context, workspace)` in `extension.ts` so the
+ * tree-context-menu `altium365.workspace.selectFromNode` command can reuse
+ * the exact same activation path without going through a QuickPick. This
+ * helper is now a pure picker — no token exchange, no globalState write.
+ *
+ * Returns the picked `WorkspaceInfo` so callers can pass it to
+ * `applyWorkspaceSelection`. `cfg` is no longer needed (the picker only
+ * uses the base-token to list workspaces) but the parameter is retained to
+ * preserve the call signature shape; callers may pass `readOAuthConfig()`.
+ */
+export async function pickWorkspace(
     context: vscode.ExtensionContext,
     cfg: OAuthConfig,
     graphqlEndpoint: string
-): Promise<string | undefined> {
+): Promise<WorkspaceInfo | undefined> {
+    void cfg;
     const baseToken = await getBaseAccessToken(context, cfg);
     if (!baseToken) {
         vscode.window.showErrorMessage('Sign in first (Altium 365: Sign In).');
@@ -206,15 +225,7 @@ export async function pickAndExchangeWorkspace(
         })),
         { placeHolder: 'Select Altium 365 workspace' }
     );
-    if (!pick) {
-        return undefined;
-    }
-    const tok = await ensureWorkspaceToken(context, cfg, {
-        workspaceId: pick.ws.workspaceId,
-        authId: pick.ws.authId,
-    });
-    await context.globalState.update('altium365.selectedWorkspace', pick.ws);
-    return tok;
+    return pick?.ws;
 }
 
 export function getSelectedWorkspace(
