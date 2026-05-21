@@ -7,6 +7,11 @@ import { getSelectedWorkspace } from './workspace';
 import { buildScriptUri, parseScriptUri } from './remoteScriptFs';
 import { executeRemoteScript } from './remoteExecution';
 import { runScriptAtPath, debugScriptAtPath } from './extension';
+import {
+    registerLocalScript,
+    getLocalScript,
+    findLocalScriptByRemoteId,
+} from './localScriptCache';
 
 /**
  * Registers the four `altium365.script.*` commands declared in package.json.
@@ -125,12 +130,29 @@ function resolveScriptContext(
     if (!active) {
         return undefined;
     }
+    // UAT-6: tmp file (Edit/Run/Debug Local) — tracked in the local
+    // script cache. Resolve identity directly from the registry; recover
+    // workspaceId from the selected workspace if it matches.
+    if (active.scheme === 'file') {
+        const identity = getLocalScript(active.fsPath);
+        if (identity) {
+            const selected = getSelectedWorkspace(context);
+            const workspaceId =
+                selected && selected.authId === identity.workspaceAuthId
+                    ? selected.workspaceId
+                    : '';
+            return {
+                workspaceId,
+                workspaceAuthId: identity.workspaceAuthId,
+                scriptId: identity.scriptId,
+                scriptName: identity.scriptName,
+            };
+        }
+    }
+    // Legacy: altium365: virtual URI (kept for back-compat — FSP still
+    // registered, may be opened by other code paths).
     try {
         const parsed = parseScriptUri(active);
-        // URI carries `authId` (per the GRID format). Recover the GRID-form
-        // workspaceId from the selected workspace iff its authId matches;
-        // otherwise leave blank — executeRemote surfaces an actionable
-        // error if it actually needs the workspaceId.
         const selected = getSelectedWorkspace(context);
         const workspaceId =
             selected && selected.authId === parsed.authId
@@ -152,30 +174,22 @@ async function editScript(
     output: vscode.OutputChannel,
     node?: A365Node
 ): Promise<void> {
-    const sc = resolveScriptContext(context, node);
-    if (!sc) {
-        vscode.window.showErrorMessage(
-            'Altium 365: Open Script — no script selected. Right-click a script in the side panel.'
-        );
+    // UAT-6: open the script as an on-disk tmp file (the same path used
+    // by Run/Debug Local) so breakpoints set here apply when the user
+    // hits Debug. Save publishes back to A365 via the save bridge in
+    // localScriptCache.ts (calls FSP.writeFile under the hood).
+    const tmpPath = await downloadScriptToTmp(context, output, node, 'Open Script');
+    if (!tmpPath) {
         return;
     }
-    void context;
     try {
-        const uri = buildScriptUri(sc.workspaceAuthId, sc.scriptId, sc.scriptName);
-        const doc = await vscode.workspace.openTextDocument(uri);
+        const doc = await vscode.workspace.openTextDocument(tmpPath);
         await vscode.languages.setTextDocumentLanguage(doc, 'python');
         await vscode.window.showTextDocument(doc);
     } catch (e) {
-        const err = e as Error & { code?: string };
-        const code = (err as { code?: string }).code;
-        const userMsg = mapGraphQLErrorToUserMessage(code, err.message);
-        output.appendLine(
-            '[Altium 365] Open Script failed: ' + err.message + (code ? ' (code=' + code + ')' : '')
-        );
-        if (err.stack) {
-            output.appendLine(err.stack);
-        }
-        vscode.window.showErrorMessage('Altium 365: ' + userMsg);
+        const err = e as Error;
+        output.appendLine(`[Altium 365] Open Script failed: ${err.message}`);
+        vscode.window.showErrorMessage('Altium 365: ' + err.message);
     }
 }
 
@@ -191,38 +205,63 @@ async function publishScript(
         );
         return;
     }
-    try {
-        const uri = buildScriptUri(sc.workspaceAuthId, sc.scriptId, sc.scriptName);
-        const doc = vscode.workspace.textDocuments.find(
-            (d) => d.uri.toString() === uri.toString()
+    // UAT-6: find the tracked tmp file for this remote script and save
+    // it. The save listener in localScriptCache.ts pushes the buffer
+    // through FSP.writeFile (same publish path as before).
+    let entry = findLocalScriptByRemoteId(sc.scriptId);
+    if (!entry) {
+        // Fall back to legacy altium365: URI lookup for back-compat.
+        const legacyUri = buildScriptUri(sc.workspaceAuthId, sc.scriptId, sc.scriptName);
+        const legacyDoc = vscode.workspace.textDocuments.find(
+            (d) => d.uri.toString() === legacyUri.toString()
         );
-        if (!doc) {
-            vscode.window.showInformationMessage(
-                'Altium 365: open the script in an editor first (right-click → Edit Script).'
-            );
-            return;
+        if (legacyDoc) {
+            if (!legacyDoc.isDirty) {
+                vscode.window.showInformationMessage(
+                    'Altium 365: nothing to publish (no unsaved changes).'
+                );
+                return;
+            }
+            try {
+                await legacyDoc.save();
+                return;
+            } catch (e) {
+                const err = e as Error;
+                output.appendLine(
+                    '[Altium 365] Publish Script failed: ' + err.message
+                );
+                vscode.window.showErrorMessage('Altium 365: ' + err.message);
+                return;
+            }
         }
-        if (!doc.isDirty) {
-            vscode.window.showInformationMessage(
-                'Altium 365: nothing to publish (no unsaved changes).'
-            );
-            return;
-        }
-        // D-03: save = publish; FSP.writeFile performs the upload.
+        vscode.window.showInformationMessage(
+            'Altium 365: open the script in an editor first (right-click → Edit Script).'
+        );
+        return;
+    }
+    const doc = vscode.workspace.textDocuments.find(
+        (d) => d.uri.scheme === 'file' && d.uri.fsPath.toLowerCase() === entry!.fsPath.toLowerCase()
+    );
+    if (!doc) {
+        vscode.window.showInformationMessage(
+            'Altium 365: open the script in an editor first (right-click → Edit Script).'
+        );
+        return;
+    }
+    if (!doc.isDirty) {
+        vscode.window.showInformationMessage(
+            'Altium 365: nothing to publish (no unsaved changes).'
+        );
+        return;
+    }
+    try {
+        // doc.save() triggers onDidSaveTextDocument -> save bridge ->
+        // FSP.writeFile -> upload + updateScript GraphQL mutation.
         await doc.save();
     } catch (e) {
-        const err = e as Error & { code?: string };
-        const code = (err as { code?: string }).code;
-        const userMsg = mapGraphQLErrorToUserMessage(code, err.message);
-        output.appendLine(
-            '[Altium 365] Publish Script failed: ' +
-                err.message +
-                (code ? ' (code=' + code + ')' : '')
-        );
-        if (err.stack) {
-            output.appendLine(err.stack);
-        }
-        vscode.window.showErrorMessage('Altium 365: ' + userMsg);
+        const err = e as Error;
+        output.appendLine('[Altium 365] Publish Script failed: ' + err.message);
+        vscode.window.showErrorMessage('Altium 365: ' + err.message);
     }
 }
 
@@ -274,6 +313,19 @@ async function debugLocalFromScriptNode(
     if (!tmpPath) {
         return;
     }
+    // UAT-6: open the script in editor before launching debugpy so the
+    // user can set breakpoints in the same buffer that the debugger
+    // uses. If the file is already open (e.g. via Edit Script), this is
+    // a no-op reveal.
+    try {
+        const doc = await vscode.workspace.openTextDocument(tmpPath);
+        await vscode.languages.setTextDocumentLanguage(doc, 'python');
+        await vscode.window.showTextDocument(doc, { preserveFocus: false });
+    } catch (e) {
+        output.appendLine(
+            `[Altium 365] Debug Script (Local): failed to reveal editor: ${(e as Error).message}`
+        );
+    }
     await debugScriptAtPath(context, tmpPath);
 }
 
@@ -309,6 +361,14 @@ async function downloadScriptToTmp(
             `altium365-${sc.scriptId}-${baseWithExt}`
         );
         await fs.writeFile(tmpPath, bytes);
+        // UAT-6: register the tmp path so (a) the save bridge can publish
+        // back on save, and (b) resolveScriptContext can recognize this
+        // editor as belonging to the remote script.
+        registerLocalScript(tmpPath, {
+            workspaceAuthId: sc.workspaceAuthId,
+            scriptId: sc.scriptId,
+            scriptName: sc.scriptName,
+        });
         output.appendLine(
             `[Altium 365] ${actionLabel}: wrote ${bytes.byteLength} bytes to ${tmpPath}`
         );
