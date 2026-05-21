@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 04 context gathered
-last_updated: "2026-05-21T00:35:50.036Z"
+stopped_at: Phase 04 complete (4/4 plans)
+last_updated: "2026-05-21T00:00:00.000Z"
 last_activity: 2026-05-21
 progress:
   total_phases: 9
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 35
-  completed_plans: 33
-  percent: 56
+  completed_plans: 34
+  percent: 97
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-19)
 
 **Core value:** A developer can open VS Code, sign in once, and go from browsing their A365 workspace to running or deploying a script — without leaving the editor or hand-crafting API calls.
-**Current focus:** Phase 04 — ui-polish
+**Current focus:** Phase 04 complete — ready for Phase 05 (Progress Feedback)
 
 ## Current Position
 
-Phase: 04 (ui-polish) — EXECUTING
-Plan: 4 of 4
-Status: Ready to execute
+Phase: 04 (ui-polish) — COMPLETE
+Plan: 4 of 4 (complete)
+Status: Phase done — next: /gsd-discuss-phase 05
 Last activity: 2026-05-21
 
-Progress: [█████████░] 94%
+Progress: [██████████] 97%
 
 Wave structure:
 
@@ -74,6 +74,7 @@ Wave structure:
 | Phase 04 P01 | 6 min | 2 tasks | 1 files |
 | Phase 04-ui-polish P02 | 3 min | 2 tasks | 2 files |
 | Phase 04-ui-polish P03 | 1 min | 1 tasks | 1 files |
+| Phase 04-ui-polish P04 | 6 min | 4 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -102,6 +103,9 @@ Recent decisions affecting current work:
 - [Phase 02.1-04]: Active workspace = the workspace whose token was most recently exchanged via ensureWorkspaceToken; tracked in globalState 'altium365.activeWorkspaceId', written exchange-path-only, cleared on sign-out
 - [Phase 02.1-04]: Inactive workspace icon uses ThemeIcon('cloud') + ThemeColor('descriptionForeground') because 'cloud-outline' is not in the standard VS Code codicon set
 - [Phase 02.1]: Open in Browser handlers appended to existing registerTreeCommands factory — D-11 keeps tree-generic handlers co-located; Plan 02.1-03 wiring already spreads disposables — no extension.ts changes needed
+- [Phase 04-04]: Renamed pickAndExchangeWorkspace → pickWorkspace (pure picker, returns WorkspaceInfo | undefined); side effects (ensureWorkspaceToken + globalState write) factored into new exported applyWorkspaceSelection(context, workspace) helper in extension.ts shared by palette QuickPick and tree context menu
+- [Phase 04-04]: contextValue-suffix pattern (workspaceNode-active / workspaceNode-inactive) gates per-state menu visibility; state-agnostic entries use VS Code when-clause regex viewItem =~ /^workspaceNode/
+- [Phase 04-04]: extension.ts ↔ treeCommands.ts circular import resolves cleanly under tsc because applyWorkspaceSelection is accessed lazily inside a registerCommand handler body, not at module init — planner's fallback (relocate to workspace.ts) not adopted
 
 ### Pending Todos
 
@@ -123,6 +127,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-21T00:35:45.935Z
-Stopped at: Phase 04 context gathered
+Last session: 2026-05-21T00:00:00.000Z
+Stopped at: Phase 04 complete (4/4 plans) — next: /gsd-discuss-phase 05
 Resume file: None

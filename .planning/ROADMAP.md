@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Packaging** - Produce a distributable VSIX with CI pipeline and Marketplace-ready metadata (completed 2026-05-19)
 - [x] **Phase 2: Side Panel** - Activity Bar tree showing workspaces, projects, and scripts with context actions (completed 2026-05-19)
 - [x] **Phase 3: Remote Script Operations** - Open, edit, publish, and execute server-side scripts from the tree (completed 2026-05-21 — partial UAT, Scenarios 3+5 deferred)
-- [ ] **Phase 4: UI Polish** - Trim noise from side-panel UX and workspace picker (command titles, QuickPick, icons, env header, active-workspace cue, Select context menu)
+- [x] **Phase 4: UI Polish** - Trim noise from side-panel UX and workspace picker (command titles, QuickPick, icons, env header, active-workspace cue, Select context menu) (completed 2026-05-21)
 - [ ] **Phase 5: Progress Feedback for Async Operations** - Consistent `withProgress` UI for every user-triggered network/IO action
 
 ## Phase Details
@@ -164,7 +164,7 @@ Phases execute in numeric order: 1 → 2 → 02.1 → 02.2 → 02.3 → 3 → 4 
 | 02.2 Auth Hardening | done | Complete | 2026-05-20 |
 | 02.3 ActionWait Auth Flow | 5/5 | Complete (partial UAT) | 2026-05-20 |
 | 3. Remote Script Operations | 5/5 | Complete (partial UAT) | 2026-05-21 |
-| 4. UI Polish | 3/4 | In Progress|  |
+| 4. UI Polish | 4/4 | Complete | 2026-05-21 |
 | 5. Progress Feedback for Async Ops | 0/0 | Pending — promoted from 999.3 | — |
 
 ## Backlog
