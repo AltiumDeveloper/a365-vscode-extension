@@ -164,7 +164,7 @@ Phases execute in numeric order: 1 → 2 → 02.1 → 02.2 → 02.3 → 3 → 4 
 | 02.2 Auth Hardening | done | Complete | 2026-05-20 |
 | 02.3 ActionWait Auth Flow | 5/5 | Complete (partial UAT) | 2026-05-20 |
 | 3. Remote Script Operations | 5/5 | Complete (partial UAT) | 2026-05-21 |
-| 4. UI Polish | 0/0 | Pending — promoted from 999.1 | — |
+| 4. UI Polish | 1/4 | In Progress|  |
 | 5. Progress Feedback for Async Ops | 0/0 | Pending — promoted from 999.3 | — |
 
 ## Backlog
