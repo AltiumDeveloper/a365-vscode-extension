@@ -113,19 +113,21 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
                     vscode.TreeItemCollapsibleState.Collapsed
                 );
                 item.contextValue = CTX_WORKSPACE;
-                // Active-workspace cue (D-07, WR-01 fix): reflects the user's
+                // Active-workspace cue (D-08, D-09, D-10): reflects the user's
                 // explicit selection via `Altium 365: Select Workspace`
                 // (persisted in globalState by `pickAndExchangeWorkspace`).
-                // Previously this tracked token-exchange events which fired on
-                // every tree expansion, causing the cue to diverge from the
-                // actual selection used by script runs. No 'cloud-outline'
-                // codicon exists, so unselected workspaces get a dimmed cloud
-                // via ThemeColor fallback.
+                // Icon strategy: active = $(circle-filled), inactive = $(cloud)
+                // + descriptionForeground. The `(active)` text suffix has been
+                // dropped — the icon swap carries the signal alone.
+                // Icon choice rationale (D-10): `circle-filled` is reserved
+                // here because future 999.2 workspace-favorites will use
+                // `star-full`/`pinned`; the two cues can stack without
+                // semantic collision — do not swap this back to a star/pin
+                // glyph without first revisiting the favorites design.
                 const selected = getSelectedWorkspace(this.ctx);
                 const isActive = selected?.workspaceId === n.info.workspaceId;
                 if (isActive) {
-                    item.iconPath = new vscode.ThemeIcon('cloud');
-                    item.description = '(active)';
+                    item.iconPath = new vscode.ThemeIcon('circle-filled');
                 } else {
                     item.iconPath = new vscode.ThemeIcon(
                         'cloud',
@@ -140,7 +142,7 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
                     vscode.TreeItemCollapsibleState.Collapsed
                 );
                 item.contextValue = CTX_PROJECTS_CATEGORY;
-                item.iconPath = new vscode.ThemeIcon('folder-library');
+                item.iconPath = new vscode.ThemeIcon('project');
                 return item;
             }
             case 'scriptsCategory': {
@@ -149,7 +151,7 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
                     vscode.TreeItemCollapsibleState.Collapsed
                 );
                 item.contextValue = CTX_SCRIPTS_CATEGORY;
-                item.iconPath = new vscode.ThemeIcon('folder-library');
+                item.iconPath = new vscode.ThemeIcon('file-code');
                 return item;
             }
             case 'project': {
