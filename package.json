@@ -91,6 +91,11 @@
         "category": "Altium 365"
       },
       {
+        "command": "altium365.script.debugLocal",
+        "title": "Debug Script (Local)",
+        "category": "Altium 365"
+      },
+      {
         "command": "altium365.script.edit",
         "title": "Edit Script",
         "category": "Altium 365"
@@ -261,6 +266,10 @@
           "when": "false"
         },
         {
+          "command": "altium365.script.debugLocal",
+          "when": "false"
+        },
+        {
           "command": "altium365.script.edit",
           "when": "false"
         },
@@ -341,9 +350,14 @@
           "group": "1_run@1"
         },
         {
-          "command": "altium365.script.executeRemote",
+          "command": "altium365.script.debugLocal",
           "when": "view == altium365.tree && viewItem == scriptNode",
           "group": "1_run@2"
+        },
+        {
+          "command": "altium365.script.executeRemote",
+          "when": "view == altium365.tree && viewItem == scriptNode",
+          "group": "1_run@3"
         },
         {
           "command": "altium365.script.edit",
