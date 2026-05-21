@@ -267,8 +267,13 @@
           "group": "2_edit@2"
         },
         {
+          "command": "altium365.workspace.selectFromNode",
+          "when": "view == altium365.tree && viewItem == workspaceNode-inactive",
+          "group": "1_select@1"
+        },
+        {
           "command": "altium365.tree.copyId",
-          "when": "view == altium365.tree && viewItem == workspaceNode",
+          "when": "view == altium365.tree && viewItem =~ /^workspaceNode/",
           "group": "9_clipboard@1"
         },
         {
@@ -283,7 +288,7 @@
         },
         {
           "command": "altium365.workspace.openInBrowser",
-          "when": "view == altium365.tree && viewItem == workspaceNode",
+          "when": "view == altium365.tree && viewItem =~ /^workspaceNode/",
           "group": "9_open@1"
         },
         {
