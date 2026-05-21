@@ -6,7 +6,7 @@ import { A365Node } from './sidePanel';
 import { getSelectedWorkspace } from './workspace';
 import { buildScriptUri, parseScriptUri } from './remoteScriptFs';
 import { executeRemoteScript } from './remoteExecution';
-import { runScriptAtPath } from './extension';
+import { runScriptAtPath, debugScriptAtPath } from './extension';
 
 /**
  * Registers the four `altium365.script.*` commands declared in package.json.
@@ -50,6 +50,10 @@ export function registerScriptCommands(
         vscode.commands.registerCommand(
             'altium365.script.runLocal',
             (node?: A365Node) => runLocalFromScriptNode(context, output, node)
+        ),
+        vscode.commands.registerCommand(
+            'altium365.script.debugLocal',
+            (node?: A365Node) => debugLocalFromScriptNode(context, output, node)
         ),
         vscode.commands.registerCommand(
             'altium365.script.edit',
@@ -247,12 +251,51 @@ async function runLocalFromScriptNode(
     output: vscode.OutputChannel,
     node?: A365Node
 ): Promise<void> {
+    const tmpPath = await downloadScriptToTmp(context, output, node, 'Run Script (Local)');
+    if (!tmpPath) {
+        return;
+    }
+    await runScriptAtPath(context, tmpPath);
+}
+
+/**
+ * UAT-5 fix: implement Debug Script (Local) for remote scripts. Mirrors
+ * runLocalFromScriptNode — same download-to-tmp pipeline — and then
+ * hands off to debugScriptAtPath which launches debugpy against
+ * `_runner.py` with the script as the first argument. Breakpoints set
+ * in the downloaded tmp file are hit (debugpy honors absolute paths).
+ */
+async function debugLocalFromScriptNode(
+    context: vscode.ExtensionContext,
+    output: vscode.OutputChannel,
+    node?: A365Node
+): Promise<void> {
+    const tmpPath = await downloadScriptToTmp(context, output, node, 'Debug Script (Local)');
+    if (!tmpPath) {
+        return;
+    }
+    await debugScriptAtPath(context, tmpPath);
+}
+
+/**
+ * Shared helper for runLocal / debugLocal: resolves the script context,
+ * downloads the body via the `altium365:` FSP, and writes it to
+ * `os.tmpdir()/altium365-<scriptId>-<basename>.py`. Returns the temp
+ * path, or undefined on error / no-selection (user message already
+ * shown).
+ */
+async function downloadScriptToTmp(
+    context: vscode.ExtensionContext,
+    output: vscode.OutputChannel,
+    node: A365Node | undefined,
+    actionLabel: string
+): Promise<string | undefined> {
     const sc = resolveScriptContext(context, node);
     if (!sc) {
         vscode.window.showErrorMessage(
-            'Altium 365: Run Script (Local) — no script selected. Right-click a script in the side panel.'
+            `Altium 365: ${actionLabel} — no script selected. Right-click a script in the side panel.`
         );
-        return;
+        return undefined;
     }
     try {
         const uri = buildScriptUri(sc.workspaceAuthId, sc.scriptId, sc.scriptName);
@@ -267,15 +310,15 @@ async function runLocalFromScriptNode(
         );
         await fs.writeFile(tmpPath, bytes);
         output.appendLine(
-            `[Altium 365] Run Script (Local): wrote ${bytes.byteLength} bytes to ${tmpPath}`
+            `[Altium 365] ${actionLabel}: wrote ${bytes.byteLength} bytes to ${tmpPath}`
         );
-        await runScriptAtPath(context, tmpPath);
+        return tmpPath;
     } catch (e) {
         const err = e as Error & { code?: string };
         const code = (err as { code?: string }).code;
         const userMsg = mapGraphQLErrorToUserMessage(code, err.message);
         output.appendLine(
-            '[Altium 365] Run Script (Local) failed: ' +
+            `[Altium 365] ${actionLabel} failed: ` +
                 err.message +
                 (code ? ' (code=' + code + ')' : '')
         );
@@ -283,6 +326,7 @@ async function runLocalFromScriptNode(
             output.appendLine(err.stack);
         }
         vscode.window.showErrorMessage('Altium 365: ' + userMsg);
+        return undefined;
     }
 }
 

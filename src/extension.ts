@@ -557,14 +557,39 @@ export async function runScriptAtPath(
 }
 
 async function debugScript(context: vscode.ExtensionContext, uri?: vscode.Uri) {
-    const prep = await prepareRun(context, uri);
+    let target = uri;
+    if (!target) {
+        const editor = vscode.window.activeTextEditor;
+        if (editor && editor.document.languageId === 'python') {
+            if (editor.document.isDirty) {
+                await editor.document.save();
+            }
+            target = editor.document.uri;
+        }
+    }
+    if (!target) {
+        vscode.window.showErrorMessage('No Python script selected.');
+        return;
+    }
+    return debugScriptAtPath(context, target.fsPath);
+}
+
+// Reused by src/scriptCommands.ts to debug a fetched A365 script body
+// written to os.tmpdir(). Mirrors runScriptAtPath: same prepareRun ->
+// SandboxProcess PYTHONPATH wiring -> Python interpreter, but launches
+// debugpy instead of spawning a subprocess.
+export async function debugScriptAtPath(
+    context: vscode.ExtensionContext,
+    scriptPath: string
+): Promise<void> {
+    const prep = await prepareRun(context, scriptPath);
     if (!prep) {
         return;
     }
-    const { python, runnerPath, scriptPath, scriptDir, args, env, endpoint, paramsPath } = prep;
+    const { python, runnerPath, scriptPath: resolvedPath, scriptDir, args, env, endpoint, paramsPath } = prep;
 
     outputChannel.show(true);
-    outputChannel.appendLine(`\n[Altium 365] Debugging ${scriptPath}`);
+    outputChannel.appendLine(`\n[Altium 365] Debugging ${resolvedPath}`);
     outputChannel.appendLine(`[Altium 365] Endpoint: ${endpoint}`);
     outputChannel.appendLine(`[Altium 365] Python:   ${python}`);
     if (paramsPath) {
@@ -574,9 +599,9 @@ async function debugScript(context: vscode.ExtensionContext, uri?: vscode.Uri) {
     const debugConfig: vscode.DebugConfiguration = {
         type: 'debugpy',
         request: 'launch',
-        name: `Altium 365: ${path.basename(scriptPath)}`,
+        name: `Altium 365: ${path.basename(resolvedPath)}`,
         program: runnerPath,
-        args: [scriptPath, ...args.slice(1)],
+        args: [resolvedPath, ...args.slice(1)],
         cwd: scriptDir,
         console: 'integratedTerminal',
         justMyCode: false,
