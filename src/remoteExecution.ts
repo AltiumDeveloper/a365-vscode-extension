@@ -15,6 +15,7 @@ import {
     listWorkspaces,
     WorkspaceInfo,
 } from './workspace';
+import { withScriptProgress } from './progress';
 
 /**
  * Remote-script execution module.
@@ -85,63 +86,88 @@ const TERMINAL_STATUSES = new Set<string>([
 ]);
 
 export async function executeRemoteScript(args: ExecuteRemoteArgs): Promise<void> {
-    // ----- Block A: setup (outside withProgress) -----
-    const cfg = readOAuthConfig();
+    // ----- Block A + B: setup wrapped in withScriptProgress (D-01c, D-10) -----
+    type SetupResult = {
+        ws: WorkspaceInfo;
+        wsToken: string;
+        apiUrl: string;
+        parameters: ReturnType<typeof resolveScriptParameters>;
+    };
+    const setup = await withScriptProgress<SetupResult | undefined>(
+        `Preparing to execute ${args.scriptName}...`,
+        async (signal) => {
+            const cfg = readOAuthConfig();
 
-    let ws: WorkspaceInfo | undefined = getSelectedWorkspace(args.context);
-    if (!ws || ws.workspaceId !== args.workspaceId) {
-        // Fall back to a fresh listWorkspaces — rare path (editor-title button
-        // pressed against a script whose workspace is not the currently
-        // selected one).
-        try {
-            const baseToken = await getBaseAccessToken(args.context, cfg);
-            if (!baseToken) {
-                vscode.window.showErrorMessage(
-                    'Altium 365: Execute Remotely failed: not signed in.'
-                );
-                return;
+            let ws: WorkspaceInfo | undefined = getSelectedWorkspace(args.context);
+            if (!ws || ws.workspaceId !== args.workspaceId) {
+                // Fall back to a fresh listWorkspaces — rare path (editor-title
+                // button pressed against a script whose workspace is not the
+                // currently selected one).
+                try {
+                    const baseToken = await getBaseAccessToken(args.context, cfg);
+                    if (!baseToken) {
+                        vscode.window.showErrorMessage(
+                            'Altium 365: Execute Remotely failed: not signed in.'
+                        );
+                        return undefined;
+                    }
+                    const list = await listWorkspaces(args.envGlobalEndpoint, baseToken);
+                    ws = list.find((w) => w.workspaceId === args.workspaceId);
+                } catch (e) {
+                    const err = e as Error;
+                    args.output.appendLine(
+                        '[Altium 365] Execute Remotely failed (workspace lookup): ' + err.message
+                    );
+                    vscode.window.showErrorMessage(
+                        'Altium 365: Execute Remotely failed: ' + err.message
+                    );
+                    return undefined;
+                }
             }
-            const list = await listWorkspaces(args.envGlobalEndpoint, baseToken);
-            ws = list.find((w) => w.workspaceId === args.workspaceId);
-        } catch (e) {
-            const err = e as Error;
-            args.output.appendLine(
-                '[Altium 365] Execute Remotely failed (workspace lookup): ' + err.message
-            );
-            vscode.window.showErrorMessage(
-                'Altium 365: Execute Remotely failed: ' + err.message
-            );
-            return;
-        }
-    }
-    if (!ws) {
-        vscode.window.showErrorMessage(
-            'Altium 365: Execute Remotely failed: workspace not found ' +
-                '(refresh the side panel).'
-        );
+            if (!ws) {
+                vscode.window.showErrorMessage(
+                    'Altium 365: Execute Remotely failed: workspace not found ' +
+                        '(refresh the side panel).'
+                );
+                return undefined;
+            }
+
+            if (signal.aborted) {
+                return undefined;
+            }
+
+            let wsToken: string;
+            try {
+                wsToken = await ensureWorkspaceToken(args.context, cfg, {
+                    workspaceId: args.workspaceId,
+                    authId: args.workspaceAuthId || ws.authId,
+                });
+            } catch (e) {
+                const err = e as Error;
+                args.output.appendLine(
+                    '[Altium 365] Execute Remotely failed (token exchange): ' + err.message
+                );
+                vscode.window.showErrorMessage(
+                    'Altium 365: Execute Remotely failed: ' + err.message
+                );
+                return undefined;
+            }
+            const apiUrl = getWorkspaceApiUrl(ws, args.envGlobalEndpoint);
+
+            // ----- Block B: parameters (D-05) -----
+            const parameters = resolveScriptParameters(args.context, args.scriptId);
+
+            return { ws, wsToken, apiUrl, parameters };
+        },
+        { cancellable: true },
+    );
+    if (!setup) {
+        // Either user cancelled the spinner (silent return per D-04) or one
+        // of the four early-return-with-toast arms above already surfaced
+        // its own message.
         return;
     }
-
-    let wsToken: string;
-    try {
-        wsToken = await ensureWorkspaceToken(args.context, cfg, {
-            workspaceId: args.workspaceId,
-            authId: args.workspaceAuthId || ws.authId,
-        });
-    } catch (e) {
-        const err = e as Error;
-        args.output.appendLine(
-            '[Altium 365] Execute Remotely failed (token exchange): ' + err.message
-        );
-        vscode.window.showErrorMessage(
-            'Altium 365: Execute Remotely failed: ' + err.message
-        );
-        return;
-    }
-    const apiUrl = getWorkspaceApiUrl(ws, args.envGlobalEndpoint);
-
-    // ----- Block B: parameters (D-05) -----
-    const parameters = resolveScriptParameters(args.context, args.scriptId);
+    const { ws, wsToken, apiUrl, parameters } = setup;
 
     // ----- Block C: OutputChannel header (D-09) -----
     args.output.show(true);
