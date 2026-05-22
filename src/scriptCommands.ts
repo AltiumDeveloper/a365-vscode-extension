@@ -291,16 +291,6 @@ async function runLocalFromScriptNode(
     output: vscode.OutputChannel,
     node?: A365Node
 ): Promise<void> {
-    // D-17: standalone-.py fallback. When invoked without a tree node
-    // (e.g. from the editor/title submenu on a Python file that is NOT
-    // a tracked remote-tmp), delegate to the active-workspace path
-    // (D-03) — no projectId prompt for a remote-tmp, no target arg.
-    if (!node) {
-        const active = vscode.window.activeTextEditor?.document.uri;
-        if (active?.scheme === 'file' && !getLocalScript(active.fsPath)) {
-            return runScriptAtPath(context, active.fsPath);
-        }
-    }
     const sc = resolveScriptContext(context, node);
     const tmpPath = await downloadScriptToTmp(context, output, node, 'Run Script (Local)');
     if (!tmpPath) {
@@ -327,13 +317,6 @@ async function debugLocalFromScriptNode(
     output: vscode.OutputChannel,
     node?: A365Node
 ): Promise<void> {
-    // D-17: standalone-.py fallback (mirror of runLocalFromScriptNode).
-    if (!node) {
-        const active = vscode.window.activeTextEditor?.document.uri;
-        if (active?.scheme === 'file' && !getLocalScript(active.fsPath)) {
-            return debugScriptAtPath(context, active.fsPath);
-        }
-    }
     const sc = resolveScriptContext(context, node);
     const tmpPath = await downloadScriptToTmp(context, output, node, 'Debug Script (Local)');
     if (!tmpPath) {

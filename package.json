@@ -272,6 +272,14 @@
           "when": "false"
         },
         {
+          "command": "altium365.script.runLocal",
+          "when": "false"
+        },
+        {
+          "command": "altium365.script.debugLocal",
+          "when": "false"
+        },
+        {
           "command": "altium365.script.edit",
           "when": "false"
         },
@@ -297,12 +305,12 @@
       ],
       "altium365.editorTitle": [
         {
-          "command": "altium365.script.runLocal",
+          "command": "altium365.runScript",
           "group": "1_run@1",
           "when": "resourceLangId == python"
         },
         {
-          "command": "altium365.script.debugLocal",
+          "command": "altium365.debugScript",
           "group": "1_run@2",
           "when": "resourceLangId == python"
         },
