@@ -1,4 +1,7 @@
 import * as vscode from 'vscode';
+import * as fs from 'fs/promises';
+import * as os from 'os';
+import * as path from 'path';
 import { buildScriptUri, AltiumRemoteScriptFs } from './remoteScriptFs';
 import { withScriptProgress } from './progress';
 
@@ -64,6 +67,66 @@ export function findLocalScriptByRemoteId(
         }
     }
     return undefined;
+}
+
+/**
+ * Rehydrate the in-memory cache by scanning the on-disk GRID layout
+ * `os.tmpdir()/altium365/<workspaceAuthId>/<scriptId>/<name>.py`
+ * (introduced by Plan 06-01 D-10/D-12). Called on extension activation
+ * so that remote-tmp `.py` tabs restored by VS Code from a previous
+ * session are immediately recognized as remote — without this, the
+ * `altium365.activeIsRemoteScript` context key (D-15) stays false for
+ * restored tabs until the user re-downloads the script, hiding the
+ * Execute Remotely / Publish submenu rows.
+ *
+ * Best-effort: silently swallows ENOENT (no remote scripts ever
+ * downloaded) and any per-entry errors (partial cache > broken
+ * activation). The script body itself is not re-fetched — the path
+ * encodes identity (workspaceAuthId, scriptId, fileName) so a directory
+ * walk is sufficient.
+ */
+export async function rehydrateLocalScriptCacheFromDisk(): Promise<number> {
+    const root = path.join(os.tmpdir(), 'altium365');
+    let count = 0;
+    let authDirs: { name: string; isDirectory(): boolean }[];
+    try {
+        authDirs = await fs.readdir(root, { withFileTypes: true });
+    } catch {
+        return 0; // directory missing — first run, nothing to rehydrate
+    }
+    for (const authEntry of authDirs) {
+        if (!authEntry.isDirectory()) continue;
+        const workspaceAuthId = authEntry.name;
+        const authDir = path.join(root, workspaceAuthId);
+        let scriptDirs: { name: string; isDirectory(): boolean }[];
+        try {
+            scriptDirs = await fs.readdir(authDir, { withFileTypes: true });
+        } catch {
+            continue;
+        }
+        for (const scriptEntry of scriptDirs) {
+            if (!scriptEntry.isDirectory()) continue;
+            const scriptId = scriptEntry.name;
+            const scriptDir = path.join(authDir, scriptId);
+            let files: { name: string; isFile(): boolean }[];
+            try {
+                files = await fs.readdir(scriptDir, { withFileTypes: true });
+            } catch {
+                continue;
+            }
+            for (const f of files) {
+                if (!f.isFile() || !f.name.toLowerCase().endsWith('.py')) continue;
+                const fsPath = path.join(scriptDir, f.name);
+                registerLocalScript(fsPath, {
+                    workspaceAuthId,
+                    scriptId,
+                    scriptName: f.name,
+                });
+                count++;
+            }
+        }
+    }
+    return count;
 }
 
 /**

@@ -22,7 +22,7 @@ import { registerScriptCommands } from './scriptCommands';
 import { registerTreeCommands } from './treeCommands';
 import { AltiumRemoteScriptFs } from './remoteScriptFs';
 import { ensureSandboxDeps, getSandboxPythonPath } from './sandboxDeps';
-import { registerLocalScriptSaveBridge, getLocalScript } from './localScriptCache';
+import { registerLocalScriptSaveBridge, getLocalScript, rehydrateLocalScriptCacheFromDisk } from './localScriptCache';
 
 let outputChannel: vscode.OutputChannel;
 
@@ -158,6 +158,24 @@ export function activate(context: vscode.ExtensionContext) {
         ...treeCommandDisposables,
         localScriptSaveBridge
     );
+
+    // D-15 (UAT-2 follow-up): rehydrate the localScriptCache from the
+    // on-disk GRID layout BEFORE seeding the active-remote context key,
+    // so remote-tmp `.py` tabs restored by VS Code from a previous
+    // session are recognized as remote on first frame (Execute Remotely
+    // / Publish submenu rows visible without re-downloading).
+    void rehydrateLocalScriptCacheFromDisk()
+        .then((n) => {
+            if (n > 0) {
+                outputChannel.appendLine(
+                    `[Altium 365] Rehydrated ${n} local script(s) from tmpdir cache.`
+                );
+            }
+            // Re-seed after rehydration completes — the synchronous seed
+            // below also fires immediately so the context key flips as
+            // soon as either path resolves.
+            updateActiveRemoteContext(vscode.window.activeTextEditor);
+        });
 
     // D-15: seed BEFORE listener registration (RESEARCH §2.2) so submenu
     // items show correct visibility from the first frame — not after the
