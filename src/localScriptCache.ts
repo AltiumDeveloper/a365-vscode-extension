@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { buildScriptUri, AltiumRemoteScriptFs } from './remoteScriptFs';
+import { withScriptProgress } from './progress';
 
 /**
  * In-memory mapping from local tmp file path -> remote script identity.
@@ -93,27 +94,33 @@ export function registerLocalScriptSaveBridge(
             identity.scriptId,
             identity.scriptName
         );
-        try {
-            const bytes = Buffer.from(doc.getText(), 'utf-8');
-            await remoteFs.writeFile(remoteUri, bytes, {
-                create: true,
-                overwrite: true,
-            });
-            output.appendLine(
-                `[Altium 365] Published ${doc.uri.fsPath} -> ${remoteUri.toString()} (${bytes.length} bytes)`
-            );
-            vscode.window.setStatusBarMessage(
-                `Altium 365: published ${identity.scriptName}`,
-                3000
-            );
-        } catch (e) {
-            const err = e as Error;
-            output.appendLine(
-                `[Altium 365] Publish failed for ${doc.uri.fsPath}: ${err.message}`
-            );
-            vscode.window.showErrorMessage(
-                `Altium 365: publish failed — ${err.message}`
-            );
-        }
+        await withScriptProgress(
+            'Publishing script...',
+            async () => {
+                try {
+                    const bytes = Buffer.from(doc.getText(), 'utf-8');
+                    await remoteFs.writeFile(remoteUri, bytes, {
+                        create: true,
+                        overwrite: true,
+                    });
+                    output.appendLine(
+                        `[Altium 365] Published ${doc.uri.fsPath} -> ${remoteUri.toString()} (${bytes.length} bytes)`
+                    );
+                    vscode.window.setStatusBarMessage(
+                        `Altium 365: published ${identity.scriptName}`,
+                        3000
+                    );
+                } catch (e) {
+                    const err = e as Error;
+                    output.appendLine(
+                        `[Altium 365] Publish failed for ${doc.uri.fsPath}: ${err.message}`
+                    );
+                    vscode.window.showErrorMessage(
+                        `Altium 365: publish failed — ${err.message}`
+                    );
+                }
+            },
+            { cancellable: false },
+        );
     });
 }
