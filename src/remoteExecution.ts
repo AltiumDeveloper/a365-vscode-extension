@@ -16,6 +16,7 @@ import {
     WorkspaceInfo,
 } from './workspace';
 import { withScriptProgress } from './progress';
+import { pickProjectId } from './projectPicker';
 
 /**
  * Remote-script execution module.
@@ -131,6 +132,13 @@ export async function executeRemoteScript(args: ExecuteRemoteArgs): Promise<void
                 );
                 return undefined;
             }
+            // RESEARCH §5.4: ensure the OutputChannel header below (Block C
+            // reads args.workspaceName) shows the script's actual workspace
+            // name on cross-workspace remote execute, not '<workspace-name
+            // unknown>' as observed before this fix.
+            if (ws.name && ws.name !== args.workspaceName) {
+                args.workspaceName = ws.name;
+            }
 
             if (signal.aborted) {
                 return undefined;
@@ -155,7 +163,41 @@ export async function executeRemoteScript(args: ExecuteRemoteArgs): Promise<void
             const apiUrl = getWorkspaceApiUrl(ws, args.envGlobalEndpoint);
 
             // ----- Block B: parameters (D-05) -----
-            const parameters = resolveScriptParameters(args.context, args.scriptId);
+            let parameters = resolveScriptParameters(args.context, args.scriptId);
+            // D-06 (Phase 6): when no per-script params are cached and the
+            // user opted into projectId prompting (default true), reuse the
+            // shared `pickProjectId` against the script's workspace. D-07:
+            // last-pick cache key is workspace-scoped, shared with local
+            // prepareRun (`altium365.lastProjectId.<workspaceId>`). D-22:
+            // this call sits INSIDE the existing withScriptProgress wrapper;
+            // do NOT add a nested wrap. D-23: reserved key
+            // `altium365.scriptParams.<scriptId>` is untouched here.
+            if (parameters === undefined) {
+                const wcfg = vscode.workspace.getConfiguration('altium365');
+                if (wcfg.get<boolean>('promptForProjectId', true)) {
+                    const lastKey = `altium365.lastProjectId.${args.workspaceId}`;
+                    const last = args.context.globalState.get<string>(lastKey, '');
+                    const picked = await pickProjectId(
+                        args.context,
+                        apiUrl,
+                        wsToken,
+                        last,
+                        ws,
+                        args.output,
+                    );
+                    if (picked === undefined) {
+                        // user cancelled — clean abort (the surrounding
+                        // executeRemoteScript treats undefined as silent return)
+                        return undefined;
+                    }
+                    if (picked) {
+                        await args.context.globalState.update(lastKey, picked);
+                        parameters = [{ key: 'projectId', value: picked }];
+                    }
+                    // empty pick ('') = user chose "No input_parameters" —
+                    // leave parameters undefined; server uses script defaults
+                }
+            }
 
             return { ws, wsToken, apiUrl, parameters };
         },
