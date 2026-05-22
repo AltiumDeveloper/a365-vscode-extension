@@ -210,12 +210,12 @@ Plans:
   7. The "Altium 365" dropdown also appears for any standalone local `.py` file, not only remote-tmp files
   8. (Stretch) AWS-Lambda-style named "test events" let users save/switch multiple parameter templates per script, shared across local and remote runs
 
-**Plans:** 3 plans
+**Plans:** 1/3 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 06-01-PLAN.md — Quick wins: single-click Edit, GRID-derived nested tmp layout, drop redundant tree Publish entry (D-09..D-12, D-18..D-20 → SC-4, SC-5, SC-6 partial)
+- [x] 06-01-PLAN.md — Quick wins: single-click Edit, GRID-derived nested tmp layout, drop redundant tree Publish entry (D-09..D-12, D-18..D-20 → SC-4, SC-5, SC-6 partial)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -244,7 +244,7 @@ Phases execute in numeric order: 1 → 2 → 02.1 → 02.2 → 02.3 → 3 → 4 
 | 3. Remote Script Operations | 5/5 | Complete (partial UAT) | 2026-05-21 |
 | 4. UI Polish | 4/4 | Complete | 2026-05-21 |
 | 5. Progress Feedback for Async Ops | 3/3 | Complete   | 2026-05-22 |
-| 6. Script Execution UX & Unified Params | 0/TBD | Pending discuss-phase | — |
+| 6. Script Execution UX & Unified Params | 1/3 | In Progress|  |
 
 ## Backlog
 
