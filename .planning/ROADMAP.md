@@ -148,7 +148,11 @@ Plans:
   2. `altium365.script.publish` and the setup phase of remote execution (`remoteExecution.ts` Block A) also show progress affordance before their network round-trip
   3. A single `ProgressLocation` convention (Notification vs Window) is chosen and applied consistently across all remote-script commands
   4. Where appropriate (e.g. Edit), progress is `cancellable: true` and cancellation aborts the in-flight GraphQL request
-**Plans**: TBD (run /gsd-plan-phase 05 to break down)
+**Plans**: 3 plans
+Plans:
+- [ ] 01-helper-and-download-PLAN.md — src/progress.ts helper + wrap downloadScriptToTmp (SC-1, SC-3, SC-4 cooperative)
+- [ ] 02-publish-save-bridge-PLAN.md — wrap registerLocalScriptSaveBridge body in withScriptProgress non-cancellable (SC-2 publish half, SC-3)
+- [ ] 03-execute-remote-setup-PLAN.md — wrap executeRemoteScript Block A+B cancellable (SC-2 executeRemote half, SC-3, SC-4)
 **Source**: Promoted from backlog 999.3 (3 items + 3 open questions, captured 2026-05-21 post Phase 3 closure)
 
 ## Progress
