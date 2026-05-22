@@ -310,3 +310,36 @@ Plans:
 - [ ] TBD — promote with `/gsd-review-backlog` when ready
 
 **Captured at:** 2026-05-22 (deferred from Phase 6 stretch goal during discuss)
+
+### Phase 999.4: Remote execute log-dedup fix (BACKLOG)
+
+**Goal:** Eliminate duplicate log batches in the OutputChannel during remote script execution. Each user-emitted log line currently appears once per poll tick that the script remains alive (observed 3× duplication for a ~4s script during Phase 6 Plan 06-03 UAT, 2026-05-22).
+
+**Captured items:**
+
+1. **Root cause** — `src/remoteExecution.ts:343-345` advances the `nextToken` poll cursor only when the server returns a truthy value:
+   ```ts
+   if (logPage.nextToken) { nextToken = logPage.nextToken; }
+   ```
+   When the server returns null/empty (its "no more logs since X" signal), the cursor stays put and the next tick re-fetches and re-prints the same page.
+2. **Investigation** — confirm `getExecutionLogs` (in `src/workspace.ts`) pagination semantics: is `nextToken` an opaque continuation token (advance only when non-empty) or a "since X" high-water mark (advance unconditionally on success)? The current code assumes the former but the duplication suggests the server returns empty when there are no NEW logs, not when all logs are consumed.
+3. **Fix candidates** (pick after investigation):
+   - Track already-printed line count locally and slice the returned `logs[]` before printing.
+   - Advance `nextToken` unconditionally when `logs.length === 0` (treat empty page as "caught up — next call should ask from latest").
+   - Switch to a server-side `since: ISO8601` filter if the API supports one.
+4. **Regression test** — add a remote-execute UAT scenario that runs a script printing N distinct numbered lines and asserts the OutputChannel contains exactly N occurrences.
+
+**Open questions:**
+
+- What is `nextToken`'s actual contract on the server side? Need to inspect the GraphQL schema for `gloScrScriptExecutionLogs` (or wherever logs come from).
+- Does an empty `logs[]` always imply "caught up", or can it mean "page is empty but more exist past this cursor" (e.g. server pagination quirk)?
+
+**Requirements:** TBD (likely REMOTE-EXEC-02 — Log fidelity)
+**Depends on:** none (independent bugfix; safe to land any time)
+**Plans:** 0 plans
+
+Plans:
+
+- [ ] TBD — promote with `/gsd-review-backlog` when ready
+
+**Captured at:** 2026-05-22 (surfaced during Phase 6 Plan 06-03 UAT)
