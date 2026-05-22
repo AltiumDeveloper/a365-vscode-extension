@@ -12,6 +12,7 @@ import {
     getLocalScript,
     findLocalScriptByRemoteId,
 } from './localScriptCache';
+import { withScriptProgress } from './progress';
 
 /**
  * Registers the four `altium365.script.*` commands declared in package.json.
@@ -349,45 +350,64 @@ async function downloadScriptToTmp(
         );
         return undefined;
     }
-    try {
-        const uri = buildScriptUri(sc.workspaceAuthId, sc.scriptId, sc.scriptName);
-        const bytes = await vscode.workspace.fs.readFile(uri);
-        const safeBase = sc.scriptName.replace(/[^\w.-]+/g, '_') || 'script.py';
-        const baseWithExt = safeBase.toLowerCase().endsWith('.py')
-            ? safeBase
-            : `${safeBase}.py`;
-        const tmpPath = path.join(
-            os.tmpdir(),
-            `altium365-${sc.scriptId}-${baseWithExt}`
-        );
-        await fs.writeFile(tmpPath, bytes);
-        // UAT-6: register the tmp path so (a) the save bridge can publish
-        // back on save, and (b) resolveScriptContext can recognize this
-        // editor as belonging to the remote script.
-        registerLocalScript(tmpPath, {
-            workspaceAuthId: sc.workspaceAuthId,
-            scriptId: sc.scriptId,
-            scriptName: sc.scriptName,
-        });
-        output.appendLine(
-            `[Altium 365] ${actionLabel}: wrote ${bytes.byteLength} bytes to ${tmpPath}`
-        );
-        return tmpPath;
-    } catch (e) {
-        const err = e as Error & { code?: string };
-        const code = (err as { code?: string }).code;
-        const userMsg = mapGraphQLErrorToUserMessage(code, err.message);
-        output.appendLine(
-            `[Altium 365] ${actionLabel} failed: ` +
-                err.message +
-                (code ? ' (code=' + code + ')' : '')
-        );
-        if (err.stack) {
-            output.appendLine(err.stack);
-        }
-        vscode.window.showErrorMessage('Altium 365: ' + userMsg);
-        return undefined;
-    }
+    return withScriptProgress(
+        `${actionLabel}: loading...`,
+        async (signal) => {
+            let tmpPath: string | undefined;
+            try {
+                try {
+                    const uri = buildScriptUri(sc.workspaceAuthId, sc.scriptId, sc.scriptName);
+                    const bytes = await vscode.workspace.fs.readFile(uri);
+                    const safeBase = sc.scriptName.replace(/[^\w.-]+/g, '_') || 'script.py';
+                    const baseWithExt = safeBase.toLowerCase().endsWith('.py')
+                        ? safeBase
+                        : `${safeBase}.py`;
+                    tmpPath = path.join(
+                        os.tmpdir(),
+                        `altium365-${sc.scriptId}-${baseWithExt}`
+                    );
+                    await fs.writeFile(tmpPath, bytes);
+                    // UAT-6: register the tmp path so (a) the save bridge can publish
+                    // back on save, and (b) resolveScriptContext can recognize this
+                    // editor as belonging to the remote script.
+                    registerLocalScript(tmpPath, {
+                        workspaceAuthId: sc.workspaceAuthId,
+                        scriptId: sc.scriptId,
+                        scriptName: sc.scriptName,
+                    });
+                    output.appendLine(
+                        `[Altium 365] ${actionLabel}: wrote ${bytes.byteLength} bytes to ${tmpPath}`
+                    );
+                    return tmpPath;
+                } catch (e) {
+                    const err = e as Error & { code?: string };
+                    const code = (err as { code?: string }).code;
+                    const userMsg = mapGraphQLErrorToUserMessage(code, err.message);
+                    output.appendLine(
+                        `[Altium 365] ${actionLabel} failed: ` +
+                            err.message +
+                            (code ? ' (code=' + code + ')' : '')
+                    );
+                    if (err.stack) {
+                        output.appendLine(err.stack);
+                    }
+                    vscode.window.showErrorMessage('Altium 365: ' + userMsg);
+                    return undefined;
+                }
+            } finally {
+                if (signal.aborted && tmpPath) {
+                    try {
+                        await fs.unlink(tmpPath);
+                    } catch (e) {
+                        output.appendLine(
+                            `[Altium 365] cancel cleanup: unlink failed: ${(e as Error).message}`
+                        );
+                    }
+                }
+            }
+        },
+        { cancellable: true },
+    );
 }
 
 async function executeRemoteFromUi(
