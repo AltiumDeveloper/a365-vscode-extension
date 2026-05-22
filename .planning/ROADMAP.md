@@ -270,3 +270,35 @@ Plans:
 - [ ] TBD — promote with `/gsd-review-backlog` when ready
 
 **Captured at:** 2026-05-21 (post Phase 3 closure)
+
+### Phase 999.3: Script Test-Events (BACKLOG)
+
+**Goal:** AWS-Lambda-style named "test events" for script parameters. Users save and switch between multiple named parameter templates per script, used identically for local run, local debug, and remote execute. Subsumes the current ad-hoc `*.params.json` files and the projectId-prompt fallback shipped in Phase 6.
+
+**Captured items:**
+
+1. **Storage** — per-script blob in workspaceState under the reserved key `altium365.scriptParams.<scriptId>` (reservation from Phase 3 D-05, preserved through Phase 6 D-23). Shape: `{ defaultEventName: string, events: { [name: string]: object } }`. One default event marked for unattended runs (palette commands, no UI prompt).
+2. **UI surface** — title-bar dropdown next to the Altium 365 submenu (or a sub-item of it): "Test events ▾" with quick-switch + "Create new…" + "Edit current…". "Edit current…" opens a JSON document (virtual or temp file) for inline editing; save commits back to workspaceState. Pattern reference: AWS Toolkit Lambda test events.
+3. **Built-in presets** — at minimum a `project-related` preset that reproduces today's `{projectId: <picked>}` payload using `pickProjectId`. User can edit/clone to customize.
+4. **Local + remote share the same model** — `prepareRun` (local) and `executeRemoteScript`'s Block B (remote) both resolve params via the same `resolveScriptParameters(scriptIdentity)` helper. Removes the divergence Phase 6 D-05 only patched at the surface.
+5. **Sibling `.params.json` migration** — on first run of a local .py with a sibling `.params.json` and no existing workspaceState entry, offer to import as a named test event. After import, sibling file is no longer consulted (workspaceState wins). Or keep sibling as a separate "file-backed event" — design decision.
+6. **Standalone .py support** — test events keyed by an identity derived from the file (workspace path? hash?) for files not registered in `localScriptCache`. Or restrict to scripts with a remote identity for v1. Design decision.
+
+**Open questions (resolve during /gsd-discuss-phase 999.3):**
+
+- Workspaceless storage vs globalState — should test events follow the user across workspaces, or be scoped per VS Code workspace?
+- Default event semantics — does invoking a palette command (`altium365.runScript`) on the active editor use the default event silently, or always prompt?
+- Sibling `.params.json` interop — full migration (consume + delete) vs coexistence (file overrides state when present)?
+- Test event sharing — should test events round-trip with the script via a special remote-stored blob (so co-developers see the same events)?
+- Edit UI — virtual doc with JSON schema validation, or a structured form? JSON is cheaper to ship.
+- Maximum number of stored events per script (to bound workspaceState bloat).
+
+**Requirements:** TBD (likely SCRIPT-V2-04 — Test Events)
+**Depends on:** Phase 6 (minimal projectId bridge + workspace-context routing must be in place)
+**Plans:** 0 plans
+
+Plans:
+
+- [ ] TBD — promote with `/gsd-review-backlog` when ready
+
+**Captured at:** 2026-05-22 (deferred from Phase 6 stretch goal during discuss)
