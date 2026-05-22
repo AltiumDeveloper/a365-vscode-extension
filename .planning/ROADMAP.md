@@ -206,7 +206,7 @@ Phases execute in numeric order: 1 → 2 → 02.1 → 02.2 → 02.3 → 3 → 4 
 | 02.3 ActionWait Auth Flow | 5/5 | Complete (partial UAT) | 2026-05-20 |
 | 3. Remote Script Operations | 5/5 | Complete (partial UAT) | 2026-05-21 |
 | 4. UI Polish | 4/4 | Complete | 2026-05-21 |
-| 5. Progress Feedback for Async Ops | 1/3 | In Progress|  |
+| 5. Progress Feedback for Async Ops | 2/3 | In Progress|  |
 
 ## Backlog
 
