@@ -178,6 +178,16 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
                 item.contextValue = CTX_SCRIPT;
                 item.iconPath = new vscode.ThemeIcon('file-code');
                 item.tooltip = n.script.description ?? n.script.name;
+                // D-19 / SC-4: single-click on a script leaf opens the same
+                // Edit Script path as the right-click context entry. VS Code
+                // honors TreeItem.command on leaf items under the default
+                // `workbench.list.openMode: singleClick` (RESEARCH §2.3 —
+                // there is no separate double-click event).
+                item.command = {
+                    command: 'altium365.script.edit',
+                    title: 'Edit Script',
+                    arguments: [n],
+                };
                 return item;
             }
             case 'info': {
