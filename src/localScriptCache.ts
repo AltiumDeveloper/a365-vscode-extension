@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs/promises';
+import * as fsSync from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { buildScriptUri, AltiumRemoteScriptFs } from './remoteScriptFs';
@@ -72,12 +73,17 @@ export function findLocalScriptByRemoteId(
 /**
  * Rehydrate the in-memory cache by scanning the on-disk GRID layout
  * `os.tmpdir()/altium365/<workspaceAuthId>/<scriptId>/<name>.py`
- * (introduced by Plan 06-01 D-10/D-12). Called on extension activation
- * so that remote-tmp `.py` tabs restored by VS Code from a previous
- * session are immediately recognized as remote — without this, the
- * `altium365.activeIsRemoteScript` context key (D-15) stays false for
- * restored tabs until the user re-downloads the script, hiding the
- * Execute Remotely / Publish submenu rows.
+ * (introduced by Plan 06-01 D-10/D-12). Called SYNCHRONOUSLY on
+ * extension activation so that remote-tmp `.py` tabs restored by VS
+ * Code from a previous session are recognized as remote BEFORE the
+ * `altium365.activeIsRemoteScript` context key (D-15) is seeded —
+ * otherwise the submenu hides Execute Remotely / Publish for restored
+ * tabs until the user re-downloads the script.
+ *
+ * Sync I/O is acceptable here: the walk is bounded (typically a handful
+ * of dirs, a few dozen files at most) and runs once at startup. The
+ * async equivalent introduced a race where the seed fired before
+ * rehydration completed (UAT-3).
  *
  * Best-effort: silently swallows ENOENT (no remote scripts ever
  * downloaded) and any per-entry errors (partial cache > broken
@@ -85,12 +91,12 @@ export function findLocalScriptByRemoteId(
  * encodes identity (workspaceAuthId, scriptId, fileName) so a directory
  * walk is sufficient.
  */
-export async function rehydrateLocalScriptCacheFromDisk(): Promise<number> {
+export function rehydrateLocalScriptCacheFromDisk(): number {
     const root = path.join(os.tmpdir(), 'altium365');
     let count = 0;
-    let authDirs: { name: string; isDirectory(): boolean }[];
+    let authDirs: fsSync.Dirent[];
     try {
-        authDirs = await fs.readdir(root, { withFileTypes: true });
+        authDirs = fsSync.readdirSync(root, { withFileTypes: true });
     } catch {
         return 0; // directory missing — first run, nothing to rehydrate
     }
@@ -98,9 +104,9 @@ export async function rehydrateLocalScriptCacheFromDisk(): Promise<number> {
         if (!authEntry.isDirectory()) continue;
         const workspaceAuthId = authEntry.name;
         const authDir = path.join(root, workspaceAuthId);
-        let scriptDirs: { name: string; isDirectory(): boolean }[];
+        let scriptDirs: fsSync.Dirent[];
         try {
-            scriptDirs = await fs.readdir(authDir, { withFileTypes: true });
+            scriptDirs = fsSync.readdirSync(authDir, { withFileTypes: true });
         } catch {
             continue;
         }
@@ -108,9 +114,9 @@ export async function rehydrateLocalScriptCacheFromDisk(): Promise<number> {
             if (!scriptEntry.isDirectory()) continue;
             const scriptId = scriptEntry.name;
             const scriptDir = path.join(authDir, scriptId);
-            let files: { name: string; isFile(): boolean }[];
+            let files: fsSync.Dirent[];
             try {
-                files = await fs.readdir(scriptDir, { withFileTypes: true });
+                files = fsSync.readdirSync(scriptDir, { withFileTypes: true });
             } catch {
                 continue;
             }
