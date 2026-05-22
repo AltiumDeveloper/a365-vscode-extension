@@ -23,7 +23,7 @@
         {
           "id": "altium365",
           "title": "Altium 365",
-          "icon": "$(circuit-board)"
+          "icon": "resources/altium365.svg"
         }
       ]
     },
