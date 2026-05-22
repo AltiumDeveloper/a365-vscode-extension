@@ -378,6 +378,9 @@ async function downloadScriptToTmp(
                     output.appendLine(
                         `[Altium 365] ${actionLabel}: wrote ${bytes.byteLength} bytes to ${tmpPath}`
                     );
+                    if (signal.aborted) {
+                        return undefined;
+                    }
                     return tmpPath;
                 } catch (e) {
                     const err = e as Error & { code?: string };
