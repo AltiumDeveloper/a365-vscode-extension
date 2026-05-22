@@ -291,11 +291,18 @@ async function runLocalFromScriptNode(
     output: vscode.OutputChannel,
     node?: A365Node
 ): Promise<void> {
+    const sc = resolveScriptContext(context, node);
     const tmpPath = await downloadScriptToTmp(context, output, node, 'Run Script (Local)');
     if (!tmpPath) {
         return;
     }
-    await runScriptAtPath(context, tmpPath);
+    // D-01..D-03 (Phase 6): route through the script's owning workspace
+    // so cross-workspace right-click runs use the correct token + apiUrl
+    // without hijacking the active-workspace selection.
+    const target = sc && sc.workspaceId
+        ? { workspaceId: sc.workspaceId, workspaceAuthId: sc.workspaceAuthId }
+        : undefined;
+    await runScriptAtPath(context, tmpPath, target);
 }
 
 /**
@@ -310,6 +317,7 @@ async function debugLocalFromScriptNode(
     output: vscode.OutputChannel,
     node?: A365Node
 ): Promise<void> {
+    const sc = resolveScriptContext(context, node);
     const tmpPath = await downloadScriptToTmp(context, output, node, 'Debug Script (Local)');
     if (!tmpPath) {
         return;
@@ -327,7 +335,11 @@ async function debugLocalFromScriptNode(
             `[Altium 365] Debug Script (Local): failed to reveal editor: ${(e as Error).message}`
         );
     }
-    await debugScriptAtPath(context, tmpPath);
+    // D-01..D-03 (Phase 6): same target plumbing as Run (above).
+    const target = sc && sc.workspaceId
+        ? { workspaceId: sc.workspaceId, workspaceAuthId: sc.workspaceAuthId }
+        : undefined;
+    await debugScriptAtPath(context, tmpPath, target);
 }
 
 /**
