@@ -81,7 +81,7 @@ Make the run / debug / execute surface of the extension feel like one coherent f
 - **D-24:** **Manual UAT only** (per `.planning/codebase/TESTING.md` and Phase 3 D-13). UAT scenarios for Phase 6 cover: cross-workspace run/debug routing, debug-then-save publishes back, double-click opens, tmp tab title shows script name, submenu visibility on remote-tmp vs standalone .py, redundant Publish entry no longer in tree menu, remote execute prompts for projectId, shared last-pick cache survives across local↔remote.
 
 ### Plan-breakdown reaffirmed
-- **D-25:** Roadmap candidate breakdown is confirmed (item 9 dropped):
+- **D-25 [informational]:** Roadmap candidate breakdown is confirmed (item 9 dropped). This decision is realized by the phase plan structure itself (06-01/06-02/06-03), not by any single plan's task list, so it is not tracked in the per-plan decision-coverage gate.
   - **Plan 1 — Quick wins:** double-click → Edit (D-19), remove Publish context menu (D-18), GRID-based tmp layout (D-09..D-12). No dependencies; ships first.
   - **Plan 2 — Title-bar UX:** branded submenu + context-sensitive visibility + standalone .py support (D-13..D-18). Depends on Plan 1 (D-16 references new tmp layout from D-10).
   - **Plan 3 — Execution correctness:** workspace-context routing + projectId prompt for remote + shared last-pick cache + save-back UAT (D-01..D-08, D-24 UAT scenarios). Independent of Plans 1+2; can wave in parallel with Plan 1.
