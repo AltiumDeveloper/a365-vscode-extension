@@ -370,11 +370,6 @@
           "group": "2_edit@1"
         },
         {
-          "command": "altium365.script.publish",
-          "when": "view == altium365.tree && viewItem == scriptNode",
-          "group": "2_edit@2"
-        },
-        {
           "command": "altium365.workspace.selectFromNode",
           "when": "view == altium365.tree && viewItem == workspaceNode-inactive",
           "group": "1_select@1"
