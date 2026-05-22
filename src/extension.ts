@@ -14,6 +14,7 @@ import {
     signIn,
 } from './auth';
 import { pickWorkspace, getSelectedWorkspace, getWorkspaceApiUrl, listProjects, WorkspaceInfo } from './workspace';
+import { pickProjectId } from './projectPicker';
 import { A365Node, A365TreeDataProvider } from './sidePanel';
 import { createStatusBar } from './statusBar';
 import { registerScriptCommands } from './scriptCommands';
@@ -765,88 +766,4 @@ async function prepareRun(
     return { python, runnerPath, scriptPath, scriptDir, args, env, endpoint, paramsPath };
 }
 
-/**
- * Prompts the user to pick a projectId. Returns:
- *   - the picked id (string, possibly empty if user chose "no parameters")
- *   - undefined if the user cancelled
- */
-async function pickProjectId(
-    context: vscode.ExtensionContext,
-    endpoint: string,
-    accessToken: string,
-    last: string
-): Promise<string | undefined> {
-    type Item = vscode.QuickPickItem & { value?: string; manual?: boolean };
-    const wsName = getSelectedWorkspace(context)?.name || '-';
 
-    const projects = await vscode.window.withProgress(
-        {
-            location: vscode.ProgressLocation.Notification,
-            title: `Loading projects from "${wsName}"...`,
-        },
-        async () => {
-            try {
-                return await listProjects(endpoint, accessToken);
-            } catch (e) {
-                outputChannel.appendLine(
-                    `[Altium 365] Failed to list projects: ${(e as Error).message}`
-                );
-                return undefined;
-            }
-        }
-    );
-
-    if (!projects) {
-        // Fallback to manual input
-        const entered = await vscode.window.showInputBox({
-            prompt: `Enter projectId (workspace: ${wsName}) — could not list projects`,
-            placeHolder: 'Leave empty to run without input_parameters',
-            value: last,
-            ignoreFocusOut: true,
-        });
-        return entered === undefined ? undefined : entered.trim();
-    }
-
-    const items: Item[] = [];
-    items.push({
-        label: '$(edit) Enter project id manually...',
-        manual: true,
-    });
-    items.push({
-        label: '$(circle-slash) No input_parameters',
-        description: 'Run without projectId',
-        value: '',
-    });
-    if (projects.length > 0) {
-        items.push({ label: 'Projects', kind: vscode.QuickPickItemKind.Separator });
-        const sorted = [...projects].sort((a, b) =>
-            (a.name || '').localeCompare(b.name || '')
-        );
-        for (const p of sorted) {
-            items.push({
-                label: p.name || '(no name)',
-                description: p.id,
-                detail: p.id === last ? 'last used' : undefined,
-                value: p.id,
-            });
-        }
-    }
-
-    const pick = await vscode.window.showQuickPick(items, {
-        placeHolder: `Pick a project for input_parameters (workspace: ${wsName})`,
-        matchOnDescription: true,
-        ignoreFocusOut: true,
-    });
-    if (!pick) {
-        return undefined;
-    }
-    if (pick.manual) {
-        const entered = await vscode.window.showInputBox({
-            prompt: `Enter projectId (workspace: ${wsName})`,
-            value: last,
-            ignoreFocusOut: true,
-        });
-        return entered === undefined ? undefined : entered.trim();
-    }
-    return pick.value ?? '';
-}
