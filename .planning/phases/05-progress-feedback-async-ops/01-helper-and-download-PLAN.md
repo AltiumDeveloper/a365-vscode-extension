@@ -17,6 +17,13 @@ must_haves:
     - "SC-3: The notification uses ProgressLocation.Notification, with title format 'Altium 365: ${label}' (caller supplies trailing ellipsis), enforced by withScriptProgress."
     - "SC-4 (cooperative): Cancelling the Edit/Run/Debug download notification dismisses the spinner, the helper returns undefined, no editor opens, and any tmp file written before cancel is unlinked. In-flight FSP readFile completes silently in the background (AbortSignal is NOT propagated to graphqlRequest / vscode.workspace.fs.readFile — RESEARCH.md Landmine 1; documented in helper JSDoc)."
     - "Run Script (Local) and Debug Script (Local) tree commands also show the spinner via the same helper (3-for-1 site)."
+    - "D-01: This plan implements wrap sites (a) downloadScriptToTmp and (d) src/progress.ts helper from the four-site scope; sites (b) save bridge and (c) executeRemoteScript Block A land in Plans 02 and 03."
+    - "D-04: Cancel UX is silent return + cleanup — helper returns undefined on token cancel, downloadScriptToTmp unlinks any partially-written tmp file in finally, no 'Cancelled' toast surfaced. (Cooperative-only per RESEARCH Landmine 1: in-flight FSP readFile completes silently because AbortSignal is not threaded through the network layer.)"
+    - "D-06: withScriptProgress does NOT swallow non-cancel errors — re-throws so callers' existing try/catch + output.appendLine + showErrorMessage at command boundary keeps working unchanged."
+    - "D-07: No migration of existing withProgress sites (extension.ts:194 sign-in, extension.ts:782 project picker, remoteExecution.ts:187 poll loop, sandboxDeps.ts:124 deps install) — Plan 01 only adds the helper and integrates it at downloadScriptToTmp."
+    - "D-09: Always-show, no delay-show threshold logic — withScriptProgress invokes vscode.window.withProgress immediately with no setTimeout race."
+    - "D-11: No new GraphQL ops, no auth changes, no FSP changes, no new commands, no package.json contributions — files_modified is exactly src/progress.ts (new) + src/scriptCommands.ts (edit)."
+    - "D-12: No automated tests — verification is the manual UAT checkpoint task at the end of this plan."
   artifacts:
     - path: "src/progress.ts"
       provides: "withScriptProgress<T> helper (D-05 signature)"
