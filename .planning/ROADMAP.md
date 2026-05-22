@@ -219,11 +219,11 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 06-03-PLAN.md — Execution correctness: workspace-context routing for local run/debug, unified projectId prompt for remote execute, shared last-pick cache (D-01..D-08 → SC-1, SC-2, SC-3) — wave 2, depends on 06-01
+- [x] 06-03-PLAN.md — Execution correctness: workspace-context routing for local run/debug, unified projectId prompt for remote execute, shared last-pick cache (D-01..D-08 → SC-1, SC-2, SC-3) — wave 2, depends on 06-01
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 06-02-PLAN.md — Title-bar UX: branded Altium 365 submenu replacing flat trio, context-key visibility, node-less submenu invocation for standalone .py (D-13..D-17 → SC-6, SC-7) — wave 3, depends on 06-01 + 06-03
+- [x] 06-02-PLAN.md — Title-bar UX: branded Altium 365 submenu replacing flat trio, context-key visibility, node-less submenu invocation for standalone .py (D-13..D-17 → SC-6, SC-7) — wave 3, depends on 06-01 + 06-03
 
 Note: SC-8 (AWS-Lambda-style test events) deferred to Phase 999.3 per D-23.
 
