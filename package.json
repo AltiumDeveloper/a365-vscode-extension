@@ -251,6 +251,16 @@
         }
       }
     },
+    "submenus": [
+      {
+        "id": "altium365.editorTitle",
+        "label": "Altium 365",
+        "icon": {
+          "light": "media/altium365.png",
+          "dark": "media/altium365.png"
+        }
+      }
+    ],
     "menus": {
       "commandPalette": [
         {
@@ -262,23 +272,7 @@
           "when": "false"
         },
         {
-          "command": "altium365.script.runLocal",
-          "when": "false"
-        },
-        {
-          "command": "altium365.script.debugLocal",
-          "when": "false"
-        },
-        {
           "command": "altium365.script.edit",
-          "when": "false"
-        },
-        {
-          "command": "altium365.script.executeRemote",
-          "when": "false"
-        },
-        {
-          "command": "altium365.script.publish",
           "when": "false"
         },
         {
@@ -296,19 +290,31 @@
       ],
       "editor/title": [
         {
-          "command": "altium365.script.publish",
-          "when": "resourceScheme == altium365 || resourceFilename =~ /^altium365-/",
-          "group": "navigation@1"
+          "submenu": "altium365.editorTitle",
+          "group": "navigation@1",
+          "when": "resourceLangId == python"
+        }
+      ],
+      "altium365.editorTitle": [
+        {
+          "command": "altium365.script.runLocal",
+          "group": "1_run@1",
+          "when": "resourceLangId == python"
+        },
+        {
+          "command": "altium365.script.debugLocal",
+          "group": "1_run@2",
+          "when": "resourceLangId == python"
         },
         {
           "command": "altium365.script.executeRemote",
-          "when": "resourceScheme == altium365 || resourceFilename =~ /^altium365-/",
-          "group": "navigation@2"
+          "group": "2_remote@1",
+          "when": "resourceLangId == python && altium365.activeIsRemoteScript"
         },
         {
-          "command": "altium365.debugScript",
-          "when": "resourceFilename =~ /^altium365-/",
-          "group": "navigation@3"
+          "command": "altium365.script.publish",
+          "group": "3_publish@1",
+          "when": "resourceLangId == python && altium365.activeIsRemoteScript"
         }
       ],
       "editor/title/run": [
