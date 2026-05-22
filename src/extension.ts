@@ -8,12 +8,13 @@ import {
     ensureWorkspaceToken,
     fireAuthStateChanged,
     getActiveAccessToken,
+    getBaseAccessToken,
     getStoredTokens,
     onAuthStateChanged,
     readOAuthConfig,
     signIn,
 } from './auth';
-import { pickWorkspace, getSelectedWorkspace, getWorkspaceApiUrl, listProjects, WorkspaceInfo } from './workspace';
+import { pickWorkspace, getSelectedWorkspace, getWorkspaceApiUrl, listProjects, listWorkspaces, WorkspaceInfo } from './workspace';
 import { pickProjectId } from './projectPicker';
 import { A365Node, A365TreeDataProvider } from './sidePanel';
 import { createStatusBar } from './statusBar';
@@ -531,18 +532,26 @@ async function runScript(context: vscode.ExtensionContext, uri?: vscode.Uri) {
 }
 
 // Reused by src/scriptCommands.ts to run a fetched A365 script body written to os.tmpdir().
+// D-01..D-03 (Phase 6): optional `target` routes execution through a specific
+// workspace's token + apiServiceUrl (the script's owning workspace, NOT the
+// currently-active one). When omitted, behavior is unchanged (palette /
+// standalone .py path uses the active workspace per D-03).
 export async function runScriptAtPath(
     context: vscode.ExtensionContext,
-    scriptPath: string
+    scriptPath: string,
+    target?: { workspaceId: string; workspaceAuthId: string }
 ): Promise<void> {
-    const prep = await prepareRun(context, scriptPath);
+    const prep = await prepareRun(context, scriptPath, target);
     if (!prep) {
         return;
     }
-    const { python, runnerPath, scriptPath: resolvedPath, scriptDir, args, env, endpoint, paramsPath } = prep;
+    const { python, runnerPath, scriptPath: resolvedPath, scriptDir, args, env, endpoint, paramsPath, workspaceName } = prep;
 
     outputChannel.show(true);
     outputChannel.appendLine(`\n[Altium 365] Running ${resolvedPath}`);
+    if (target && workspaceName) {
+        outputChannel.appendLine(`[Altium 365] Workspace: ${workspaceName}`);
+    }
     outputChannel.appendLine(`[Altium 365] Endpoint: ${endpoint}`);
     outputChannel.appendLine(`[Altium 365] Python:   ${python}`);
     if (paramsPath) {
@@ -584,16 +593,20 @@ async function debugScript(context: vscode.ExtensionContext, uri?: vscode.Uri) {
 // debugpy instead of spawning a subprocess.
 export async function debugScriptAtPath(
     context: vscode.ExtensionContext,
-    scriptPath: string
+    scriptPath: string,
+    target?: { workspaceId: string; workspaceAuthId: string }
 ): Promise<void> {
-    const prep = await prepareRun(context, scriptPath);
+    const prep = await prepareRun(context, scriptPath, target);
     if (!prep) {
         return;
     }
-    const { python, runnerPath, scriptPath: resolvedPath, scriptDir, args, env, endpoint, paramsPath } = prep;
+    const { python, runnerPath, scriptPath: resolvedPath, scriptDir, args, env, endpoint, paramsPath, workspaceName } = prep;
 
     outputChannel.show(true);
     outputChannel.appendLine(`\n[Altium 365] Debugging ${resolvedPath}`);
+    if (target && workspaceName) {
+        outputChannel.appendLine(`[Altium 365] Workspace: ${workspaceName}`);
+    }
     outputChannel.appendLine(`[Altium 365] Endpoint: ${endpoint}`);
     outputChannel.appendLine(`[Altium 365] Python:   ${python}`);
     if (paramsPath) {
@@ -630,24 +643,30 @@ interface RunPrep {
     env: NodeJS.ProcessEnv;
     endpoint: string;
     paramsPath: string;
+    // D-01..D-03: when caller passes a `target`, this carries the resolved
+    // workspace name so callers (runScriptAtPath / debugScriptAtPath) can
+    // log it in the OutputChannel header (RESEARCH §5.4). Undefined for
+    // the active-workspace fallback (preserves today's header).
+    workspaceName?: string;
 }
 
 async function prepareRun(
     context: vscode.ExtensionContext,
-    uriOrPath?: vscode.Uri | string
+    uriOrPath?: vscode.Uri | string,
+    target?: { workspaceId: string; workspaceAuthId: string }
 ): Promise<RunPrep | undefined> {
-    let target: vscode.Uri | undefined =
+    let targetUri: vscode.Uri | undefined =
         typeof uriOrPath === 'string' ? vscode.Uri.file(uriOrPath) : uriOrPath;
-    if (!target) {
+    if (!targetUri) {
         const editor = vscode.window.activeTextEditor;
         if (editor && editor.document.languageId === 'python') {
             if (editor.document.isDirty) {
                 await editor.document.save();
             }
-            target = editor.document.uri;
+            targetUri = editor.document.uri;
         }
     }
-    if (!target) {
+    if (!targetUri) {
         vscode.window.showErrorMessage('No Python script selected.');
         return undefined;
     }
@@ -658,26 +677,78 @@ async function prepareRun(
         vscode.window.showErrorMessage('Set "altium365.graphqlEndpoint" in settings.');
         return undefined;
     }
-    // Phase 02.3 D-19: when a workspace is selected, prefer its own
-    // apiServiceUrl over the env-global endpoint for any workspace-scoped
-    // operation (listing projects, executing scripts on that workspace).
-    // Falls back to env-global for the "no workspace selected" case so the
-    // existing Python-runner workflow keeps working.
-    const endpoint = getWorkspaceApiUrl(getSelectedWorkspace(context), envGlobalEndpoint);
 
     const oauthCfg = readOAuthConfig();
-    let token = await getActiveAccessToken(context, oauthCfg);
-    if (!token) {
-        const choice = await vscode.window.showWarningMessage(
-            'Not signed in to Altium 365.',
-            'Sign in'
-        );
-        if (choice === 'Sign in') {
-            await doSignIn(context);
-            token = await getActiveAccessToken(context, oauthCfg);
+    let endpoint: string;
+    let token: string | undefined;
+    let resolvedWs: WorkspaceInfo | undefined;
+
+    if (target) {
+        // D-01..D-03 (Phase 6): tree-driven invocation against a specific
+        // workspace. Mirror remoteExecution.ts:99-155 Block A — resolve the
+        // workspace (fall back to listWorkspaces if it isn't the active one)
+        // then mint a workspace-scoped token via ensureWorkspaceToken and use
+        // the workspace's own apiServiceUrl. Does NOT touch the active
+        // workspace selection (no implicit switch — D-01).
+        resolvedWs = getSelectedWorkspace(context);
+        if (!resolvedWs || resolvedWs.workspaceId !== target.workspaceId) {
+            try {
+                const baseToken = await getBaseAccessToken(context, oauthCfg);
+                if (!baseToken) {
+                    vscode.window.showErrorMessage(
+                        'Altium 365: not signed in.'
+                    );
+                    return undefined;
+                }
+                const list = await listWorkspaces(envGlobalEndpoint, baseToken);
+                resolvedWs = list.find((w) => w.workspaceId === target.workspaceId);
+            } catch (e) {
+                vscode.window.showErrorMessage(
+                    'Altium 365: workspace lookup failed: ' + (e as Error).message
+                );
+                return undefined;
+            }
         }
-        if (!token) {
+        if (!resolvedWs) {
+            vscode.window.showErrorMessage(
+                'Altium 365: workspace not found (refresh the side panel).'
+            );
             return undefined;
+        }
+        try {
+            token = await ensureWorkspaceToken(context, oauthCfg, {
+                workspaceId: target.workspaceId,
+                authId: target.workspaceAuthId || resolvedWs.authId,
+            });
+        } catch (e) {
+            vscode.window.showErrorMessage(
+                'Altium 365: token exchange failed: ' + (e as Error).message
+            );
+            return undefined;
+        }
+        endpoint = getWorkspaceApiUrl(resolvedWs, envGlobalEndpoint);
+    } else {
+        // D-03: palette / standalone .py — preserve today's active-workspace
+        // behavior verbatim.
+        // Phase 02.3 D-19: when a workspace is selected, prefer its own
+        // apiServiceUrl over the env-global endpoint for any workspace-scoped
+        // operation (listing projects, executing scripts on that workspace).
+        // Falls back to env-global for the "no workspace selected" case so the
+        // existing Python-runner workflow keeps working.
+        endpoint = getWorkspaceApiUrl(getSelectedWorkspace(context), envGlobalEndpoint);
+        token = await getActiveAccessToken(context, oauthCfg);
+        if (!token) {
+            const choice = await vscode.window.showWarningMessage(
+                'Not signed in to Altium 365.',
+                'Sign in'
+            );
+            if (choice === 'Sign in') {
+                await doSignIn(context);
+                token = await getActiveAccessToken(context, oauthCfg);
+            }
+            if (!token) {
+                return undefined;
+            }
         }
     }
 
@@ -690,7 +761,7 @@ async function prepareRun(
     if (!depsReady) {
         return undefined;
     }
-    const scriptPath = target.fsPath;
+    const scriptPath = targetUri.fsPath;
     const scriptDir = path.dirname(scriptPath);
     const pythonDir = context.asAbsolutePath('python');
     const runnerPath = path.join(pythonDir, '_runner.py');
@@ -712,10 +783,16 @@ async function prepareRun(
     if (!paramsPath) {
         const promptForProject = wcfg.get<boolean>('promptForProjectId', true);
         if (promptForProject) {
-            const wsId = getSelectedWorkspace(context)?.workspaceId || 'default';
+            // D-07 (Phase 6): when invoked against a target workspace, key the
+            // last-pick cache on that workspace so local↔remote stays symmetric
+            // (remoteExecution.ts uses the same `altium365.lastProjectId.<workspaceId>`
+            // key prefix per the script's owning workspace).
+            const wsId = target
+                ? target.workspaceId
+                : getSelectedWorkspace(context)?.workspaceId || 'default';
             const lastKey = `altium365.lastProjectId.${wsId}`;
             const last = context.globalState.get<string>(lastKey, '');
-            const picked = await pickProjectId(context, endpoint, token!, last);
+            const picked = await pickProjectId(context, endpoint, token, last, resolvedWs, outputChannel);
             if (picked === undefined) {
                 // user cancelled
                 return undefined;
@@ -741,11 +818,14 @@ async function prepareRun(
     env.ALTIUM365_TOKEN = token;
     env.PYTHONIOENCODING = 'utf-8';
     env.PYTHONUNBUFFERED = '1';
-    const selectedWs = getSelectedWorkspace(context);
-    if (selectedWs) {
-        env.ALTIUM365_WORKSPACE_ID = selectedWs.workspaceId;
-        env.ALTIUM365_WORKSPACE_AUTH_ID = selectedWs.authId;
-        env.ALTIUM365_WORKSPACE_NAME = selectedWs.name;
+    // D-01..D-03: when a target workspace was supplied, expose its identity
+    // to the runner (NOT the currently-active workspace) so user scripts that
+    // read ALTIUM365_WORKSPACE_* see the script's owning workspace.
+    const envWs = target ? resolvedWs : getSelectedWorkspace(context);
+    if (envWs) {
+        env.ALTIUM365_WORKSPACE_ID = envWs.workspaceId;
+        env.ALTIUM365_WORKSPACE_AUTH_ID = envWs.authId;
+        env.ALTIUM365_WORKSPACE_NAME = envWs.name;
     }
     if (injectHelper) {
         const sep = process.platform === 'win32' ? ';' : ':';
@@ -763,7 +843,7 @@ async function prepareRun(
         args.push(paramsPath);
     }
 
-    return { python, runnerPath, scriptPath, scriptDir, args, env, endpoint, paramsPath };
+    return { python, runnerPath, scriptPath, scriptDir, args, env, endpoint, paramsPath, workspaceName: resolvedWs?.name };
 }
 
 
