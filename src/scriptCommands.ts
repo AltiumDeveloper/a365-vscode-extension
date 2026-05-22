@@ -358,14 +358,31 @@ async function downloadScriptToTmp(
                 try {
                     const uri = buildScriptUri(sc.workspaceAuthId, sc.scriptId, sc.scriptName);
                     const bytes = await vscode.workspace.fs.readFile(uri);
-                    const safeBase = sc.scriptName.replace(/[^\w.-]+/g, '_') || 'script.py';
-                    const baseWithExt = safeBase.toLowerCase().endsWith('.py')
+                    // D-09 / D-10 / D-12: Altium platform GRID format —
+                    //   grid:workspace:{workspaceAuthId}:scripts:script/{scriptId}
+                    // The on-disk layout `altium365/<authId>/<scriptId>/<name>.py`
+                    // encodes the GRID identity in the path, so (a) the editor
+                    // tab title stays as the readable script name (no `altium365-…`
+                    // prefix), and (b) two scripts that share a name in different
+                    // workspaces resolve to distinct paths — cross-workspace
+                    // collisions are impossible. D-11: no migration of legacy
+                    // flat `altium365-<id>-<name>.py` files; the cache keys on
+                    // fsPath so they keep working until the user closes them.
+                    const safeBase = sc.scriptName.replace(/[^\w.-]+/g, '_') || 'script';
+                    const fileName = safeBase.toLowerCase().endsWith('.py')
                         ? safeBase
                         : `${safeBase}.py`;
-                    tmpPath = path.join(
+                    const dir = path.join(
                         os.tmpdir(),
-                        `altium365-${sc.scriptId}-${baseWithExt}`
+                        'altium365',
+                        sc.workspaceAuthId,
+                        sc.scriptId
                     );
+                    // D-12: create the nested directory on demand. D-22: do NOT
+                    // wrap in a nested `withScriptProgress` — the surrounding
+                    // wrapper already covers this region.
+                    await fs.mkdir(dir, { recursive: true });
+                    tmpPath = path.join(dir, fileName);
                     await fs.writeFile(tmpPath, bytes);
                     // UAT-6: register the tmp path so (a) the save bridge can publish
                     // back on save, and (b) resolveScriptContext can recognize this
