@@ -22,7 +22,7 @@ import { registerScriptCommands } from './scriptCommands';
 import { registerTreeCommands } from './treeCommands';
 import { AltiumRemoteScriptFs } from './remoteScriptFs';
 import { ensureSandboxDeps, getSandboxPythonPath } from './sandboxDeps';
-import { registerLocalScriptSaveBridge } from './localScriptCache';
+import { registerLocalScriptSaveBridge, getLocalScript } from './localScriptCache';
 
 let outputChannel: vscode.OutputChannel;
 
@@ -33,6 +33,15 @@ async function updateSignedInContext(context: vscode.ExtensionContext): Promise<
     } catch {
         // best-effort — worst case is welcome view stays visible (recoverable)
     }
+}
+
+function updateActiveRemoteContext(editor: vscode.TextEditor | undefined): void {
+    const isRemote = !!(
+        editor?.document.uri.scheme === 'file'
+        && getLocalScript(editor.document.uri.fsPath)
+    );
+    void vscode.commands.executeCommand(
+        'setContext', 'altium365.activeIsRemoteScript', isRemote);
 }
 
 export function activate(context: vscode.ExtensionContext) {
@@ -148,6 +157,14 @@ export function activate(context: vscode.ExtensionContext) {
         ...scriptCommandDisposables,
         ...treeCommandDisposables,
         localScriptSaveBridge
+    );
+
+    // D-15: seed BEFORE listener registration (RESEARCH §2.2) so submenu
+    // items show correct visibility from the first frame — not after the
+    // next tab switch.
+    updateActiveRemoteContext(vscode.window.activeTextEditor);
+    context.subscriptions.push(
+        vscode.window.onDidChangeActiveTextEditor(updateActiveRemoteContext),
     );
 
     void updateSignedInContext(context);
