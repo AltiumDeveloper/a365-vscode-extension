@@ -18,6 +18,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: Remote Script Operations** - Open, edit, publish, and execute server-side scripts from the tree (completed 2026-05-21 — partial UAT, Scenarios 3+5 deferred)
 - [x] **Phase 4: UI Polish** - Trim noise from side-panel UX and workspace picker (command titles, QuickPick, icons, env header, active-workspace cue, Select context menu) (completed 2026-05-21)
 - [x] **Phase 5: Progress Feedback for Async Operations** - Consistent `withProgress` UI for every user-triggered network/IO action (completed 2026-05-22)
+- [ ] **Phase 6: Script Execution UX & Unified Parameters** - 9-item UX cleanup of the run/debug/execute flows (workspace-context routing, save-back fix, parameter unification, double-click open, redundant menu removal, GRID-named tmp files, branded title-bar dropdown, dropdown for any .py, AWS-Lambda-style test events)
 
 ## Phase Details
 
@@ -192,10 +193,38 @@ Plans:
 
 **Source**: Promoted from backlog 999.3 (3 items + 3 open questions, captured 2026-05-21 post Phase 3 closure)
 
+### Phase 6: Script Execution UX & Unified Parameters
+
+**Goal**: Make the run/debug/execute flows feel coherent — execution always runs in the script's own workspace context, save-back works after debug, parameters behave identically across local and remote, and the editor surface (tabs, title bar, default activation) matches what users expect from a first-class A365 integration.
+**Mode:** mvp
+**Depends on**: Phase 5
+**Requirements**: TBD (derive during /gsd-discuss-phase 6)
+**Success Criteria** (what must be TRUE — to be refined in discuss):
+
+  1. Run/Debug/Execute on a script node always uses the script's owning workspace token (auto-routes or transparently switches), not the active workspace
+  2. Editing a tmp file opened by Debug (Local) and saving it publishes back to the remote script — same path as Edit Script today
+  3. The same parameter model is used for local run, local debug, and remote execute; "project-related" preset reproduces today's projectId prompt
+  4. Double-clicking a script node in the side panel opens it for Edit (same code path as the Edit context action)
+  5. Tmp file is named after the script's GRID so the editor tab title is meaningful
+  6. Editor title bar shows a single branded "Altium 365" dropdown (Publish / Execute Local / Debug Local / Execute Remote) instead of separate buttons; the redundant "Publish Script" context-menu entry is removed
+  7. The "Altium 365" dropdown also appears for any standalone local `.py` file, not only remote-tmp files
+  8. (Stretch) AWS-Lambda-style named "test events" let users save/switch multiple parameter templates per script, shared across local and remote runs
+
+**Plans**: TBD (4 candidates pre-scoped in source todo — to be validated in discuss)
+
+Candidate breakdown (validate in /gsd-discuss-phase 6):
+
+- **Quick wins (1 plan):** double-click → Edit; remove Publish context menu; rename tmp to GRID
+- **Title-bar UX (1 plan):** "Altium 365" dropdown consolidation; dropdown for any local .py
+- **Execution correctness (1 plan):** workspace-context routing; save-back after debug; unified parameter prompting (covers SC 1-3)
+- **Test events feature (1 plan, larger):** AWS-Lambda-style named parameter templates (depends on the parameter-unification plan)
+
+**Source**: `.planning/todos/completed/2026-05-22-phase-05-candidates.md` (9 items captured during Phase 04 UAT, promoted 2026-05-22 after Phase 5 closure)
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 02.1 → 02.2 → 02.3 → 3 → 4 → 5
+Phases execute in numeric order: 1 → 2 → 02.1 → 02.2 → 02.3 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -207,6 +236,7 @@ Phases execute in numeric order: 1 → 2 → 02.1 → 02.2 → 02.3 → 3 → 4 
 | 3. Remote Script Operations | 5/5 | Complete (partial UAT) | 2026-05-21 |
 | 4. UI Polish | 4/4 | Complete | 2026-05-21 |
 | 5. Progress Feedback for Async Ops | 3/3 | Complete   | 2026-05-22 |
+| 6. Script Execution UX & Unified Params | 0/TBD | Pending discuss-phase | — |
 
 ## Backlog
 

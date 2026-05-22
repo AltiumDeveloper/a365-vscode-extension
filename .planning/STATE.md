@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: verifying
-stopped_at: Phase 05 context gathered
-last_updated: "2026-05-22T09:51:05.337Z"
+status: pending
+stopped_at: Phase 06 added — ready for discuss-phase
+last_updated: "2026-05-22T11:15:00.000Z"
 last_activity: 2026-05-22
 progress:
-  total_phases: 9
-  completed_phases: 7
+  total_phases: 10
+  completed_phases: 8
   total_plans: 38
   completed_plans: 37
-  percent: 78
+  percent: 80
 ---
 
 # Project State
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-19)
 
 **Core value:** A developer can open VS Code, sign in once, and go from browsing their A365 workspace to running or deploying a script — without leaving the editor or hand-crafting API calls.
-**Current focus:** Phase 05 — progress-feedback-async-ops
+**Current focus:** Phase 06 — script-execution-ux-and-unified-params (pending discuss-phase)
 
 ## Current Position
 
-Phase: 05 (progress-feedback-async-ops) — EXECUTING
-Plan: 3 of 3
-Status: Phase complete — ready for verification
+Phase: 06 (script-execution-ux-and-unified-params) — PENDING DISCUSS
+Plan: 0 of TBD
+Status: Phase added to roadmap from promoted todo — needs /gsd-discuss-phase 6
 Last activity: 2026-05-22
 
 Progress: [██████████] 97%
@@ -109,7 +109,7 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-- 2026-05-22-phase-05-candidates — Phase 05 candidates: script-execution UX polish (workspace context, save-back, unified params, double-click open, GRID-named tmp, Altium 365 title-bar dropdown, test-events feature). 9 items from Phase 04 UAT session. Source: `.planning/todos/pending/2026-05-22-phase-05-candidates.md`
+_None — `2026-05-22-phase-05-candidates` promoted to Phase 6 on 2026-05-22._
 
 ### Blockers/Concerns
 
