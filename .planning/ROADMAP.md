@@ -301,13 +301,18 @@ Plans:
 - Edit UI — virtual doc with JSON schema validation, or a structured form? JSON is cheaper to ship.
 - Maximum number of stored events per script (to bound workspaceState bloat).
 
-**Requirements:** TBD (likely SCRIPT-V2-04 — Test Events)
+**Requirements:** SCRIPT-V2-04 (Test Events; 10 sub-bullets — see REQUIREMENTS.md)
 **Depends on:** Phase 6 (minimal projectId bridge + workspace-context routing must be in place)
-**Plans:** 0 plans
+**Plans:** 6 plans
 
 Plans:
 
-- [ ] TBD — promote with `/gsd-review-backlog` when ready
+- [ ] 999.3-01-PLAN.md — Foundation: schema + store + identity (Wave 1)
+- [ ] 999.3-02-PLAN.md — ATOMIC: unified resolver + prepareRun + executeRemoteScript migration + sibling import (Wave 2)
+- [ ] 999.3-03-PLAN.md — Editor surface: FileSystemProvider on altium365-event:// + jsonValidation registration (Wave 3)
+- [ ] 999.3-04-PLAN.md — Picker + 5 commands + first-run prompt UI + soft-warning hook (Wave 4)
+- [ ] 999.3-05-PLAN.md — Menu wiring: Placement A (submenu sub-row) + Placement B (title-bar button) + setting description updates (Wave 5)
+- [ ] 999.3-06-PLAN.md — Polish + A/B UAT + README docs (Wave 6)
 
 **Captured at:** 2026-05-22 (deferred from Phase 6 stretch goal during discuss)
 

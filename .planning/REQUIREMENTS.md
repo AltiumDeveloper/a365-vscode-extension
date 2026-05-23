@@ -47,6 +47,17 @@
 - **SCRIPT-V2-01**: User can create a new remote script from within VS Code
 - **SCRIPT-V2-02**: User can delete a remote script from the tree
 - **SCRIPT-V2-03**: Diff view between local and remote script before publishing
+- **SCRIPT-V2-04**: Named test events per script with default-event semantics, unified across local run/debug/remote execute
+  - SCRIPT-V2-04.1: resolveScriptIdentity returns `kind: 'remote'` for tmp files in localScriptCache and for altium365:// URIs
+  - SCRIPT-V2-04.2: resolveScriptIdentity returns `kind: 'local'` for arbitrary file:// .py URIs not in cache
+  - SCRIPT-V2-04.3: resolveScriptParameters returns silent default when one exists (no UI)
+  - SCRIPT-V2-04.4: resolveScriptParameters triggers first-run prompt when store empty and promptOnFirstRun is true
+  - SCRIPT-V2-04.5: Cmd+S on altium365-event:// URI commits payload to globalState
+  - SCRIPT-V2-04.6: Sibling .params.json import prompt fires once, marker prevents re-prompt
+  - SCRIPT-V2-04.7: Both UI placements (submenu sub-row + standalone title-bar button) visible simultaneously on a .py editor for A/B trial
+  - SCRIPT-V2-04.8: altium365.promptForProjectId setting becomes a no-op (deprecated; replaced by project-related preset)
+  - SCRIPT-V2-04.9: prepareRun (local) and executeRemoteScript Block B (remote) both route through resolveScriptParameters (single resolver)
+  - SCRIPT-V2-04.10: Soft warning toast fires once at 26th event per identity; suppressible per identity
 
 ### Distribution
 
@@ -87,6 +98,7 @@
 | SCRIPT-03 | Phase 3: Remote Script Operations | Pending |
 | SCRIPT-04 | Phase 3: Remote Script Operations | Pending |
 | SCRIPT-05 | Phase 3: Remote Script Operations | Pending |
+| SCRIPT-V2-04 | Phase 999.3: Script Test-Events | Pending |
 
 **Coverage:**
 - v1 requirements: 21 total
