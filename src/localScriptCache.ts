@@ -34,7 +34,8 @@ export interface LocalScriptIdentity {
 
 const registry = new Map<string, LocalScriptIdentity>();
 
-function key(fsPath: string): string {
+/** Case-normalized fsPath key — lowercase on win32/darwin, raw on linux. Single source of truth for cross-module identity equality (per .planning/phases/999.3-script-test-events-backlog/999.3-RESEARCH.md §Don't Hand-Roll Q5). */
+export function normalizeLocalScriptKey(fsPath: string): string {
     // Normalize for case-insensitive filesystems (Windows, default macOS).
     return process.platform === 'win32' || process.platform === 'darwin'
         ? fsPath.toLowerCase()
@@ -45,13 +46,13 @@ export function registerLocalScript(
     fsPath: string,
     identity: LocalScriptIdentity
 ): void {
-    registry.set(key(fsPath), identity);
+    registry.set(normalizeLocalScriptKey(fsPath), identity);
 }
 
 export function getLocalScript(
     fsPath: string
 ): LocalScriptIdentity | undefined {
-    return registry.get(key(fsPath));
+    return registry.get(normalizeLocalScriptKey(fsPath));
 }
 
 /**
