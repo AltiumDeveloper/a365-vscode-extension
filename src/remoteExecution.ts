@@ -16,7 +16,7 @@ import {
     WorkspaceInfo,
 } from './workspace';
 import { withScriptProgress } from './progress';
-import { pickProjectId } from './projectPicker';
+import { resolveScriptParameters } from './testEvents/resolver';
 
 /**
  * Remote-script execution module.
@@ -29,10 +29,14 @@ import { pickProjectId } from './projectPicker';
  * - D-04b: async — `gloScrExecuteScript` returns a `scriptExecutionId`;
  *   client polls `gloScrScriptExecutionResult` for status + logs every
  *   1.5 s with a 10-min wall-clock backstop.
- * - D-05: parameters resolved from `workspaceState['altium365.scriptParams.<id>']`
- *   (per-workspace per-script cache populated by future settings UI), else
- *   the same projectId-prompt used by `runScript`. All values are stringified
- *   (RESEARCH §Pitfall 2 — `GloScrScriptParameterInput.value: String!`).
+ * - D-20..D-22 (Phase 999.3): parameters resolved via the unified
+ *   `resolveScriptParameters` (src/testEvents/resolver.ts), same code
+ *   path as the local Python runner's `prepareRun`. The legacy
+ *   `altium365.promptForProjectId` setting is now a no-op (D-22); the
+ *   per-script test-event store lives in `globalState` (D-01) keyed by
+ *   `altium365.scriptParams.<identity>` (owned by ./testEvents/store.ts).
+ *   Stringification of values (Pitfall 2 — `GloScrScriptParameterInput.value: String!`)
+ *   happens inside the resolver.
  * - D-08: token resolved once per execution via `ensureWorkspaceToken` (mutex,
  *   per-workspace). Long executions across env-switches are documented as
  *   undefined-behavior in the Phase 3 README.
@@ -92,7 +96,7 @@ export async function executeRemoteScript(args: ExecuteRemoteArgs): Promise<void
         ws: WorkspaceInfo;
         wsToken: string;
         apiUrl: string;
-        parameters: ReturnType<typeof resolveScriptParameters>;
+        parameters: Awaited<ReturnType<typeof resolveScriptParameters>>;
     };
     const setup = await withScriptProgress<SetupResult | undefined>(
         `Preparing to execute ${args.scriptName}...`,
@@ -162,42 +166,18 @@ export async function executeRemoteScript(args: ExecuteRemoteArgs): Promise<void
             }
             const apiUrl = getWorkspaceApiUrl(ws, args.envGlobalEndpoint);
 
-            // ----- Block B: parameters (D-05) -----
-            let parameters = resolveScriptParameters(args.context, args.scriptId);
-            // D-06 (Phase 6): when no per-script params are cached and the
-            // user opted into projectId prompting (default true), reuse the
-            // shared `pickProjectId` against the script's workspace. D-07:
-            // last-pick cache key is workspace-scoped, shared with local
-            // prepareRun (`altium365.lastProjectId.<workspaceId>`). D-22:
-            // this call sits INSIDE the existing withScriptProgress wrapper;
-            // do NOT add a nested wrap. D-23: reserved key
-            // `altium365.scriptParams.<scriptId>` is untouched here.
-            if (parameters === undefined) {
-                const wcfg = vscode.workspace.getConfiguration('altium365');
-                if (wcfg.get<boolean>('promptForProjectId', true)) {
-                    const lastKey = `altium365.lastProjectId.${args.workspaceId}`;
-                    const last = args.context.globalState.get<string>(lastKey, '');
-                    const picked = await pickProjectId(
-                        args.context,
-                        apiUrl,
-                        wsToken,
-                        last,
-                        ws,
-                        args.output,
-                    );
-                    if (picked === undefined) {
-                        // user cancelled — clean abort (the surrounding
-                        // executeRemoteScript treats undefined as silent return)
-                        return undefined;
-                    }
-                    if (picked) {
-                        await args.context.globalState.update(lastKey, picked);
-                        parameters = [{ key: 'projectId', value: picked }];
-                    }
-                    // empty pick ('') = user chose "No input_parameters" —
-                    // leave parameters undefined; server uses script defaults
-                }
-            }
+            // ----- Block B: parameters (D-20..D-22 / Phase 999.3) -----
+            // Unified resolver — same code path as prepareRun. Phase 6 D-05's
+            // workspace-state read + projectId-prompt fallback are both gone;
+            // the legacy `promptForProjectId` setting is now a no-op (D-22).
+            // Sibling import + escape hatch + silent-default semantics live
+            // inside resolveScriptParameters.
+            const parameters = await resolveScriptParameters(
+                args.context,
+                { kind: 'remote', identity: args.scriptId },
+                args.output,
+                { promptOnFirstRun: true },
+            );
 
             return { ws, wsToken, apiUrl, parameters };
         },
@@ -260,38 +240,6 @@ export async function executeRemoteScript(args: ExecuteRemoteArgs): Promise<void
         },
         (progress, token) => runPollLoop(apiUrl, wsToken, execId, args, progress, token)
     );
-}
-
-/**
- * Resolve parameters per D-05 priority chain:
- *   1. `workspaceState['altium365.scriptParams.<scriptId>']` — if set, all
- *      values are stringified (Pitfall 2).
- *   2. Otherwise undefined — server uses script defaults. The 02-phase
- *      projectId-prompt is intentionally NOT reused here for the v1 remote
- *      execution flow: the prompt is bound to the local Python runner's
- *      input_parameters convention, not to GloScrExecuteScript parameters.
- *      A future settings UI will populate the workspaceState entry above
- *      (deferred — out of scope for v1; tracked in backlog).
- */
-function resolveScriptParameters(
-    ctx: vscode.ExtensionContext,
-    scriptId: string
-): Array<{ key: string; value: string }> | undefined {
-    const cached = ctx.workspaceState.get<Record<string, unknown>>(
-        'altium365.scriptParams.' + scriptId
-    );
-    if (!cached || typeof cached !== 'object') {
-        return undefined;
-    }
-    const out: Array<{ key: string; value: string }> = [];
-    for (const [key, value] of Object.entries(cached)) {
-        // Stringify every value — Pitfall 2: `GloScrScriptParameterInput.value: String!`.
-        if (value === undefined || value === null) {
-            continue;
-        }
-        out.push({ key, value: String(value) });
-    }
-    return out.length > 0 ? out : undefined;
 }
 
 async function runPollLoop(

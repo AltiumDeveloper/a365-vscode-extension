@@ -15,7 +15,6 @@ import {
     signIn,
 } from './auth';
 import { pickWorkspace, getSelectedWorkspace, getWorkspaceApiUrl, listProjects, listWorkspaces, WorkspaceInfo } from './workspace';
-import { pickProjectId } from './projectPicker';
 import { A365Node, A365TreeDataProvider } from './sidePanel';
 import { createStatusBar } from './statusBar';
 import { registerScriptCommands } from './scriptCommands';
@@ -23,6 +22,8 @@ import { registerTreeCommands } from './treeCommands';
 import { AltiumRemoteScriptFs } from './remoteScriptFs';
 import { ensureSandboxDeps, getSandboxPythonPath } from './sandboxDeps';
 import { registerLocalScriptSaveBridge, getLocalScript, rehydrateLocalScriptCacheFromDisk } from './localScriptCache';
+import { resolveScriptIdentity } from './testEvents/identity';
+import { resolveScriptParameters } from './testEvents/resolver';
 
 let outputChannel: vscode.OutputChannel;
 
@@ -805,47 +806,45 @@ async function prepareRun(
     const injectHelper = wcfg.get<boolean>('injectHelper', true);
     const extraEnv = wcfg.get<Record<string, string>>('extraEnv') || {};
 
-    let paramsPath = (wcfg.get<string>('inputParametersPath') || '').trim();
-    if (!paramsPath) {
-        const sibling = path.join(
-            scriptDir,
-            `${path.basename(scriptPath, path.extname(scriptPath))}.params.json`
-        );
-        if (fs.existsSync(sibling)) {
-            paramsPath = sibling;
-        }
-    }
-
-    // If no params file is configured, prompt for projectId (the most common A365 input).
-    if (!paramsPath) {
-        const promptForProject = wcfg.get<boolean>('promptForProjectId', true);
-        if (promptForProject) {
-            // D-07 (Phase 6): when invoked against a target workspace, key the
-            // last-pick cache on that workspace so local↔remote stays symmetric
-            // (remoteExecution.ts uses the same `altium365.lastProjectId.<workspaceId>`
-            // key prefix per the script's owning workspace).
-            const wsId = target
-                ? target.workspaceId
-                : getSelectedWorkspace(context)?.workspaceId || 'default';
-            const lastKey = `altium365.lastProjectId.${wsId}`;
-            const last = context.globalState.get<string>(lastKey, '');
-            const picked = await pickProjectId(context, endpoint, token, last, resolvedWs, outputChannel);
-            if (picked === undefined) {
-                // user cancelled
-                return undefined;
-            }
-            if (picked) {
-                await context.globalState.update(lastKey, picked);
-                const tmpFile = path.join(
-                    os.tmpdir(),
-                    `altium365-params-${Date.now()}-${process.pid}.json`
-                );
-                fs.writeFileSync(
-                    tmpFile,
-                    JSON.stringify({ projectId: picked }, null, 2),
-                    'utf-8'
-                );
-                paramsPath = tmpFile;
+    // Unified test-event resolver (Phase 999.3 D-20). The escape-hatch
+    // setting altium365.inputParametersPath is honoured inside the
+    // resolver (D-09); the legacy sibling .params.json auto-detect and
+    // the projectId prompt have moved into the resolver as well. The
+    // legacy lastProjectId cache key remains in use by the future
+    // project-related preset (Plan 999.3-04); not touched here.
+    let paramsPath = '';
+    {
+        const idResult = resolveScriptIdentity(targetUri);
+        if (idResult) {
+            const params = await resolveScriptParameters(
+                context,
+                idResult,
+                outputChannel,
+                { promptOnFirstRun: true },
+            );
+            if (params !== undefined) {
+                const wcfg2 = vscode.workspace.getConfiguration('altium365');
+                const explicit = (wcfg2.get<string>('inputParametersPath') || '').trim();
+                if (explicit && fs.existsSync(explicit)) {
+                    // Escape hatch already pointed at a real file — resolver
+                    // returned its parsed contents; pass the path through
+                    // directly to preserve the user's chosen file (no tmpfile
+                    // round-trip needed).
+                    paramsPath = explicit;
+                } else {
+                    // Write resolver output as a tmp JSON object — same
+                    // pattern as the legacy prepareRun at extension.ts:839-848.
+                    const tmpFile = path.join(
+                        os.tmpdir(),
+                        `altium365-params-${Date.now()}-${process.pid}.json`,
+                    );
+                    const obj: Record<string, string> = {};
+                    for (const p of params) {
+                        obj[p.key] = p.value;
+                    }
+                    fs.writeFileSync(tmpFile, JSON.stringify(obj, null, 2), 'utf-8');
+                    paramsPath = tmpFile;
+                }
             }
         }
     }
