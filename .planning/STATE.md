@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: planning
-stopped_at: Phase 999.3 planned (6 plans + PLAN-CHECK PASS-with-fixes)
-last_updated: "2026-05-23T22:15:00.000Z"
-last_activity: 2026-05-22
+status: executing
+stopped_at: Phase 999.3 Plan 01 complete; ready for Plan 02 (Wave 2 ATOMIC migration)
+last_updated: "2026-05-23T23:00:00.000Z"
+last_activity: 2026-05-23
 progress:
   total_phases: 12
   completed_phases: 8
-  total_plans: 41
-  completed_plans: 40
-  percent: 67
+  total_plans: 42
+  completed_plans: 41
+  percent: 68
 ---
 
 # Project State
@@ -26,17 +26,20 @@ See: .planning/PROJECT.md (updated 2026-05-19)
 ## Current Position
 
 Phase: 999.3
-Plan: 999.3-01 (Foundation — schema + store + identity)
-Status: Ready to execute
-Last activity: 2026-05-22
+Plan: 999.3-02 (ATOMIC — unified resolver + prepareRun + executeRemoteScript migration + sibling import)
+Status: Ready to execute (Wave 2 of 6)
+Last activity: 2026-05-23
 
-Progress: [█████████░] 93%
+Progress: [█████████░] 95%
 
-Wave structure:
+Phase 999.3 wave structure (sequential, all touch extension.ts):
 
-- Wave 1 (parallel): 02-01 (listScripts), 02-02 (auth refactor), 02-03 (package.json contributes)
-- Wave 2 (parallel, depends on Wave 1): 02-04 (sidePanel TreeDataProvider), 02-05 (status bar)
-- Wave 3 (depends on Wave 2): 02-06 (script commands — contains blocking human-verify checkpoint for D-09 A1/A2)
+- Wave 1 ✅ Plan 01 (Foundation — schema + store + identity)
+- Wave 2 ▶ Plan 02 (ATOMIC resolver migration; Pitfall 8 — single commit)
+- Wave 3   Plan 03 (FSP on altium365-event://)
+- Wave 4   Plan 04 (Picker + 5 commands + first-run UI)
+- Wave 5   Plan 05 (Menu wiring A + B)
+- Wave 6   Plan 06 (Polish + A/B UAT + README)
 
 ## Performance Metrics
 
@@ -107,6 +110,8 @@ Recent decisions affecting current work:
 - [Phase 04-04]: Renamed pickAndExchangeWorkspace → pickWorkspace (pure picker, returns WorkspaceInfo | undefined); side effects (ensureWorkspaceToken + globalState write) factored into new exported applyWorkspaceSelection(context, workspace) helper in extension.ts shared by palette QuickPick and tree context menu
 - [Phase 04-04]: contextValue-suffix pattern (workspaceNode-active / workspaceNode-inactive) gates per-state menu visibility; state-agnostic entries use VS Code when-clause regex viewItem =~ /^workspaceNode/
 - [Phase 04-04]: extension.ts ↔ treeCommands.ts circular import resolves cleanly under tsc because applyWorkspaceSelection is accessed lazily inside a registerCommand handler body, not at module init — planner's fallback (relocate to workspace.ts) not adopted
+- [Phase 999.3-01]: Identity regex duplicated in identity.ts instead of imported from remoteScriptFs.ts — keeps the resolver module pure (no FSP machinery pull-in)
+- [Phase 999.3-01]: TestEventStore.events typed Record<string, Record<string, unknown>> (stricter than plan's Record<string, object>) — better consumer type-safety with no contract change
 
 ### Pending Todos
 
