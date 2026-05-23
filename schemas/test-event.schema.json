@@ -1,0 +1,12 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Altium 365 Test Event",
+    "type": "object",
+    "properties": {
+        "projectId": {
+            "type": "string",
+            "description": "Altium 365 project GUID"
+        }
+    },
+    "additionalProperties": true
+}
