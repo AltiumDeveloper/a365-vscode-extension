@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 999.3 Plan 02 complete + UAT approved; ready for Plan 03 (FSP)
-last_updated: "2026-05-23T23:30:00.000Z"
-last_activity: 2026-05-23
+stopped_at: Phase 999.3 Plan 03 complete + UAT approved; ready for Plan 04 (Picker + 5 commands + first-run UI)
+last_updated: "2026-05-25T00:30:00.000Z"
+last_activity: 2026-05-25
 progress:
   total_phases: 12
   completed_phases: 8
@@ -26,18 +26,18 @@ See: .planning/PROJECT.md (updated 2026-05-19)
 ## Current Position
 
 Phase: 999.3
-Plan: 999.3-03 (FSP on altium365-event:// + jsonValidation registration)
-Status: Ready to execute (Wave 3 of 6)
-Last activity: 2026-05-23
+Plan: 999.3-04 (Picker + 5 commands + first-run prompt UI + soft-warning hook)
+Status: Ready to execute (Wave 4 of 6)
+Last activity: 2026-05-25
 
-Progress: [█████████░] 96%
+Progress: [█████████░] 97%
 
 Phase 999.3 wave structure (sequential, all touch extension.ts):
 
 - Wave 1 ✅ Plan 01 (Foundation — schema + store + identity)
 - Wave 2 ✅ Plan 02 (ATOMIC resolver migration — UAT approved)
-- Wave 3 ▶ Plan 03 (FSP on altium365-event://)
-- Wave 4   Plan 04 (Picker + 5 commands + first-run UI)
+- Wave 3 ✅ Plan 03 (FSP on altium365-event:// — UAT approved)
+- Wave 4 ▶ Plan 04 (Picker + 5 commands + first-run UI; replaces TODO(999.3-04) stubs in resolver.ts)
 - Wave 5   Plan 05 (Menu wiring A + B)
 - Wave 6   Plan 06 (Polish + A/B UAT + README)
 
@@ -115,6 +115,12 @@ Recent decisions affecting current work:
 - [Phase 999.3-02]: Stale D-05 doc-comments in remoteExecution.ts updated rather than deleted — preserves the D-05 → D-20..D-22 migration trail for future readers; verification gate intent ("no code references") satisfied
 - [Phase 999.3-02]: Defensive escape-hatch — missing file / non-object JSON logs warning and falls through to next branch rather than throwing
 - [Phase 999.3-02]: UAT approved 2026-05-23 for all 7 scenarios (silent default, sibling import, decline marker, escape hatch, no-op setting in both run paths)
+- [Phase 999.3-03]: URI shape `altium365-event://<encoded-identity>/<encoded-name>.json` — authority carries identity, single path segment carries event name; `buildEventUri`/`parseEventUri` helpers centralize the shape
+- [Phase 999.3-03]: TestEventFs.delete delegates to `altium365.testEvents.delete` command (Plan 04) rather than calling deleteStore inline — keeps confirmation UI in command layer, not FSP
+- [Phase 999.3-03]: stat returns FileType.File unconditionally — supports openTextDocument for not-yet-created events; readFile seeds empty `{}` event with `$schema` injected (Layer-2 fallback)
+- [Phase 999.3-03]: Dual-layer schema binding shipped — package.json `contributes.jsonValidation` (Layer 1) + runtime `$schema` injection on read (Layer 2); writeFile strips `$schema` before persist so it never leaks to storage
+- [Phase 999.3-03]: UAT bootstrapping pattern — DevTools console has no `vscode` namespace; FSP UAT requires either a throwaway command (preferred) or Debug Console at a breakpoint. Future FSP plans should default to throwaway-command pattern in UAT instructions.
+- [Phase 999.3-03]: UAT approved 2026-05-25 (8 scenarios: open / autocomplete / edit / save / reopen / reload-window persistence / revert / no error toast)
 
 ### Pending Todos
 
