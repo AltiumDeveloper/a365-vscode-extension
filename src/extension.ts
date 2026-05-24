@@ -25,6 +25,7 @@ import { registerLocalScriptSaveBridge, getLocalScript, rehydrateLocalScriptCach
 import { resolveScriptIdentity } from './testEvents/identity';
 import { resolveScriptParameters } from './testEvents/resolver';
 import { TestEventFs } from './testEvents/eventFs';
+import { registerTestEventCommands } from './testEvents/commands';
 
 let outputChannel: vscode.OutputChannel;
 
@@ -110,6 +111,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     const scriptCommandDisposables = registerScriptCommands(context, outputChannel);
     const treeCommandDisposables = registerTreeCommands(context, outputChannel);
+    const testEventCommandDisposables = registerTestEventCommands(context, outputChannel);
     const localScriptSaveBridge = registerLocalScriptSaveBridge(outputChannel, remoteFs);
 
     context.subscriptions.push(
@@ -168,6 +170,7 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand('altium365.statusBar.click', () => onStatusBarClick()),
         ...scriptCommandDisposables,
         ...treeCommandDisposables,
+        ...testEventCommandDisposables,
         localScriptSaveBridge
     );
 

@@ -90,27 +90,47 @@ export async function resolveScriptParameters(
         // (3) Store read.
         const store = readStore(ctx, identity.identity);
 
-        // (4a) First-run gap — D-11.
+        // (4a) First-run gap — D-11. Plan 04: dispatch the create command,
+        // which seeds the store and (when autoSetDefault is true OR the
+        // store was empty) sets the new event as default. The command
+        // returns the new event body so we can route it straight into the
+        // run loop without a second store read.
         if (!store || Object.keys(store.events).length === 0) {
             if (!promptOnFirstRun) {
                 return undefined;
             }
             output.appendLine(
-                `[Altium 365] resolveScriptParameters: no events for ${identity.identity}; first-run create UI deferred to 999.3-04`,
+                `[Altium 365] resolveScriptParameters: no events for ${identity.identity}; dispatching testEvents.create`,
             );
-            // TODO(999.3-04): dispatch vscode.commands.executeCommand('altium365.testEvents.create', identity)
-            // and re-read the store; until then, return undefined so the caller sees a clean "no params" path.
-            return undefined;
+            const created = await vscode.commands.executeCommand<
+                { name: string; body: Record<string, unknown> } | undefined
+            >('altium365.testEvents.create', identity, { autoSetDefault: true });
+            if (!created) {
+                return undefined;
+            }
+            return stringifyEvent(created.body);
         }
 
-        // (4b) Missing default — D-11.
+        // (4b) Missing default — D-11. Plan 04: dispatch setDefault, then
+        // re-read the store and resolve from the new default. Returns
+        // undefined if the user cancelled the picker.
         if (!store.defaultEventName || !store.events[store.defaultEventName]) {
             output.appendLine(
-                `[Altium 365] resolveScriptParameters: no default event for ${identity.identity}; setDefault UI deferred to 999.3-04`,
+                `[Altium 365] resolveScriptParameters: no default event for ${identity.identity}; dispatching testEvents.setDefault`,
             );
-            // TODO(999.3-04): dispatch vscode.commands.executeCommand('altium365.testEvents.setDefault', identity)
-            // and re-read the store; until then, return undefined.
-            return undefined;
+            await vscode.commands.executeCommand(
+                'altium365.testEvents.setDefault',
+                identity,
+            );
+            const refreshed = readStore(ctx, identity.identity);
+            if (
+                !refreshed ||
+                !refreshed.defaultEventName ||
+                !refreshed.events[refreshed.defaultEventName]
+            ) {
+                return undefined;
+            }
+            return stringifyEvent(refreshed.events[refreshed.defaultEventName]);
         }
 
         // (5) Happy path — silent default.
