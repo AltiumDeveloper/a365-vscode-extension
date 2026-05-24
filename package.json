@@ -44,6 +44,31 @@
     ],
     "commands": [
       {
+        "command": "altium365.testEvents.pick",
+        "title": "Pick Test Event",
+        "category": "Altium 365"
+      },
+      {
+        "command": "altium365.testEvents.create",
+        "title": "Create Test Event",
+        "category": "Altium 365"
+      },
+      {
+        "command": "altium365.testEvents.edit",
+        "title": "Edit Test Event",
+        "category": "Altium 365"
+      },
+      {
+        "command": "altium365.testEvents.delete",
+        "title": "Delete Test Event",
+        "category": "Altium 365"
+      },
+      {
+        "command": "altium365.testEvents.setDefault",
+        "title": "Set Default Test Event",
+        "category": "Altium 365"
+      },
+      {
         "command": "altium365.signIn",
         "title": "Sign In",
         "category": "Altium 365"
