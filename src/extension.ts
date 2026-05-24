@@ -24,6 +24,7 @@ import { ensureSandboxDeps, getSandboxPythonPath } from './sandboxDeps';
 import { registerLocalScriptSaveBridge, getLocalScript, rehydrateLocalScriptCacheFromDisk } from './localScriptCache';
 import { resolveScriptIdentity } from './testEvents/identity';
 import { resolveScriptParameters } from './testEvents/resolver';
+import { TestEventFs } from './testEvents/eventFs';
 
 let outputChannel: vscode.OutputChannel;
 
@@ -98,6 +99,15 @@ export function activate(context: vscode.ExtensionContext) {
         { isCaseSensitive: true, isReadonly: false }
     );
 
+    // Phase 999.3 D-15: writable virtual scheme backing test-event JSON
+    // tabs. Cmd+S commits via TestEventFs.writeFile → writeStore.
+    const testEventFs = new TestEventFs(context, outputChannel);
+    const testEventFsRegistration = vscode.workspace.registerFileSystemProvider(
+        'altium365-event',
+        testEventFs,
+        { isCaseSensitive: true, isReadonly: false }
+    );
+
     const scriptCommandDisposables = registerScriptCommands(context, outputChannel);
     const treeCommandDisposables = registerTreeCommands(context, outputChannel);
     const localScriptSaveBridge = registerLocalScriptSaveBridge(outputChannel, remoteFs);
@@ -105,6 +115,7 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         outputChannel,
         fsRegistration,
+        testEventFsRegistration,
         vscode.commands.registerCommand('altium365.signIn', () => doSignIn(context)),
         vscode.commands.registerCommand('altium365.signOut', () => doSignOut(context)),
         vscode.commands.registerCommand('altium365.selectWorkspace', () =>
