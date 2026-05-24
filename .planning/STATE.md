@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 999.3 Plan 03 complete + UAT approved; ready for Plan 04 (Picker + 5 commands + first-run UI)
-last_updated: "2026-05-25T00:30:00.000Z"
+stopped_at: Phase 999.3 Plan 04 complete + UAT approved; ready for Plan 05 (Menu wiring A + B)
+last_updated: "2026-05-25T01:30:00.000Z"
 last_activity: 2026-05-25
 progress:
   total_phases: 12
@@ -26,19 +26,19 @@ See: .planning/PROJECT.md (updated 2026-05-19)
 ## Current Position
 
 Phase: 999.3
-Plan: 999.3-04 (Picker + 5 commands + first-run prompt UI + soft-warning hook)
-Status: Ready to execute (Wave 4 of 6)
+Plan: 999.3-05 (Menu wiring A + B; deprecate promptForProjectId description)
+Status: Ready to execute (Wave 5 of 6)
 Last activity: 2026-05-25
 
-Progress: [█████████░] 97%
+Progress: [█████████░] 98%
 
 Phase 999.3 wave structure (sequential, all touch extension.ts):
 
 - Wave 1 ✅ Plan 01 (Foundation — schema + store + identity)
 - Wave 2 ✅ Plan 02 (ATOMIC resolver migration — UAT approved)
 - Wave 3 ✅ Plan 03 (FSP on altium365-event:// — UAT approved)
-- Wave 4 ▶ Plan 04 (Picker + 5 commands + first-run UI; replaces TODO(999.3-04) stubs in resolver.ts)
-- Wave 5   Plan 05 (Menu wiring A + B)
+- Wave 4 ✅ Plan 04 (Picker + 5 commands + first-run UI — UAT approved 9/9)
+- Wave 5 ▶ Plan 05 (Menu wiring A + B; deprecate promptForProjectId description)
 - Wave 6   Plan 06 (Polish + A/B UAT + README)
 
 ## Performance Metrics
@@ -121,6 +121,10 @@ Recent decisions affecting current work:
 - [Phase 999.3-03]: Dual-layer schema binding shipped — package.json `contributes.jsonValidation` (Layer 1) + runtime `$schema` injection on read (Layer 2); writeFile strips `$schema` before persist so it never leaks to storage
 - [Phase 999.3-03]: UAT bootstrapping pattern — DevTools console has no `vscode` namespace; FSP UAT requires either a throwaway command (preferred) or Debug Console at a breakpoint. Future FSP plans should default to throwaway-command pattern in UAT instructions.
 - [Phase 999.3-03]: UAT approved 2026-05-25 (8 scenarios: open / autocomplete / edit / save / reopen / reload-window persistence / revert / no error toast)
+- [Phase 999.3-04]: Delete-default policy — deleteEvent clears defaultEventName to ''; picker omits default-header row when default doesn't resolve; resolver 4b branch dispatches setDefault on next run. Passive-clear chosen over auto-promote — safer when multiple events remain.
+- [Phase 999.3-04]: Project-related preset uses pickProjectIdSafe with three-tier auth fallback (workspace+token → manual on no workspace → manual on token mint fail). UAT confirmed both no-workspace manual path and live workspace project-list path work.
+- [Phase 999.3-04]: package.json contributes.commands extended with 5 testEvents.* entries (palette-required by must_have truth #1 but not in plan task list — classified as planned-by-truth auto-fix, committed as 10db7b3).
+- [Phase 999.3-04]: UAT approved 2026-05-25 for all 9 scenarios on first pass.
 
 ### Pending Todos
 
