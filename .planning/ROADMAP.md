@@ -308,7 +308,7 @@ Plans:
 Plans:
 
 - [x] 999.3-01-PLAN.md — Foundation: schema + store + identity (Wave 1)
-- [ ] 999.3-02-PLAN.md — ATOMIC: unified resolver + prepareRun + executeRemoteScript migration + sibling import (Wave 2)
+- [x] 999.3-02-PLAN.md — ATOMIC: unified resolver + prepareRun + executeRemoteScript migration + sibling import (Wave 2)
 - [ ] 999.3-03-PLAN.md — Editor surface: FileSystemProvider on altium365-event:// + jsonValidation registration (Wave 3)
 - [ ] 999.3-04-PLAN.md — Picker + 5 commands + first-run prompt UI + soft-warning hook (Wave 4)
 - [ ] 999.3-05-PLAN.md — Menu wiring: Placement A (submenu sub-row) + Placement B (title-bar button) + setting description updates (Wave 5)
