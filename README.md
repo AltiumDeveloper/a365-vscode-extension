@@ -96,7 +96,7 @@ Test events replace the older `<script>.params.json` / `altium365.inputParameter
 
 For Python files (local `.py` or remote-tmp script bodies) the test-event picker is reachable from three surfaces:
 
-- **Language status item** at the bottom-right of the editor — shows the **current default event name** with a `$(symbol-event)` icon, and clicks straight into `Pick Test Event`. The most discoverable indicator of which event will be used on next run.
+- **Status bar indicator** (bottom-right of VS Code, next to the Altium 365 user/env item) — shows the **current default event name** with a `$(symbol-event)` icon, only when a Python editor is active. Click it to open `Pick Test Event`. The most discoverable indicator of which event will be used on next run; turns yellow when events exist but no default is set.
 - **Title-bar icon** next to the Run button — direct entry to `Pick Test Event`.
 - **Altium 365 editor-title submenu** → `Test events ▾` sub-row — same command, grouped with the other A365 actions.
 
