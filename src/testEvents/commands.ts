@@ -189,8 +189,15 @@ async function doPickTestEvent(
         );
         return;
     }
-    if (result.kind === 'edit-default') {
+    if (result.kind === 'edit-any') {
+        // Dispatch without a name → testEvents.edit shows its own
+        // eventsOnly picker so the user chooses which event to edit.
         await vscode.commands.executeCommand('altium365.testEvents.edit', identity);
+        return;
+    }
+    if (result.kind === 'delete-any') {
+        // Same pattern — testEvents.delete chooses the target itself.
+        await vscode.commands.executeCommand('altium365.testEvents.delete', identity);
         return;
     }
     // kind === 'empty' — unreachable in current picker UI but kept for

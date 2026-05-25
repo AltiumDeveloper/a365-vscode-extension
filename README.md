@@ -65,8 +65,7 @@ From the Altium 365 side panel, right-click any script to **Edit**, **Publish**,
 ### Execute Remotely
 
 - Right-click a script → **Execute Remotely** kicks off a server-side execution. A cancellable progress notification appears, and log lines stream into the **Altium 365** Output channel as they arrive (polled every 1.5 s).
-- Parameters are read from the per-workspace state key `altium365.scriptParams.<scriptId>` (reserved for a future Set Parameters UI). Values are passed to the server as strings.
-- The `altium365.promptForProjectId` setting controls whether a `projectId` input box appears for executions that need one.
+- Parameters come from the active **test event** for the script (see [Test Events](#test-events) below). Values are passed to the server as strings.
 
 > **Cancellation caveat.** Cancelling the progress notification stops the local poll loop, but the server-side execution continues. The Output channel will print `Remote execution cancelled (server-side execution continues)` to make this explicit. There is currently no server-side cancel API.
 
@@ -107,10 +106,6 @@ Test events are **not** synced via Settings Sync. This is intentional: parameter
 
 If you store more than 25 events for one script, the extension surfaces a one-time non-blocking toast suggesting you delete unused ones. The warning fires only once per script over the extension's lifetime.
 
-### Note on `promptForProjectId`
-
-The `altium365.promptForProjectId` setting is a legacy back-compat shim and no longer prompts at runtime — use the `Project-related` preset when creating a test event instead.
-
 ## Commands Reference
 
 | Command | Description |
@@ -127,5 +122,4 @@ The `altium365.promptForProjectId` setting is a legacy back-compat shim and no l
 Key settings (see VS Code Settings for the full list):
 
 - `altium365.pythonPath` — path to the Python interpreter (default: auto-detect via the Python extension or `python` on `PATH`)
-- `altium365.promptForProjectId` — legacy no-op (use the `Project-related` test-event preset instead)
 - `altium365.environments` — object of named environments; each entry can override `graphqlEndpoint`, `authEndpoint`, `tokenEndpoint`, `scopes`, and `audience`
