@@ -11,6 +11,7 @@ import * as vscode from 'vscode';
  */
 
 export const TEST_EVENT_KEY_PREFIX = 'altium365.scriptParams.';
+export const BLOAT_WARN_KEY_PREFIX = 'altium365.scriptParams.bloatWarned.';
 
 export interface TestEventStore {
     defaultEventName: string;
@@ -97,4 +98,26 @@ export function eventCount(
     identity: string,
 ): number {
     return listEvents(ctx, identity).length;
+}
+
+/**
+ * Per-identity "bloat warning has fired" flag (Phase 999.3 Plan 06, D-21).
+ *
+ * Stored in globalState under `altium365.scriptParams.bloatWarned.<identity>`.
+ * The flag is set by doCreateTestEvent the first time a script crosses the
+ * BLOAT_WARN_THRESHOLD (25) so the informational toast fires exactly once
+ * per identity over the extension's lifetime.
+ */
+export function isBloatWarned(
+    ctx: vscode.ExtensionContext,
+    identity: string,
+): boolean {
+    return ctx.globalState.get<boolean>(BLOAT_WARN_KEY_PREFIX + identity) === true;
+}
+
+export function markBloatWarned(
+    ctx: vscode.ExtensionContext,
+    identity: string,
+): Thenable<void> {
+    return ctx.globalState.update(BLOAT_WARN_KEY_PREFIX + identity, true);
 }
