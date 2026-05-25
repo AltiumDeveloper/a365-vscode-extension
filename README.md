@@ -74,6 +74,51 @@ From the Altium 365 side panel, right-click any script to **Edit**, **Publish**,
 
 Remote scripts use a workspace-scoped token obtained automatically the first time you act on a script in that workspace. Switching environments (e.g. **Prod** ↔ **Dev**) invalidates any open `altium365:` editors — close and reopen them after the switch to pick up tokens from the new environment.
 
+## Test Events
+
+**Test events** are named JSON parameter sets attached to a script — AWS-Lambda-style. The same event is used uniformly by **Run**, **Debug**, and **Execute Remotely**, so you can develop a script locally and execute it on the server against the same payload without juggling files.
+
+### Why
+
+Test events replace the older `<script>.params.json` / `altium365.inputParametersPath` workflow. Instead of editing one JSON file per script, you can keep multiple named parameterizations per script — e.g. `small-project`, `with-errors`, `production-id` — and switch between them in one click.
+
+### Commands
+
+| Command | What it does |
+| --- | --- |
+| Altium 365: Pick Test Event | Choose the event to run with; offers Create/Edit/Set-default from the picker |
+| Altium 365: Create Test Event | New event from `Empty` / `Project-related` / `From settings.inputParametersPath` preset |
+| Altium 365: Edit Test Event | Open the event's JSON in a tab — `Cmd+S` / `Ctrl+S` saves |
+| Altium 365: Delete Test Event | Remove an event (modal confirm) |
+| Altium 365: Set Default Test Event | Mark an event as the default for unattended Run / Debug / Execute |
+
+### UI affordances
+
+For Python files (local `.py` or remote-tmp script bodies) the test-event picker is one click away — both placements are shipped during the v1 trial:
+
+- **Title-bar icon** next to the Run button — direct entry to `Pick Test Event`.
+- **Altium 365 editor-title submenu** → `Test events ▾` sub-row — same command, grouped with the other A365 actions.
+
+The picker header shows the current default event prominently and includes inline `Create new…` and `Edit current default…` rows. Picking an event sets it as the default and runs the script.
+
+### Storage
+
+Test events live in **`vscode.context.globalState`** under the key `altium365.scriptParams.<identity>` — scoped to your machine and **shared across all VS Code workspaces** on that machine. `<identity>` is derived from the script's `(workspaceId, scriptId)` for remote scripts or its absolute path for local `.py` files.
+
+Test events are **not** synced via Settings Sync. This is intentional: parameter payloads frequently contain machine-specific paths or workspace-specific IDs that would break on a teammate's machine.
+
+If you store more than 25 events for one script, the extension surfaces a one-time non-blocking toast suggesting you delete unused ones. The warning fires only once per script over the extension's lifetime.
+
+### Migration from `inputParametersPath`
+
+The `altium365.inputParametersPath` setting is still honoured as an **escape hatch** — if set to an existing JSON file, its contents win over any stored test event for that run. It is also exposed as the `From settings.inputParametersPath` preset when creating a new event, so you can one-shot import its current contents into a named test event and then unset the setting.
+
+Sibling `<script>.params.json` files next to local scripts trigger a one-time import prompt (`Import` / `Not now` / `Never for this file`) the first time you run a script with no stored events. Imported events land as the `imported` event and are set as the default. The sibling file is never deleted.
+
+### Note on `promptForProjectId`
+
+The `altium365.promptForProjectId` setting is a legacy back-compat shim and no longer prompts at runtime — use the `Project-related` preset when creating a test event instead.
+
 ## Commands Reference
 
 | Command | Description |
