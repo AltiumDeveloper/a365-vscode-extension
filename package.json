@@ -205,11 +205,6 @@
           "default": "",
           "description": "Path to the Python interpreter. If empty, the ms-python.python extension or 'python' on PATH will be used."
         },
-        "altium365.inputParametersPath": {
-          "type": "string",
-          "default": "",
-          "description": "Path to a JSON file used to seed the \"From settings\" preset when creating a test event (Altium 365: Create Test Event). Relative paths resolve to the first workspace folder. Not used at runtime — test events stored per-script are the source of truth for script parameters."
-        },
         "altium365.extraEnv": {
           "type": "object",
           "default": {},
@@ -334,11 +329,6 @@
         {
           "submenu": "altium365.editorTitle",
           "group": "navigation@1",
-          "when": "resourceLangId == python"
-        },
-        {
-          "command": "altium365.testEvents.pick",
-          "group": "navigation@2",
           "when": "resourceLangId == python"
         }
       ],

@@ -10,21 +10,24 @@ import { readStore, onDidChangeTestEventStore } from './store';
  * editor (local `.py` or remote-tmp `altium365:` body) is active. Text
  * shows the current default event name with a `$(symbol-event)` icon
  * so users know at a glance which event will be used on the next Run /
- * Debug / Execute Remotely. Click invokes `altium365.testEvents.setDefault`
- * so the visible default actually changes after the user picks — the
- * transient `pick` command returns a body for one-shot runs and would
- * leave the indicator stale.
+ * Debug / Execute Remotely. Click invokes `altium365.testEvents.pick`,
+ * which (UAT iter 5) is the unified picker: lists events, offers Create
+ * / Edit current as inline actions, and SETS the picked event as the
+ * default (mutating the store so the indicator text refreshes).
  *
  * UX iteration history:
  *   v1 — Language Status Item (`vscode.languages.createLanguageStatusItem`).
  *        Rejected: collapsed behind the `{}` indicator at Information
  *        severity; UAT reported "no new button visible".
  *   v2 — Regular StatusBarItem wired to `testEvents.pick`. Rejected:
- *        pick is transient and never mutates `defaultEventName`, so the
- *        indicator text never updated after a click.
- *   v3 — StatusBarItem wired to `testEvents.setDefault` (this impl).
- *        setDefault writes the store → fires `onDidChangeTestEventStore`
- *        → refresh() re-reads and updates the visible text.
+ *        pick was transient (returned a body, didn't mutate the store),
+ *        so the indicator text never updated after a click.
+ *   v3 — StatusBarItem wired to `testEvents.setDefault`. Worked but the
+ *        eventsOnly picker hid Create / Edit, forcing users into the
+ *        Command Palette for any event maintenance from the status bar.
+ *   v4 — StatusBarItem wired to the now-unified `testEvents.pick`
+ *        (this impl). Picking an event sets it as default; Create / Edit
+ *        rows in the same picker round out the affordance.
  *
  * Refresh triggers:
  *   - `onDidChangeActiveTextEditor` — identity may switch with the tab.
@@ -51,7 +54,7 @@ export function registerTestEventStatusItem(
         PRIORITY,
     );
     item.name = 'Altium 365 Test Event';
-    item.command = 'altium365.testEvents.setDefault';
+    item.command = 'altium365.testEvents.pick';
 
     const refresh = () => {
         const editor = vscode.window.activeTextEditor;
@@ -150,8 +153,7 @@ function buildTooltip(
     if (identity) {
         const args = encodeURIComponent(JSON.stringify([identity]));
         md.appendMarkdown(
-            `[Set default](command:altium365.testEvents.setDefault?${args} "Switch the default event for this script") · ` +
-                `[Pick for one run](command:altium365.testEvents.pick?${args} "Choose an event for a single Run/Debug without changing the default") · ` +
+            `[Pick event](command:altium365.testEvents.pick?${args} "Choose which event becomes the new default — also lets you Create or Edit from the same picker") · ` +
                 `[Create new](command:altium365.testEvents.create?${args} "Create a new event") · ` +
                 `[Edit current](command:altium365.testEvents.edit?${args} "Open the current event's JSON in an editor")\n`,
         );

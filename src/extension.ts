@@ -840,12 +840,13 @@ async function prepareRun(
     const injectHelper = wcfg.get<boolean>('injectHelper', true);
     const extraEnv = wcfg.get<Record<string, string>>('extraEnv') || {};
 
-    // Unified test-event resolver (Phase 999.3 D-20). The escape-hatch
-    // setting altium365.inputParametersPath is honoured inside the
-    // resolver (D-09); the legacy sibling .params.json auto-detect and
-    // the projectId prompt have moved into the resolver as well. The
-    // legacy lastProjectId cache key remains in use by the future
-    // project-related preset (Plan 999.3-04); not touched here.
+    // Unified test-event resolver (Phase 999.3 D-20). The legacy
+    // inputParametersPath escape hatch was removed in Plan 06 UAT iter 5
+    // (2026-05-25); test events stored per-script are now the sole source
+    // of truth. Sibling .params.json auto-detect and the projectId prompt
+    // were folded into the resolver. The legacy lastProjectId cache key
+    // remains in use by the project-related preset (Plan 999.3-04); not
+    // touched here.
     let paramsPath = '';
     {
         const idResult = resolveScriptIdentity(targetUri);
@@ -857,28 +858,18 @@ async function prepareRun(
                 { promptOnFirstRun: true },
             );
             if (params !== undefined) {
-                const wcfg2 = vscode.workspace.getConfiguration('altium365');
-                const explicit = (wcfg2.get<string>('inputParametersPath') || '').trim();
-                if (explicit && fs.existsSync(explicit)) {
-                    // Escape hatch already pointed at a real file — resolver
-                    // returned its parsed contents; pass the path through
-                    // directly to preserve the user's chosen file (no tmpfile
-                    // round-trip needed).
-                    paramsPath = explicit;
-                } else {
-                    // Write resolver output as a tmp JSON object — same
-                    // pattern as the legacy prepareRun at extension.ts:839-848.
-                    const tmpFile = path.join(
-                        os.tmpdir(),
-                        `altium365-params-${Date.now()}-${process.pid}.json`,
-                    );
-                    const obj: Record<string, string> = {};
-                    for (const p of params) {
-                        obj[p.key] = p.value;
-                    }
-                    fs.writeFileSync(tmpFile, JSON.stringify(obj, null, 2), 'utf-8');
-                    paramsPath = tmpFile;
+                // Write resolver output as a tmp JSON object — same
+                // pattern as the legacy prepareRun at extension.ts:839-848.
+                const tmpFile = path.join(
+                    os.tmpdir(),
+                    `altium365-params-${Date.now()}-${process.pid}.json`,
+                );
+                const obj: Record<string, string> = {};
+                for (const p of params) {
+                    obj[p.key] = p.value;
                 }
+                fs.writeFileSync(tmpFile, JSON.stringify(obj, null, 2), 'utf-8');
+                paramsPath = tmpFile;
             }
         }
     }

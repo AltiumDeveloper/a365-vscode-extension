@@ -26,7 +26,7 @@ Scripts must define a top-level `onExecute(context, input_parameters)` function.
 
 - `context.auth_token` — the current Altium 365 access token (workspace-scoped when a workspace is selected)
 - `context.graphql_url` — the active GraphQL endpoint
-- `input_parameters` — a dict loaded from `<script>.params.json` next to the script, or from the file pointed to by `altium365.inputParametersPath`
+- `input_parameters` — a dict supplied by the active **test event** for this script (see [Test Events](#test-events) below). For local `.py` files that have never been parameterized, the extension offers a one-time import of a sibling `<script>.params.json` file if present.
 
 A bundled `a365` helper module is auto-injected onto `PYTHONPATH`, so scripts can call the Altium 365 GraphQL API directly:
 
@@ -80,27 +80,24 @@ Remote scripts use a workspace-scoped token obtained automatically the first tim
 
 ### Why
 
-Test events replace the older `<script>.params.json` / `altium365.inputParametersPath` workflow. Instead of editing one JSON file per script, you can keep multiple named parameterizations per script — e.g. `small-project`, `with-errors`, `production-id` — and switch between them in one click.
+Test events let you keep multiple named parameterizations per script — e.g. `small-project`, `with-errors`, `production-id` — and switch between them in one click, instead of editing a single JSON file. Sibling `<script>.params.json` files next to local scripts trigger a one-time import prompt on first run with no stored events.
 
 ### Commands
 
 | Command | What it does |
 | --- | --- |
-| Altium 365: Pick Test Event | Choose the event to run with; offers Create/Edit/Set-default from the picker |
-| Altium 365: Create Test Event | New event from `Empty` / `Project-related` / `From settings.inputParametersPath` preset |
+| Altium 365: Pick Test Event | Unified picker — lists events, offers Create / Edit current; picking an event sets it as the default |
+| Altium 365: Create Test Event | New event from `Empty` or `Project-related` preset |
 | Altium 365: Edit Test Event | Open the event's JSON in a tab — `Cmd+S` / `Ctrl+S` saves |
 | Altium 365: Delete Test Event | Remove an event (modal confirm) |
 | Altium 365: Set Default Test Event | Mark an event as the default for unattended Run / Debug / Execute |
 
 ### UI affordances
 
-For Python files (local `.py` or remote-tmp script bodies) the test-event picker is reachable from three surfaces:
+For Python files (local `.py` or remote-tmp script bodies) the test-event picker is reachable from two surfaces:
 
-- **Status bar indicator** (bottom-right of VS Code, next to the Altium 365 user/env item) — shows the **current default event name** with a `$(symbol-event)` icon, only when a Python editor is active. Click it to open `Pick Test Event`. The most discoverable indicator of which event will be used on next run; turns yellow when events exist but no default is set.
-- **Title-bar icon** next to the Run button — direct entry to `Pick Test Event`.
-- **Altium 365 editor-title submenu** → `Test events ▾` sub-row — same command, grouped with the other A365 actions.
-
-The picker header shows the current default event prominently and includes inline `Create new…` and `Edit current default…` rows. Picking an event sets it as the default and runs the script.
+- **Status bar indicator** (bottom-right of VS Code, next to the Altium 365 user/env item) — shows the **current default event name** with a `$(symbol-event)` icon, only when a Python editor is active. Click it to open the unified picker (events list + Create + Edit). Turns yellow when events exist but no default is set.
+- **Altium 365 editor-title submenu** → `Pick Test Event` row — same unified picker, grouped with the other A365 actions.
 
 ### Storage
 
@@ -109,12 +106,6 @@ Test events live in **`vscode.context.globalState`** under the key `altium365.sc
 Test events are **not** synced via Settings Sync. This is intentional: parameter payloads frequently contain machine-specific paths or workspace-specific IDs that would break on a teammate's machine.
 
 If you store more than 25 events for one script, the extension surfaces a one-time non-blocking toast suggesting you delete unused ones. The warning fires only once per script over the extension's lifetime.
-
-### Migration from `inputParametersPath`
-
-The `altium365.inputParametersPath` setting is still honoured as an **escape hatch** — if set to an existing JSON file, its contents win over any stored test event for that run. It is also exposed as the `From settings.inputParametersPath` preset when creating a new event, so you can one-shot import its current contents into a named test event and then unset the setting.
-
-Sibling `<script>.params.json` files next to local scripts trigger a one-time import prompt (`Import` / `Not now` / `Never for this file`) the first time you run a script with no stored events. Imported events land as the `imported` event and are set as the default. The sibling file is never deleted.
 
 ### Note on `promptForProjectId`
 
@@ -136,6 +127,5 @@ The `altium365.promptForProjectId` setting is a legacy back-compat shim and no l
 Key settings (see VS Code Settings for the full list):
 
 - `altium365.pythonPath` — path to the Python interpreter (default: auto-detect via the Python extension or `python` on `PATH`)
-- `altium365.inputParametersPath` — path to a JSON file passed as `input_parameters` (default: look for `<script>.params.json` next to the script)
-- `altium365.promptForProjectId` — whether to prompt for a `projectId` when no params file is found (default: `true`)
+- `altium365.promptForProjectId` — legacy no-op (use the `Project-related` test-event preset instead)
 - `altium365.environments` — object of named environments; each entry can override `graphqlEndpoint`, `authEndpoint`, `tokenEndpoint`, `scopes`, and `audience`

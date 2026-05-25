@@ -1,6 +1,4 @@
 import * as vscode from 'vscode';
-import * as fs from 'fs/promises';
-import * as path from 'path';
 import { ScriptIdentity, resolveScriptIdentity } from './identity';
 import {
     TestEventStore,
@@ -64,7 +62,7 @@ export function registerTestEventCommands(
             'altium365.testEvents.pick',
             async (identity?: ScriptIdentity) => {
                 try {
-                    return await doPickTestEvent(context, outputChannel, identity);
+                    await doPickTestEvent(context, outputChannel, identity);
                 } catch (err) {
                     surfaceError(outputChannel, 'pick', err);
                 }
@@ -153,36 +151,51 @@ async function doPickTestEvent(
     context: vscode.ExtensionContext,
     output: vscode.OutputChannel,
     identityArg: ScriptIdentity | undefined,
-): Promise<Record<string, unknown> | undefined> {
+): Promise<void> {
+    // Unified picker (UAT iter 5, 2026-05-25): single click on the status bar
+    // / editor-title menu shows the full picker (events + Create + Edit
+    // current) and picking an event SETS IT AS THE DEFAULT. The previous
+    // "pick for one run" semantics returned a transient body but never
+    // mutated the store, so the status bar indicator never updated and
+    // the affordance felt broken. We collapsed pick → setDefault because
+    // no caller used the transient body return — the resolver routes
+    // through testEvents.create / testEvents.setDefault directly.
     const identity = resolveIdentityOrWarn(identityArg);
-    if (!identity) return undefined;
+    if (!identity) return;
 
     const store = readStore(context, identity.identity);
     const result = await pickTestEvent(identity.identity, store);
     if (!result) {
         output.appendLine(`[Altium 365] testEvents.pick: cancelled for ${identity.identity}`);
-        return undefined;
+        return;
     }
     if (result.kind === 'event') {
+        await setDefault(context, identity.identity, result.name);
         output.appendLine(
-            `[Altium 365] testEvents.pick: selected "${result.name}" for ${identity.identity}`,
+            `[Altium 365] testEvents.pick: "${result.name}" is now default for ${identity.identity}`,
         );
-        return result.body;
+        vscode.window.showInformationMessage(
+            `Altium 365: Default event set to "${result.name}".`,
+        );
+        return;
     }
     if (result.kind === 'create') {
-        const created = await vscode.commands.executeCommand<CreateResult>(
+        // autoSetDefault: true — user explicitly asked for a new event from
+        // the unified picker, they want it active immediately.
+        await vscode.commands.executeCommand<CreateResult>(
             'altium365.testEvents.create',
             identity,
+            { autoSetDefault: true },
         );
-        return created?.body;
+        return;
     }
     if (result.kind === 'edit-default') {
         await vscode.commands.executeCommand('altium365.testEvents.edit', identity);
-        return undefined;
+        return;
     }
-    // kind === 'empty'
-    output.appendLine(`[Altium 365] testEvents.pick: run with empty params for ${identity.identity}`);
-    return {};
+    // kind === 'empty' — unreachable in current picker UI but kept for
+    // exhaustiveness; treat as cancellation.
+    output.appendLine(`[Altium 365] testEvents.pick: no-op (kind=empty) for ${identity.identity}`);
 }
 
 async function doCreateTestEvent(
@@ -215,7 +228,7 @@ async function doCreateTestEvent(
     }
     const trimmedName = name.trim();
 
-    type PresetItem = vscode.QuickPickItem & { preset: 'empty' | 'project' | 'settings' };
+    type PresetItem = vscode.QuickPickItem & { preset: 'empty' | 'project' };
     const presetItems: PresetItem[] = [
         {
             label: '$(json) Empty',
@@ -226,11 +239,6 @@ async function doCreateTestEvent(
             label: '$(project) Project-related',
             description: 'Seed with { projectId: <picked> }',
             preset: 'project',
-        },
-        {
-            label: '$(file-code) From settings.inputParametersPath',
-            description: 'Read JSON from altium365.inputParametersPath',
-            preset: 'settings',
         },
     ];
     const preset = await vscode.window.showQuickPick(presetItems, {
@@ -249,8 +257,6 @@ async function doCreateTestEvent(
             return undefined;
         }
         body = { projectId: pickedProject };
-    } else if (preset.preset === 'settings') {
-        body = await readSettingsSeed(output);
     }
 
     // Write to store.
@@ -576,50 +582,4 @@ async function offerSelectOrManual(
         return undefined;
     }
     return mintAndPickProject(context, cfg, endpoint, nowActive, output);
-}
-
-/**
- * Reads `altium365.inputParametersPath` setting, resolves relative to
- * the first workspace folder, JSON.parses, and returns the body. On
- * any error surfaces a non-blocking warning and returns {} so the
- * create flow proceeds.
- */
-async function readSettingsSeed(
-    output: vscode.OutputChannel,
-): Promise<Record<string, unknown>> {
-    const raw = (
-        vscode.workspace.getConfiguration('altium365').get<string>('inputParametersPath') || ''
-    ).trim();
-    if (!raw) {
-        vscode.window.showWarningMessage(
-            'Altium 365: altium365.inputParametersPath is not set — starting from empty.',
-        );
-        return {};
-    }
-    let resolved = raw;
-    if (!path.isAbsolute(raw)) {
-        const wsFolder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-        if (wsFolder) {
-            resolved = path.join(wsFolder, raw);
-        }
-    }
-    try {
-        const buf = await fs.readFile(resolved, 'utf-8');
-        const parsed = JSON.parse(buf);
-        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-            vscode.window.showWarningMessage(
-                `Altium 365: ${resolved} is not a JSON object — starting from empty.`,
-            );
-            return {};
-        }
-        return parsed as Record<string, unknown>;
-    } catch (e) {
-        vscode.window.showWarningMessage(
-            `Altium 365: Could not read inputParametersPath: ${(e as Error).message}. Starting from empty.`,
-        );
-        output.appendLine(
-            `[Altium 365] testEvents.create: readSettingsSeed failed (${resolved}): ${(e as Error).message}`,
-        );
-        return {};
-    }
 }
