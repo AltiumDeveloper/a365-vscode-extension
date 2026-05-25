@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 999.3 Plan 05 complete + UAT approved; ready for Plan 06 (Polish + A/B UAT + README)
-last_updated: "2026-05-25T02:00:00.000Z"
+stopped_at: Phase 999.3 complete (6/6 plans, all UAT approved); ready for next phase
+last_updated: "2026-05-25T18:00:00.000Z"
 last_activity: 2026-05-25
 progress:
   total_phases: 12
-  completed_phases: 8
+  completed_phases: 9
   total_plans: 42
-  completed_plans: 43
-  percent: 72
+  completed_plans: 44
+  percent: 75
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-19)
 
 **Core value:** A developer can open VS Code, sign in once, and go from browsing their A365 workspace to running or deploying a script — without leaving the editor or hand-crafting API calls.
-**Current focus:** Phase 999.3 — script test events (planning complete; ready to execute)
+**Current focus:** Phase 999.3 ✅ complete — script test events shipped. Next: Phase 999.4 (remote-execute log-dedup) is the ready-to-promote backlog item.
 
 ## Current Position
 
-Phase: 999.3
-Plan: 999.3-06 (Polish + A/B UAT + README docs — FINAL)
-Status: Ready to execute (Wave 6 of 6)
+Phase: 999.3 ✅ COMPLETE
+Plan: all 6 plans UAT-approved
+Status: Phase shipped 2026-05-25
 Last activity: 2026-05-25
 
-Progress: [█████████░] 99%
+Progress: [██████████] 100% of Phase 999.3
 
 Phase 999.3 wave structure (sequential, all touch extension.ts):
 
@@ -39,7 +39,7 @@ Phase 999.3 wave structure (sequential, all touch extension.ts):
 - Wave 3 ✅ Plan 03 (FSP on altium365-event:// — UAT approved)
 - Wave 4 ✅ Plan 04 (Picker + 5 commands + first-run UI — UAT approved 9/9)
 - Wave 5 ✅ Plan 05 (Menu wiring A + B + setting descriptions — UAT approved)
-- Wave 6 ▶ Plan 06 (Polish + A/B UAT + README)
+- Wave 6 ✅ Plan 06 (Polish + bloat warning + log audit + README + 7 UX iterations — UAT approved 2026-05-25)
 
 ## Performance Metrics
 
@@ -130,6 +130,19 @@ Recent decisions affecting current work:
 - [Phase 999.3-05]: Placement B button gated on `resourceLangId == python` only (NOT `&& altium365.activeIsRemoteScript`) — local standalone `.py` scripts also benefit from test events; matches Phase 6 D-15 broader-than-remote scope.
 - [Phase 999.3-05]: Dropped redundant `detail: defaultName` from "Edit current default…" picker row — picker header already shows default name prominently.
 - [Phase 999.3-05]: UAT approved 2026-05-25 after one UX iteration (initial picker "Run with empty params" row removed; reverified).
+- [Phase 999.3-06]: Bloat warning at >25 events per identity fires from doCreateTestEvent only (not edit/setDefault) — flag stored per-identity (`altium365.scriptParams.bloatWarned.<identity>`) so each script gets one warning, never global
+- [Phase 999.3-06]: LanguageStatusItem → StatusBarItem (UAT iter 1→2) — Information-severity LSIs collapse behind the {} language icon and are invisible; StatusBarItem (Right, priority 100, gated on `languageId === 'python'`) is the right primitive for a per-editor affordance
+- [Phase 999.3-06]: `ScriptIdentity.remote.workspaceAuthId` optional additive field — single source of truth for "which workspace owns this script"; enables cross-workspace project picking without breaking the kind|identity match contract
+- [Phase 999.3-06]: `pickProjectIdSafe` refactored into three named helpers (lookupWorkspaceByAuthId → mintAndPickProject → offerSelectOrManual) — branch priority: script-workspace → active-workspace → Select-or-Manual
+- [Phase 999.3-06]: Rich `MarkdownString` tooltip with `command:` URIs and `isTrusted = true` — shows full state (count / default / workspace) and offers actionable links from the status bar
+- [Phase 999.3-06]: Unified `testEvents.pick` Quick Pick — picking an event SETS DEFAULT; Create / Edit / Delete dispatched to dedicated commands which own their own eventsOnly chooser; picker stays thin
+- [Phase 999.3-06]: Removed `altium365.inputParametersPath` setting end-to-end (no back-compat) — no active users; resolver branch + post-resolve special-case + `From settings` preset + `readSettingsSeed` + README migration section all deleted
+- [Phase 999.3-06]: Removed `altium365.promptForProjectId` setting end-to-end — was a no-op since D-22 (Phase 6); dead-surface cleanup
+- [Phase 999.3-06]: Status bar click rewired from transient picker (UAT iter 4) → unified `testEvents.pick` (UAT iter 5) — eliminates the no-op click that didn't mutate the store
+- [Phase 999.3-06]: Test-event URI identity moved from authority to first path segment + `vscode.Uri.from` constructor — `Uri.parse` lowercases authority per RFC 3986 §3.2.2 (corrupts mixed-case UUID hex from GraphQL → store-key miss → empty Edit payload); single-slash `:/foo` form also throws "path cannot begin with //" on round-trip via `openTextDocument`, so `Uri.from({scheme, path})` is the safe constructor
+- [Phase 999.3-06]: A/B trial outcome — Placement B (sibling title-bar button) removed in UAT iter 5; status bar indicator + Placement A submenu is the final placement
+- [Phase 999.3-06]: UAT approved 2026-05-25 after 7 UX iterations (LanguageStatusItem → StatusBarItem; cross-workspace picker + rich tooltip; status bar setDefault wiring; unified picker; remove inputParametersPath; remove promptForProjectId; URI shape fix)
+- [Phase 999.3-06]: Phase 999.3 COMPLETE — 6/6 plans UAT-approved, all SCRIPT-V2-04 sub-requirements shipped
 
 ### Pending Todos
 
