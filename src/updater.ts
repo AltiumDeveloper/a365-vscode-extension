@@ -8,7 +8,7 @@ import { compareVersions } from './semverCompare';
 
 /**
  * In-extension self-updater. Polls GitHub Releases for the
- * `altium/a365-vscode-extension` repo, compares the latest published version
+ * `AltiumDeveloper/a365-vscode-extension` repo, compares the latest published version
  * against the running extension (`altium.developer`), and offers a one-click
  * download + install + reload flow.
  *
@@ -28,7 +28,7 @@ import { compareVersions } from './semverCompare';
 // publisher = "altium", name = "developer" → "altium.developer".
 const EXTENSION_ID = 'altium.developer';
 const GLOBAL_LAST_CHECK_KEY = 'altium365.lastUpdateCheckAt';
-const RELEASES_URL = 'https://api.github.com/repos/altium/a365-vscode-extension/releases';
+const RELEASES_URL = 'https://api.github.com/repos/AltiumDeveloper/a365-vscode-extension/releases';
 const DEBOUNCE_MS = 24 * 60 * 60 * 1000;
 // GitHub REST returns 403 without a User-Agent (see 08-RESEARCH.md Pitfall #4).
 const USER_AGENT = 'altium365-vscode-extension';
