@@ -22,7 +22,7 @@
       "activitybar": [
         {
           "id": "altium365",
-          "title": "Altium 365",
+          "title": "Altium Developer",
           "icon": "resources/altium365.svg"
         }
       ]
@@ -46,115 +46,115 @@
       {
         "command": "altium365.testEvents.pick",
         "title": "Pick Test Event",
-        "category": "Altium 365",
+        "category": "Altium Developer",
         "icon": "$(symbol-event)"
       },
       {
         "command": "altium365.testEvents.create",
         "title": "Create Test Event",
-        "category": "Altium 365"
+        "category": "Altium Developer"
       },
       {
         "command": "altium365.testEvents.edit",
         "title": "Edit Test Event",
-        "category": "Altium 365"
+        "category": "Altium Developer"
       },
       {
         "command": "altium365.testEvents.delete",
         "title": "Delete Test Event",
-        "category": "Altium 365"
+        "category": "Altium Developer"
       },
       {
         "command": "altium365.testEvents.setDefault",
         "title": "Set Default Test Event",
-        "category": "Altium 365"
+        "category": "Altium Developer"
       },
       {
         "command": "altium365.signIn",
         "title": "Sign In",
-        "category": "Altium 365"
+        "category": "Altium Developer"
       },
       {
         "command": "altium365.signOut",
         "title": "Sign Out",
-        "category": "Altium 365"
+        "category": "Altium Developer"
       },
       {
         "command": "altium365.selectWorkspace",
         "title": "Select Workspace",
-        "category": "Altium 365"
+        "category": "Altium Developer"
       },
       {
         "command": "altium365.selectEnvironment",
         "title": "Select Environment",
-        "category": "Altium 365",
+        "category": "Altium Developer",
         "icon": "$(globe)"
       },
       {
         "command": "altium365.runScript",
         "title": "Run Python Script",
-        "category": "Altium 365"
+        "category": "Altium Developer"
       },
       {
         "command": "altium365.debugScript",
         "title": "Debug Python Script",
-        "category": "Altium 365"
+        "category": "Altium Developer"
       },
       {
         "command": "altium365.tree.refresh",
         "title": "Refresh Workspaces",
-        "category": "Altium 365",
+        "category": "Altium Developer",
         "icon": "$(refresh)"
       },
       {
         "command": "altium365.tree.copyId",
         "title": "Copy ID",
-        "category": "Altium 365"
+        "category": "Altium Developer"
       },
       {
         "command": "altium365.script.runLocal",
         "title": "Run Script (Local)",
-        "category": "Altium 365"
+        "category": "Altium Developer"
       },
       {
         "command": "altium365.script.debugLocal",
         "title": "Debug Script (Local)",
-        "category": "Altium 365"
+        "category": "Altium Developer"
       },
       {
         "command": "altium365.script.edit",
         "title": "Edit Script",
-        "category": "Altium 365"
+        "category": "Altium Developer"
       },
       {
         "command": "altium365.script.executeRemote",
         "title": "Execute Script Remotely",
-        "category": "Altium 365"
+        "category": "Altium Developer"
       },
       {
         "command": "altium365.script.publish",
         "title": "Publish Script",
-        "category": "Altium 365"
+        "category": "Altium Developer"
       },
       {
         "command": "altium365.workspace.openInBrowser",
         "title": "Open Workspace in Browser",
-        "category": "Altium 365"
+        "category": "Altium Developer"
       },
       {
         "command": "altium365.workspace.selectFromNode",
         "title": "Select Workspace",
-        "category": "Altium 365"
+        "category": "Altium Developer"
       },
       {
         "command": "altium365.project.openInBrowser",
         "title": "Open Project in Browser",
-        "category": "Altium 365"
+        "category": "Altium Developer"
       },
       {
         "command": "altium365.installScriptDependencies",
         "title": "Install Script Dependencies",
-        "category": "Altium 365"
+        "category": "Altium Developer"
       },
       {
         "command": "altium365.checkForUpdates",
@@ -163,7 +163,7 @@
       }
     ],
     "configuration": {
-      "title": "Altium 365 Scripting",
+      "title": "Altium Developer",
       "properties": {
         "altium365.graphqlEndpoint": {
           "type": "string",
@@ -188,12 +188,12 @@
         "altium365.actionWaitEndpoint": {
           "type": "string",
           "default": "https://actionwait.dev1.altium.com/await",
-          "description": "Altium ActionWait long-poll endpoint used to receive the OAuth authorization code from the browser callback. Populated automatically by 'Altium 365: Select Environment'."
+          "description": "Altium ActionWait long-poll endpoint used to receive the OAuth authorization code from the browser callback. Populated automatically by 'Altium Developer: Select Environment'."
         },
         "altium365.redirectUri": {
           "type": "string",
           "default": "https://auth.dev1.altium.com/api/AuthComplete",
-          "description": "Fixed OAuth redirect URI registered with the Altium auth client (Altium-hosted authCompleted page). Must match the URI sent in both /connect/authorize and /connect/token. Populated automatically by 'Altium 365: Select Environment'."
+          "description": "Fixed OAuth redirect URI registered with the Altium auth client (Altium-hosted authCompleted page). Must match the URI sent in both /connect/authorize and /connect/token. Populated automatically by 'Altium Developer: Select Environment'."
         },
         "altium365.scopes": {
           "type": "string",
@@ -223,7 +223,7 @@
         "altium365.activeEnvironment": {
           "type": "string",
           "default": "",
-          "description": "Name of the active environment from `altium365.environments`. Managed by the 'Altium 365: Select Environment' command."
+          "description": "Name of the active environment from `altium365.environments`. Managed by the 'Altium Developer: Select Environment' command."
         },
         "altium365.environments": {
           "type": "object",
@@ -256,7 +256,7 @@
               "audience": ""
             }
           },
-          "description": "Named environments. Each entry can override graphqlEndpoint, authEndpoint, tokenEndpoint, actionWaitEndpoint, redirectUri, scopes, audience. Use 'Altium 365: Select Environment' to switch.",
+          "description": "Named environments. Each entry can override graphqlEndpoint, authEndpoint, tokenEndpoint, actionWaitEndpoint, redirectUri, scopes, audience. Use 'Altium Developer: Select Environment' to switch.",
           "additionalProperties": {
             "type": "object",
             "properties": {
@@ -286,7 +286,7 @@
     "submenus": [
       {
         "id": "altium365.editorTitle",
-        "label": "Altium 365",
+        "label": "Altium Developer",
         "icon": {
           "light": "media/altium365.png",
           "dark": "media/altium365.png"
