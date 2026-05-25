@@ -181,7 +181,7 @@ async function doPickTestEvent(
         return undefined;
     }
     // kind === 'empty'
-    output.appendLine(`[Altium 365] testEvents.pick: run with empty params`);
+    output.appendLine(`[Altium 365] testEvents.pick: run with empty params for ${identity.identity}`);
     return {};
 }
 

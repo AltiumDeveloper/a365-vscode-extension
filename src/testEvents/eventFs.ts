@@ -131,7 +131,7 @@ export class TestEventFs implements vscode.FileSystemProvider {
         }
         await writeStore(this.ctx, parsed.identity, next);
         this.output.appendLine(
-            `[Altium 365] Saved test event '${parsed.eventName}' for ${parsed.identity}`,
+            `[Altium 365] testEvents.fs: saved '${parsed.eventName}' for ${parsed.identity}`,
         );
         this._onDidChangeFile.fire([
             { type: vscode.FileChangeType.Changed, uri },
