@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { resolveScriptIdentity } from './identity';
+import { ScriptIdentity, resolveScriptIdentity } from './identity';
 import { readStore, onDidChangeTestEventStore } from './store';
 
 /**
@@ -65,7 +65,11 @@ export function registerTestEventStatusItem(
             // surface the affordance; pick command will warn-and-noop
             // if the user clicks without context.
             item.text = '$(symbol-event) No script identity';
-            item.tooltip = 'Test events require a recognised script identity';
+            item.tooltip = buildTooltip(
+                'No script identity',
+                'The active editor is not a recognised Altium 365 script.',
+                undefined,
+            );
             item.show();
             return;
         }
@@ -74,17 +78,29 @@ export function registerTestEventStatusItem(
         const hasDefault = !!(defaultName && store?.events[defaultName]);
         if (hasDefault) {
             item.text = `$(symbol-event) ${defaultName}`;
-            item.tooltip = `Altium 365 default test event: ${defaultName}\nClick to switch / create / edit.`;
+            item.tooltip = buildTooltip(
+                `Default: ${defaultName}`,
+                `This event will be passed to **Run**, **Debug**, and **Execute Remotely** for the active script.`,
+                identity,
+            );
             item.backgroundColor = undefined;
         } else if (store && Object.keys(store.events).length > 0) {
             item.text = '$(symbol-event) No default';
-            item.tooltip = 'Test events exist but no default is set — click to pick one.';
+            item.tooltip = buildTooltip(
+                'No default test event',
+                `Test events exist for this script but none is marked as the default. Click to pick or set one.`,
+                identity,
+            );
             item.backgroundColor = new vscode.ThemeColor(
                 'statusBarItem.warningBackground',
             );
         } else {
             item.text = '$(symbol-event) No events';
-            item.tooltip = 'No test events yet — click to create one.';
+            item.tooltip = buildTooltip(
+                'No test events',
+                `No test events stored for this script yet. Click to create one.`,
+                identity,
+            );
             item.backgroundColor = undefined;
         }
         item.show();
@@ -97,4 +113,41 @@ export function registerTestEventStatusItem(
         onDidChangeTestEventStore(refresh),
     ];
     return disposables;
+}
+
+/**
+ * Build a rich MarkdownString tooltip for the status bar item.
+ * Includes Altium 365 attribution, plain-language explanation of what
+ * test events are, current state, and links to the relevant commands
+ * so the affordance teaches itself the first time a user hovers it.
+ */
+function buildTooltip(
+    headline: string,
+    state: string,
+    identity: ScriptIdentity | undefined,
+): vscode.MarkdownString {
+    const md = new vscode.MarkdownString(undefined, true);
+    md.isTrusted = true;
+    md.supportThemeIcons = true;
+    md.appendMarkdown(`**Altium 365 — Test Events**\n\n`);
+    md.appendMarkdown(`$(symbol-event) **${headline}**\n\n`);
+    md.appendMarkdown(`${state}\n\n`);
+    md.appendMarkdown(`---\n\n`);
+    md.appendMarkdown(
+        `Test events are **named JSON parameter sets** attached to a script — ` +
+            `AWS-Lambda-style. The same event is used by **Run**, **Debug**, and ` +
+            `**Execute Remotely**, so you can keep multiple parameterizations ` +
+            `(e.g. \`small-project\`, \`with-errors\`, \`production-id\`) and switch ` +
+            `between them in one click.\n\n`,
+    );
+    if (identity) {
+        const args = encodeURIComponent(JSON.stringify([identity]));
+        md.appendMarkdown(
+            `[Pick event](command:altium365.testEvents.pick?${args} "Choose which event to use") · ` +
+                `[Create new](command:altium365.testEvents.create?${args} "Create a new event") · ` +
+                `[Edit current](command:altium365.testEvents.edit?${args} "Open the current event's JSON in an editor") · ` +
+                `[Set default](command:altium365.testEvents.setDefault?${args} "Mark an event as the default for unattended runs")\n`,
+        );
+    }
+    return md;
 }

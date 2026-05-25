@@ -18,7 +18,7 @@ import { getLocalScript, normalizeLocalScriptKey } from '../localScriptCache';
  */
 
 export type ScriptIdentity =
-    | { kind: 'remote'; identity: string }
+    | { kind: 'remote'; identity: string; workspaceAuthId?: string }
     | { kind: 'local'; identity: string };
 
 // Copied from src/remoteScriptFs.ts (lines 70-71) to avoid pulling FSP
@@ -27,7 +27,9 @@ export type ScriptIdentity =
 const UUID_REGEX = /^[0-9a-fA-F-]{36}$/;
 const GRID_PATH_REGEX = /^\/grid:workspace:([^:/]+):scripts:script\/([0-9a-fA-F-]{36})(?:\/(.*))?$/;
 
-function parseAltium365Uri(uri: vscode.Uri): string | undefined {
+function parseAltium365Uri(
+    uri: vscode.Uri,
+): { authId: string; scriptId: string } | undefined {
     const m = GRID_PATH_REGEX.exec(uri.path);
     if (!m) {
         return undefined;
@@ -37,21 +39,29 @@ function parseAltium365Uri(uri: vscode.Uri): string | undefined {
     if (!authId || !UUID_REGEX.test(scriptId)) {
         return undefined;
     }
-    return scriptId;
+    return { authId, scriptId };
 }
 
 export function resolveScriptIdentity(uri: vscode.Uri): ScriptIdentity | undefined {
     if (uri.scheme === 'altium365') {
-        const scriptId = parseAltium365Uri(uri);
-        if (!scriptId) {
+        const parsed = parseAltium365Uri(uri);
+        if (!parsed) {
             return undefined;
         }
-        return { kind: 'remote', identity: scriptId };
+        return {
+            kind: 'remote',
+            identity: parsed.scriptId,
+            workspaceAuthId: parsed.authId,
+        };
     }
     if (uri.scheme === 'file') {
         const cached = getLocalScript(uri.fsPath);
         if (cached) {
-            return { kind: 'remote', identity: cached.scriptId };
+            return {
+                kind: 'remote',
+                identity: cached.scriptId,
+                workspaceAuthId: cached.workspaceAuthId,
+            };
         }
         return { kind: 'local', identity: normalizeLocalScriptKey(uri.fsPath) };
     }
