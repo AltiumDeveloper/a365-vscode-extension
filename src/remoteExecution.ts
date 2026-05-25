@@ -17,6 +17,7 @@ import {
 } from './workspace';
 import { withScriptProgress } from './progress';
 import { resolveScriptParameters } from './testEvents/resolver';
+import { dedupLogPage } from './logDedup';
 
 /**
  * Remote-script execution module.
@@ -319,35 +320,6 @@ async function runPollLoop(
 
 function sleep(ms: number): Promise<void> {
     return new Promise((r) => setTimeout(r, ms));
-}
-
-/**
- * Pure dedup helper for the remote-execution poll loop.
- *
- * The server's `getExecutionLogs` re-sends the full transcript-so-far on every
- * poll (the `nextToken` cursor was previously trusted as a continuation token;
- * empirically it isn't, which caused ~3× duplication of every log line — see
- * Phase 7 / 07-CONTEXT.md). Strategy: ignore the cursor entirely, track how
- * many lines we've already printed, and slice off the un-printed suffix.
- *
- * Contract-agnostic: works whether the server returns identical prefixes,
- * monotonically growing transcripts, or eventually-clean non-overlapping pages.
- *
- * Defensive: if the server ever returns fewer lines than we've already printed
- * (shouldn't happen, but treat as transient glitch), emit nothing and keep
- * `printedCount` stable — never shrink, never re-emit.
- */
-export function dedupLogPage(
-    returnedLogs: readonly string[],
-    printedCount: number
-): { fresh: string[]; newPrintedCount: number } {
-    if (returnedLogs.length <= printedCount) {
-        return { fresh: [], newPrintedCount: printedCount };
-    }
-    return {
-        fresh: returnedLogs.slice(printedCount),
-        newPrintedCount: returnedLogs.length,
-    };
 }
 
 function writeFooter(out: vscode.OutputChannel, r: ExecutionResult): void {
