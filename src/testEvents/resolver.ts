@@ -1,30 +1,27 @@
 import * as vscode from 'vscode';
-import * as fs from 'fs';
 import { AsyncMutex } from '../asyncMutex';
 import { ScriptIdentity } from './identity';
 import { readStore } from './store';
 import { maybePromptForSiblingImport } from './importSibling';
 
 /**
- * Unified script-parameter resolver (Phase 999.3, D-20..D-22).
+ * Unified script-parameter resolver (Phase 999.3, D-20..D-22; D-09 escape
+ * hatch removed in Plan 06 UAT iter 5, 2026-05-25).
  *
  * Single entry point used by BOTH `prepareRun` (local Python runner) and
- * `executeRemoteScript` Block B (remote gloScrExecuteScript). Replaces the
- * three divergent sources Phase 6 D-05 only patched at the surface:
+ * `executeRemoteScript` Block B (remote gloScrExecuteScript). Replaces
+ * the three divergent sources Phase 6 D-05 only patched at the surface:
  *   - the never-written workspaceState `altium365.scriptParams.<id>` blob,
  *   - sibling `<name>.params.json` auto-detect (now opt-in via prompt),
  *   - the projectId-prompt fallback (now a no-op; D-22).
  *
  * Resolution priority:
- *   1. Escape hatch (D-09): `altium365.inputParametersPath` setting wins
- *      unconditionally — parses + returns its contents.
- *   2. Sibling import (D-07/08, local-kind only): one-shot prompt offers
+ *   1. Sibling import (D-07/08, local-kind only): one-shot prompt offers
  *      to import `<name>.params.json` as the 'imported' test event.
- *   3. Store read: if a default event is set, return its payload silently
+ *   2. Store read: if a default event is set, return its payload silently
  *      (D-10 — no UI on the happy path).
- *   4. First-run gap (D-11) or stale default → stub-log + return undefined
- *      (Plan 04 will replace stubs with command dispatch to
- *      `altium365.testEvents.create` / `setDefault`).
+ *   3. First-run gap (D-11) or stale default → dispatch
+ *      `altium365.testEvents.create` / `setDefault` to seed the store.
  *
  * Pitfall 2: nulls/undefined filtered BEFORE String() — identical contract
  * to the legacy remoteExecution.ts:286-294 loop.
@@ -53,44 +50,15 @@ export async function resolveScriptParameters(
     const mutexKey = identity.kind + ':' + identity.identity;
 
     return resolveMutex.runExclusive(mutexKey, async () => {
-        // (1) Escape hatch — D-09. Wins unconditionally.
-        const explicit = (
-            vscode.workspace.getConfiguration('altium365').get<string>('inputParametersPath') || ''
-        ).trim();
-        if (explicit) {
-            if (!fs.existsSync(explicit)) {
-                output.appendLine(
-                    `[Altium 365] testEvents.resolver: inputParametersPath '${explicit}' does not exist; ignoring`,
-                );
-            } else {
-                try {
-                    const raw = fs.readFileSync(explicit, 'utf-8');
-                    const parsed = JSON.parse(raw);
-                    if (!parsed || typeof parsed !== 'object') {
-                        output.appendLine(
-                            `[Altium 365] testEvents.resolver: ${explicit} is not a JSON object; ignoring`,
-                        );
-                        return undefined;
-                    }
-                    return stringifyEvent(parsed as Record<string, unknown>);
-                } catch (e) {
-                    output.appendLine(
-                        `[Altium 365] testEvents.resolver: failed to read ${explicit}: ${(e as Error).message}`,
-                    );
-                    return undefined;
-                }
-            }
-        }
-
-        // (2) Sibling import — D-07/08. Local-kind only, opt-in.
+        // (1) Sibling import — D-07/08. Local-kind only, opt-in.
         if (identity.kind === 'local' && promptOnFirstRun) {
             await maybePromptForSiblingImport(ctx, identity.identity, output);
         }
 
-        // (3) Store read.
+        // (2) Store read.
         const store = readStore(ctx, identity.identity);
 
-        // (4a) First-run gap — D-11. Plan 04: dispatch the create command,
+        // (3a) First-run gap — D-11. Plan 04: dispatch the create command,
         // which seeds the store and (when autoSetDefault is true OR the
         // store was empty) sets the new event as default. The command
         // returns the new event body so we can route it straight into the
@@ -111,7 +79,7 @@ export async function resolveScriptParameters(
             return stringifyEvent(created.body);
         }
 
-        // (4b) Missing default — D-11. Plan 04: dispatch setDefault, then
+        // (3b) Missing default — D-11. Plan 04: dispatch setDefault, then
         // re-read the store and resolve from the new default. Returns
         // undefined if the user cancelled the picker.
         if (!store.defaultEventName || !store.events[store.defaultEventName]) {
@@ -133,7 +101,7 @@ export async function resolveScriptParameters(
             return stringifyEvent(refreshed.events[refreshed.defaultEventName]);
         }
 
-        // (5) Happy path — silent default.
+        // (4) Happy path — silent default.
         return stringifyEvent(store.events[store.defaultEventName]);
     });
 }
