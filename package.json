@@ -359,11 +359,6 @@
           "when": "resourceLangId == python && altium365.activeIsRemoteScript"
         },
         {
-          "command": "altium365.script.publish",
-          "group": "3_publish@1",
-          "when": "resourceLangId == python && altium365.activeIsRemoteScript"
-        },
-        {
           "command": "altium365.testEvents.pick",
           "group": "4_events@1",
           "when": "resourceLangId == python"

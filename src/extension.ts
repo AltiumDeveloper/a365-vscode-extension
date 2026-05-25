@@ -26,6 +26,7 @@ import { resolveScriptIdentity } from './testEvents/identity';
 import { resolveScriptParameters } from './testEvents/resolver';
 import { TestEventFs } from './testEvents/eventFs';
 import { registerTestEventCommands } from './testEvents/commands';
+import { registerTestEventStatusItem } from './testEvents/statusItem';
 
 let outputChannel: vscode.OutputChannel;
 
@@ -112,6 +113,7 @@ export function activate(context: vscode.ExtensionContext) {
     const scriptCommandDisposables = registerScriptCommands(context, outputChannel);
     const treeCommandDisposables = registerTreeCommands(context, outputChannel);
     const testEventCommandDisposables = registerTestEventCommands(context, outputChannel);
+    const testEventStatusDisposables = registerTestEventStatusItem(context);
     const localScriptSaveBridge = registerLocalScriptSaveBridge(outputChannel, remoteFs);
 
     context.subscriptions.push(
@@ -171,6 +173,7 @@ export function activate(context: vscode.ExtensionContext) {
         ...scriptCommandDisposables,
         ...treeCommandDisposables,
         ...testEventCommandDisposables,
+        ...testEventStatusDisposables,
         localScriptSaveBridge
     );
 
