@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 999.3 Plan 04 complete + UAT approved; ready for Plan 05 (Menu wiring A + B)
-last_updated: "2026-05-25T01:30:00.000Z"
+stopped_at: Phase 999.3 Plan 05 complete + UAT approved; ready for Plan 06 (Polish + A/B UAT + README)
+last_updated: "2026-05-25T02:00:00.000Z"
 last_activity: 2026-05-25
 progress:
   total_phases: 12
   completed_phases: 8
   total_plans: 42
-  completed_plans: 42
-  percent: 70
+  completed_plans: 43
+  percent: 72
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-05-19)
 ## Current Position
 
 Phase: 999.3
-Plan: 999.3-05 (Menu wiring A + B; deprecate promptForProjectId description)
-Status: Ready to execute (Wave 5 of 6)
+Plan: 999.3-06 (Polish + A/B UAT + README docs — FINAL)
+Status: Ready to execute (Wave 6 of 6)
 Last activity: 2026-05-25
 
-Progress: [█████████░] 98%
+Progress: [█████████░] 99%
 
 Phase 999.3 wave structure (sequential, all touch extension.ts):
 
@@ -38,8 +38,8 @@ Phase 999.3 wave structure (sequential, all touch extension.ts):
 - Wave 2 ✅ Plan 02 (ATOMIC resolver migration — UAT approved)
 - Wave 3 ✅ Plan 03 (FSP on altium365-event:// — UAT approved)
 - Wave 4 ✅ Plan 04 (Picker + 5 commands + first-run UI — UAT approved 9/9)
-- Wave 5 ▶ Plan 05 (Menu wiring A + B; deprecate promptForProjectId description)
-- Wave 6   Plan 06 (Polish + A/B UAT + README)
+- Wave 5 ✅ Plan 05 (Menu wiring A + B + setting descriptions — UAT approved)
+- Wave 6 ▶ Plan 06 (Polish + A/B UAT + README)
 
 ## Performance Metrics
 
@@ -125,6 +125,11 @@ Recent decisions affecting current work:
 - [Phase 999.3-04]: Project-related preset uses pickProjectIdSafe with three-tier auth fallback (workspace+token → manual on no workspace → manual on token mint fail). UAT confirmed both no-workspace manual path and live workspace project-list path work.
 - [Phase 999.3-04]: package.json contributes.commands extended with 5 testEvents.* entries (palette-required by must_have truth #1 but not in plan task list — classified as planned-by-truth auto-fix, committed as 10db7b3).
 - [Phase 999.3-04]: UAT approved 2026-05-25 for all 9 scenarios on first pass.
+- [Phase 999.3-05]: Removed "Run with empty params" picker action row entirely (UAT bug — picker only logged the choice, so next run silently used default); force-overrides now flow Set Default → Pick → Run. `PickerResult` union retains `'empty'` as defensive dead-code.
+- [Phase 999.3-05]: Dual-shipping Placement A (submenu sub-row under altium365.editorTitle group `4_events@1`) + Placement B (sibling title-bar button at `navigation@2`) per D-12 A/B trial; observation criteria deferred to Plan 06.
+- [Phase 999.3-05]: Placement B button gated on `resourceLangId == python` only (NOT `&& altium365.activeIsRemoteScript`) — local standalone `.py` scripts also benefit from test events; matches Phase 6 D-15 broader-than-remote scope.
+- [Phase 999.3-05]: Dropped redundant `detail: defaultName` from "Edit current default…" picker row — picker header already shows default name prominently.
+- [Phase 999.3-05]: UAT approved 2026-05-25 after one UX iteration (initial picker "Run with empty params" row removed; reverified).
 
 ### Pending Todos
 
