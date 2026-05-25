@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: verifying
+status: executing
 stopped_at: Phase 8 context gathered
-last_updated: "2026-05-25T22:25:34.058Z"
+last_updated: "2026-05-25T22:58:35.890Z"
 last_activity: 2026-05-25
 progress:
   total_phases: 13
   completed_phases: 10
-  total_plans: 48
-  completed_plans: 49
+  total_plans: 51
+  completed_plans: 51
   percent: 77
 ---
 
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-19)
 
 **Core value:** A developer can open VS Code, sign in once, and go from browsing their A365 workspace to running or deploying a script — without leaving the editor or hand-crafting API calls.
-**Current focus:** Phase 7 ✅ complete. Awaiting next-phase selection.
+**Current focus:** Phase 08 — distinct-vsix-version-per-build
 
 ## Current Position
 
-Phase: 7 ✅ COMPLETE
-Plan: 07-01 ✅ shipped (3 tasks, 3 commits)
-Status: Phase summary written; ROADMAP ticked. Next: gsd-verifier or pick next phase.
+Phase: 08 (distinct-vsix-version-per-build) — EXECUTING
+Plan: 2 of 3
+Status: Ready to execute
 Last activity: 2026-05-25
 
-Progress: [██████████] 100% of Phase 7
+Progress: [██████████] 100%
 
 Phase 7 plan structure (single plan):
 
@@ -74,6 +74,8 @@ Phase 7 plan structure (single plan):
 | Phase 04-ui-polish P02 | 3 min | 2 tasks | 2 files |
 | Phase 04-ui-polish P03 | 1 min | 1 tasks | 1 files |
 | Phase 04-ui-polish P04 | 6 min | 4 tasks | 5 files |
+| Phase 08 P02 | 2min | 2 tasks | 2 files |
+| Phase 08 P01 | 5min | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -139,6 +141,8 @@ Recent decisions affecting current work:
 - [Phase 999.3-06]: A/B trial outcome — Placement B (sibling title-bar button) removed in UAT iter 5; status bar indicator + Placement A submenu is the final placement
 - [Phase 999.3-06]: UAT approved 2026-05-25 after 7 UX iterations (LanguageStatusItem → StatusBarItem; cross-workspace picker + rich tooltip; status bar setDefault wiring; unified picker; remove inputParametersPath; remove promptForProjectId; URI shape fix)
 - [Phase 999.3-06]: Phase 999.3 COMPLETE — 6/6 plans UAT-approved, all SCRIPT-V2-04 sub-requirements shipped
+- [Phase 08]: Plan 08-02: SemVer helper at src/semverCompare.ts (vscode-free) with leading-v support so updater can pass release.tag_name directly
+- [Phase ?]: 08-01: CI now stamps unique pre-release version per main run and publishes GitHub Release via softprops/action-gh-release@v2
 
 ### Pending Todos
 
@@ -160,6 +164,6 @@ _None — `2026-05-22-phase-05-candidates` promoted to Phase 6 on 2026-05-22._
 
 ## Session Continuity
 
-Last session: 2026-05-25T22:25:34.049Z
+Last session: 2026-05-25T22:58:23.500Z
 Stopped at: Phase 8 context gathered
-Resume file: .planning/phases/08-distinct-vsix-version-per-build/08-CONTEXT.md
+Resume file: None
