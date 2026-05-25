@@ -92,14 +92,9 @@ export async function pickTestEvent(
         if (defaultName && store && store.events[defaultName]) {
             items.push({
                 label: '$(edit) Edit current default…',
-                detail: defaultName,
                 action: 'edit-default',
             });
         }
-        items.push({
-            label: '$(close) Run with empty params',
-            action: 'empty',
-        });
     }
 
     const qp = vscode.window.createQuickPick<PickerItem>();
