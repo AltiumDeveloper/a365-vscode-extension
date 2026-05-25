@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Phase 7 complete (log-dedup shipped + vitest bootstrapped); ready for next phase or gsd-verifier
-last_updated: "2026-05-25T22:55:00.000Z"
+status: verifying
+stopped_at: Phase 8 context gathered
+last_updated: "2026-05-25T22:25:34.058Z"
 last_activity: 2026-05-25
 progress:
-  total_phases: 12
+  total_phases: 13
   completed_phases: 10
-  total_plans: 43
-  completed_plans: 45
-  percent: 83
+  total_plans: 48
+  completed_plans: 49
+  percent: 77
 ---
 
 # Project State
@@ -81,6 +81,7 @@ Phase 7 plan structure (single plan):
 
 - Phase 02.1 inserted after Phase 02: Side-panel UX closure (G-01..G-05 from human UAT) (URGENT)
 - Phase 02.2 inserted after Phase 02.1: Auth hardening — close carry-forward CR-01/CR-02/WR-01 (02-REVIEW.md) and WR-05 (02.1-REVIEW.md) before Phase 3 remote script mutations (URGENT)
+- Phase 8 added: distinct-vsix-version-per-build
 
 ### Decisions
 
@@ -159,6 +160,6 @@ _None — `2026-05-22-phase-05-candidates` promoted to Phase 6 on 2026-05-22._
 
 ## Session Continuity
 
-Last session: 2026-05-23T18:26:24.233Z
-Stopped at: Phase 999.3 planned (6 plans + PLAN-CHECK PASS-with-fixes)
-Resume file: .planning/phases/999.3-script-test-events-backlog/999.3-CONTEXT.md
+Last session: 2026-05-25T22:25:34.049Z
+Stopped at: Phase 8 context gathered
+Resume file: .planning/phases/08-distinct-vsix-version-per-build/08-CONTEXT.md
