@@ -9,7 +9,16 @@ import {
     deleteEvent,
     setDefault,
     eventCount,
+    isBloatWarned,
+    markBloatWarned,
 } from './store';
+
+/**
+ * Soft cap on stored events per script. Crossing this triggers a
+ * one-time informational toast (D-21 / RESEARCH §Q9). Not a hard limit
+ * — storage continues to function past the threshold.
+ */
+const BLOAT_WARN_THRESHOLD = 25;
 import { pickTestEvent } from './picker';
 import { buildEventUri } from './eventFs';
 import { pickProjectId } from '../projectPicker';
@@ -256,6 +265,20 @@ async function doCreateTestEvent(
         `[Altium 365] testEvents.create: wrote "${trimmedName}" for ${identity.identity}` +
             (store.defaultEventName === trimmedName ? ' (set as default)' : ''),
     );
+
+    // Bloat warning (D-21): one-time toast when crossing threshold.
+    // Fires from .create ONLY — .edit and .setDefault are legitimate
+    // maintenance and must not nag the user.
+    const totalEvents = Object.keys(store.events).length;
+    if (totalEvents > BLOAT_WARN_THRESHOLD && !isBloatWarned(context, identity.identity)) {
+        vscode.window.showInformationMessage(
+            `[Altium 365] You now have ${totalEvents} test events for this script. Consider deleting unused ones — globalState is shared across all workspaces.`,
+        );
+        await markBloatWarned(context, identity.identity);
+        output.appendLine(
+            `[Altium 365] testEvents.create: bloat warning fired for ${identity.identity} at count=${totalEvents}`,
+        );
+    }
 
     // Open editor tab for the event.
     try {
