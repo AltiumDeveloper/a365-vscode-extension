@@ -32,8 +32,9 @@ import { resolveScriptParameters } from './testEvents/resolver';
  * - D-20..D-22 (Phase 999.3): parameters resolved via the unified
  *   `resolveScriptParameters` (src/testEvents/resolver.ts), same code
  *   path as the local Python runner's `prepareRun`. The legacy
- *   `altium365.promptForProjectId` setting is now a no-op (D-22); the
- *   per-script test-event store lives in `globalState` (D-01) keyed by
+ *   `altium365.promptForProjectId` setting has been removed (Plan 06
+ *   UAT iter 6, 2026-05-25 — was a no-op since D-22); the per-script
+ *   test-event store lives in `globalState` (D-01) keyed by
  *   `altium365.scriptParams.<identity>` (owned by ./testEvents/store.ts).
  *   Stringification of values (Pitfall 2 — `GloScrScriptParameterInput.value: String!`)
  *   happens inside the resolver.
@@ -169,9 +170,9 @@ export async function executeRemoteScript(args: ExecuteRemoteArgs): Promise<void
             // ----- Block B: parameters (D-20..D-22 / Phase 999.3) -----
             // Unified resolver — same code path as prepareRun. Phase 6 D-05's
             // workspace-state read + projectId-prompt fallback are both gone;
-            // the legacy `promptForProjectId` setting is now a no-op (D-22).
-            // Sibling import + escape hatch + silent-default semantics live
-            // inside resolveScriptParameters.
+            // the legacy `promptForProjectId` setting was removed in Plan 06
+            // UAT iter 6 (was a no-op since D-22). Sibling import +
+            // silent-default semantics live inside resolveScriptParameters.
             const parameters = await resolveScriptParameters(
                 args.context,
                 { kind: 'remote', identity: args.scriptId },

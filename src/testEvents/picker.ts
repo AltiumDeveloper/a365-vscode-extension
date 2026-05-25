@@ -15,34 +15,38 @@ import { TestEventStore } from './store';
  * abort — the resolver path uses it to silently skip running rather
  * than running with bogus defaults.
  *
- * Layout per RESEARCH §Q3:
+ * Layout per RESEARCH §Q3 (refined Plan 06 UAT iter 6, 2026-05-25):
  *   [$(star-full) Default: <name>]   ← only if store.defaultEventName set
  *   ─── Saved events ───
  *   <event1>
  *   <event2>
  *   ─── Actions ───
  *   $(add)   Create new event…
- *   $(edit)  Edit current default…
- *   $(close) Run with empty params
+ *   $(edit)  Edit Test Event…       ← shown when ≥1 event exists; dispatches
+ *                                      testEvents.edit which opens its own
+ *                                      eventsOnly picker to choose the target
+ *   $(trash) Delete Test Event…     ← same pattern; dispatches testEvents.delete
  */
 
 export type PickerResult =
     | { kind: 'event'; name: string; body: Record<string, unknown> }
     | { kind: 'create' }
-    | { kind: 'edit-default' }
+    | { kind: 'edit-any' }
+    | { kind: 'delete-any' }
     | { kind: 'empty' };
 
 export interface PickerOptions {
     /** Title shown above the picker; defaults to a generic prompt. */
     headerLabel?: string;
-    /** When true, action rows (Create / Edit default / Run empty) are hidden.
-     *  Used by Edit / Delete / SetDefault commands which only want to pick
-     *  an existing event. */
+    /** When true, action rows (Create / Edit any / Delete any / Run empty)
+     *  are hidden. Used by Edit / Delete / SetDefault commands which
+     *  themselves call back into this picker in eventsOnly mode to choose
+     *  a target event. */
     eventsOnly?: boolean;
 }
 
 type PickerItem = vscode.QuickPickItem & {
-    action?: 'create' | 'edit-default' | 'empty' | 'default-header';
+    action?: 'create' | 'edit-any' | 'delete-any' | 'empty' | 'default-header';
     eventName?: string;
 };
 
@@ -89,10 +93,14 @@ export async function pickTestEvent(
             label: '$(add) Create new event…',
             action: 'create',
         });
-        if (defaultName && store && store.events[defaultName]) {
+        if (eventNames.length > 0) {
             items.push({
-                label: '$(edit) Edit current default…',
-                action: 'edit-default',
+                label: '$(edit) Edit Test Event…',
+                action: 'edit-any',
+            });
+            items.push({
+                label: '$(trash) Delete Test Event…',
+                action: 'delete-any',
             });
         }
     }
@@ -116,8 +124,11 @@ export async function pickTestEvent(
         if (picked.action === 'create') {
             return { kind: 'create' };
         }
-        if (picked.action === 'edit-default') {
-            return { kind: 'edit-default' };
+        if (picked.action === 'edit-any') {
+            return { kind: 'edit-any' };
+        }
+        if (picked.action === 'delete-any') {
+            return { kind: 'delete-any' };
         }
         if (picked.action === 'empty') {
             return { kind: 'empty' };

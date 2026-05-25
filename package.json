@@ -215,13 +215,6 @@
           "default": true,
           "description": "Inject the bundled 'a365' helper module on PYTHONPATH so scripts can `import a365`."
         },
-        "altium365.promptForProjectId": {
-          "type": "boolean",
-          "default": true,
-          "description": "(Deprecated — kept for backward compatibility.) When true, prompts for a project ID before script execution if none is set on the active test event. Prefer creating a test event with the \"Project-related\" preset, which embeds the projectId directly. Will be removed in a future release.",
-          "deprecationMessage": "Use the test-events workflow (Altium 365: Create Test Event → Project-related preset) instead.",
-          "markdownDeprecationMessage": "Use the test-events workflow (`Altium 365: Create Test Event` → Project-related preset) instead."
-        },
         "altium365.activeEnvironment": {
           "type": "string",
           "default": "",
