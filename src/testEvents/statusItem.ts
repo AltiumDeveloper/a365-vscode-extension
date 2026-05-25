@@ -10,14 +10,21 @@ import { readStore, onDidChangeTestEventStore } from './store';
  * editor (local `.py` or remote-tmp `altium365:` body) is active. Text
  * shows the current default event name with a `$(symbol-event)` icon
  * so users know at a glance which event will be used on the next Run /
- * Debug / Execute Remotely. Click invokes `altium365.testEvents.pick`.
+ * Debug / Execute Remotely. Click invokes `altium365.testEvents.setDefault`
+ * so the visible default actually changes after the user picks — the
+ * transient `pick` command returns a body for one-shot runs and would
+ * leave the indicator stale.
  *
  * UX iteration history:
  *   v1 — Language Status Item (`vscode.languages.createLanguageStatusItem`).
  *        Rejected: collapsed behind the `{}` indicator at Information
  *        severity; UAT reported "no new button visible".
- *   v2 — Regular StatusBarItem (this implementation). Always visible
- *        when a Python editor is active.
+ *   v2 — Regular StatusBarItem wired to `testEvents.pick`. Rejected:
+ *        pick is transient and never mutates `defaultEventName`, so the
+ *        indicator text never updated after a click.
+ *   v3 — StatusBarItem wired to `testEvents.setDefault` (this impl).
+ *        setDefault writes the store → fires `onDidChangeTestEventStore`
+ *        → refresh() re-reads and updates the visible text.
  *
  * Refresh triggers:
  *   - `onDidChangeActiveTextEditor` — identity may switch with the tab.
@@ -44,7 +51,7 @@ export function registerTestEventStatusItem(
         PRIORITY,
     );
     item.name = 'Altium 365 Test Event';
-    item.command = 'altium365.testEvents.pick';
+    item.command = 'altium365.testEvents.setDefault';
 
     const refresh = () => {
         const editor = vscode.window.activeTextEditor;
@@ -80,7 +87,7 @@ export function registerTestEventStatusItem(
             item.text = `$(symbol-event) ${defaultName}`;
             item.tooltip = buildTooltip(
                 `Default: ${defaultName}`,
-                `This event will be passed to **Run**, **Debug**, and **Execute Remotely** for the active script.`,
+                `This event will be passed to **Run**, **Debug**, and **Execute Remotely** for the active script. Click to switch the default.`,
                 identity,
             );
             item.backgroundColor = undefined;
@@ -143,10 +150,10 @@ function buildTooltip(
     if (identity) {
         const args = encodeURIComponent(JSON.stringify([identity]));
         md.appendMarkdown(
-            `[Pick event](command:altium365.testEvents.pick?${args} "Choose which event to use") · ` +
+            `[Set default](command:altium365.testEvents.setDefault?${args} "Switch the default event for this script") · ` +
+                `[Pick for one run](command:altium365.testEvents.pick?${args} "Choose an event for a single Run/Debug without changing the default") · ` +
                 `[Create new](command:altium365.testEvents.create?${args} "Create a new event") · ` +
-                `[Edit current](command:altium365.testEvents.edit?${args} "Open the current event's JSON in an editor") · ` +
-                `[Set default](command:altium365.testEvents.setDefault?${args} "Mark an event as the default for unattended runs")\n`,
+                `[Edit current](command:altium365.testEvents.edit?${args} "Open the current event's JSON in an editor")\n`,
         );
     }
     return md;
