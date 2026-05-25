@@ -279,7 +279,7 @@ Plans:
 
 **Captured at:** 2026-05-21 (post Phase 3 closure)
 
-### Phase 999.3: Script Test-Events (BACKLOG)
+### Phase 999.3: Script Test-Events (COMPLETED)
 
 **Goal:** AWS-Lambda-style named "test events" for script parameters. Users save and switch between multiple named parameter templates per script, used identically for local run, local debug, and remote execute. Subsumes the current ad-hoc `*.params.json` files and the projectId-prompt fallback shipped in Phase 6.
 
@@ -316,9 +316,9 @@ Plans:
 
 **Captured at:** 2026-05-22 (deferred from Phase 6 stretch goal during discuss)
 
-### Phase 999.4: Remote execute log-dedup fix (BACKLOG)
+### Phase 7: Remote execute log-dedup fix
 
-**Goal:** Eliminate duplicate log batches in the OutputChannel during remote script execution. Each user-emitted log line currently appears once per poll tick that the script remains alive (observed 3× duplication for a ~4s script during Phase 6 Plan 06-03 UAT, 2026-05-22).
+**Goal:** Eliminate duplicate log batches in the OutputChannel during remote script execution. Each user-emitted log line currently appears once per poll tick that the script remains alive (observed 3× duplication for a ~4s script during Phase 6 Plan 06-03 UAT, 2026-05-22). Promoted from backlog 2026-05-25 after Phase 999.3 closeout.
 
 **Captured items:**
 
@@ -327,6 +327,7 @@ Plans:
    if (logPage.nextToken) { nextToken = logPage.nextToken; }
    ```
    When the server returns null/empty (its "no more logs since X" signal), the cursor stays put and the next tick re-fetches and re-prints the same page.
+
 2. **Investigation** — confirm `getExecutionLogs` (in `src/workspace.ts`) pagination semantics: is `nextToken` an opaque continuation token (advance only when non-empty) or a "since X" high-water mark (advance unconditionally on success)? The current code assumes the former but the duplication suggests the server returns empty when there are no NEW logs, not when all logs are consumed.
 3. **Fix candidates** (pick after investigation):
    - Track already-printed line count locally and slice the returned `logs[]` before printing.
@@ -340,11 +341,9 @@ Plans:
 - Does an empty `logs[]` always imply "caught up", or can it mean "page is empty but more exist past this cursor" (e.g. server pagination quirk)?
 
 **Requirements:** TBD (likely REMOTE-EXEC-02 — Log fidelity)
-**Depends on:** none (independent bugfix; safe to land any time)
-**Plans:** 0 plans
+**Depends on:** Phase 6 (remote execution surface)
+**Plans:** 0 plans (run `/gsd-discuss-phase 7` → `/gsd-plan-phase 7`)
 
 Plans:
 
-- [ ] TBD — promote with `/gsd-review-backlog` when ready
-
-**Captured at:** 2026-05-22 (surfaced during Phase 6 Plan 06-03 UAT)
+- [ ] TBD — break down via `/gsd-plan-phase 7`

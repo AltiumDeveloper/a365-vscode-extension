@@ -5,7 +5,7 @@
     "properties": {
         "projectId": {
             "type": "string",
-            "description": "Altium 365 project GUID"
+            "description": "Altium 365 project GRID"
         }
     },
     "additionalProperties": true
