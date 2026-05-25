@@ -7,7 +7,7 @@ def onExecute(context: ExecutionContext, input_parameters: dict) -> dict:
     project_id = "grid:workspace:593aea78-190d-445e-b469-4de4bfa8fe3c:design:project/434C949E-2CEA-4F22-9089-875B5BEAEDE9" 
     print(f"Project ID: {project_id}")
 
-    # Get project details (updated again)
+    # Get project details (updated again)   
     query = gql("""
         mutation ($projectId: ID!, $title: String!, $description: String!) {
             desCreateProjectTask(
