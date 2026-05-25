@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: 08-03 complete
-last_updated: "2026-05-25T23:03:35.780Z"
-last_activity: 2026-05-25
+status: completed
+stopped_at: 08-04 complete (Phase 08 UAT gaps closed)
+last_updated: "2026-05-25T23:32:30Z"
+last_activity: 2026-05-25 -- Phase 08 gap-closure plan 04 complete
 progress:
   total_phases: 13
-  completed_phases: 11
-  total_plans: 51
-  completed_plans: 52
-  percent: 85
+  completed_phases: 10
+  total_plans: 54
+  completed_plans: 53
+  percent: 78
 ---
 
 # Project State
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-05-19)
 
 ## Current Position
 
-Phase: 08 (distinct-vsix-version-per-build) — EXECUTING
-Plan: 3 of 3
-Status: Ready to execute
-Last activity: 2026-05-25
+Phase: 08 — COMPLETE (gap-closure plan 08-04 shipped)
+Plan: 4 of 4
+Status: Phase 08 complete — auto-update check now points at real repo; package.json rebrand 100%
+Last activity: 2026-05-25 -- Phase 08 gap-closure plan 04 complete
 
 Progress: [██████████] 100%
 
@@ -77,6 +77,7 @@ Phase 7 plan structure (single plan):
 | Phase 08 P02 | 2min | 2 tasks | 2 files |
 | Phase 08 P01 | 5min | 1 tasks | 1 files |
 | Phase 08 P03 | 12min | 3 tasks | 3 files |
+| Phase 08 P04 | 5min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -146,6 +147,7 @@ Recent decisions affecting current work:
 - [Phase ?]: 08-01: CI now stamps unique pre-release version per main run and publishes GitHub Release via softprops/action-gh-release@v2
 - [Phase ?]: Plan 08-03: Extension rebrand applied (name=developer, displayName=Altium Developer); all altium365.* identifiers preserved
 - [Phase ?]: Plan 08-03: Debounce stored as epoch ms in globalState, written only after successful fetch — network failures don't poison next retry
+- [Phase 08-04]: Hotfix gap-closure — src/updater.ts RELEASES_URL owner corrected (altium → AltiumDeveloper); 22 package.json command categories + activitybar title + editorTitle submenu label + 4 sibling description references rebranded to "Altium Developer"; all altium365.* identifiers + EXTENSION_ID preserved
 
 ### Pending Todos
 
@@ -167,6 +169,6 @@ _None — `2026-05-22-phase-05-candidates` promoted to Phase 6 on 2026-05-22._
 
 ## Session Continuity
 
-Last session: 2026-05-25T23:03:35.772Z
-Stopped at: 08-03 complete
+Last session: 2026-05-25T23:32:30Z
+Stopped at: 08-04 complete (Phase 08 UAT gaps closed)
 Resume file: None
