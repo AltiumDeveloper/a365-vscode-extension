@@ -1,6 +1,6 @@
 {
-  "name": "altium365-scripting",
-  "displayName": "Altium 365 Developer Tools",
+  "name": "developer",
+  "displayName": "Altium Developer",
   "description": "Browse Altium 365 workspaces, run and debug Python scripts locally with live API access, and manage remote scripts — all without leaving VS Code.",
   "version": "0.1.0",
   "publisher": "altium",
@@ -155,6 +155,11 @@
         "command": "altium365.installScriptDependencies",
         "title": "Install Script Dependencies",
         "category": "Altium 365"
+      },
+      {
+        "command": "altium365.checkForUpdates",
+        "title": "Check for Updates",
+        "category": "Altium Developer"
       }
     ],
     "configuration": {
@@ -264,6 +269,11 @@
               "audience": { "type": "string" }
             }
           }
+        },
+        "altium365.checkForUpdates": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically check GitHub Releases for newer Altium Developer extension builds once per day. Manual checks via the 'Altium Developer: Check for Updates' command are always available."
         }
       }
     },
