@@ -61,9 +61,12 @@ function parseEventUri(
 export function buildEventUri(identity: string, eventName: string): vscode.Uri {
     // Empty authority + identity in first path segment — see file header
     // for why authority is unsafe (Uri.parse lowercases per RFC 3986).
-    return vscode.Uri.parse(
-        `${SCHEME}:/${encodeURIComponent(identity)}/${encodeURIComponent(eventName)}.json`,
-    );
+    // Use Uri.from to avoid the "path cannot begin with //" ambiguity that
+    // Uri.parse triggers when authority is empty and path starts with a slash.
+    return vscode.Uri.from({
+        scheme: SCHEME,
+        path: `/${encodeURIComponent(identity)}/${encodeURIComponent(eventName)}.json`,
+    });
 }
 
 // CONVENTIONS exception: this class holds private mutable state
