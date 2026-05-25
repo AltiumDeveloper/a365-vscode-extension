@@ -57,8 +57,8 @@ From the Altium 365 side panel, right-click any script to **Edit**, **Publish**,
 ### Open + Edit + Publish
 
 - Right-click a script in the side panel → **Edit Script** opens the live script body in a Python editor.
-- Press `Ctrl+S` / `Cmd+S` (or right-click → **Publish Script**) to save **and** publish the new version. The publish comment is recorded as _"Updated via VS Code extension"_.
-- When an `altium365:` document is the active editor, **Publish Script** and **Execute Remotely** also appear in the editor title bar.
+- Press `Ctrl+S` / `Cmd+S` to save **and** publish the new version. The publish comment is recorded as _"Updated via VS Code extension"_. **Publish Script** also remains available in the Command Palette for explicit invocations.
+- When an `altium365:` document is the active editor, **Execute Remotely** appears in the editor title bar.
 
 > **Last-write-wins caveat.** Publishing uses last-write-wins. If two clients edit the same script, the most recent save wins — coordinate edits out-of-band. A diff/conflict UI is planned but is not in this release.
 
@@ -94,8 +94,9 @@ Test events replace the older `<script>.params.json` / `altium365.inputParameter
 
 ### UI affordances
 
-For Python files (local `.py` or remote-tmp script bodies) the test-event picker is one click away — both placements are shipped during the v1 trial:
+For Python files (local `.py` or remote-tmp script bodies) the test-event picker is reachable from three surfaces:
 
+- **Language status item** at the bottom-right of the editor — shows the **current default event name** with a `$(symbol-event)` icon, and clicks straight into `Pick Test Event`. The most discoverable indicator of which event will be used on next run.
 - **Title-bar icon** next to the Run button — direct entry to `Pick Test Event`.
 - **Altium 365 editor-title submenu** → `Test events ▾` sub-row — same command, grouped with the other A365 actions.
 

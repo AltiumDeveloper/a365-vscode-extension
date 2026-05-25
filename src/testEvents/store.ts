@@ -13,6 +13,19 @@ import * as vscode from 'vscode';
 export const TEST_EVENT_KEY_PREFIX = 'altium365.scriptParams.';
 export const BLOAT_WARN_KEY_PREFIX = 'altium365.scriptParams.bloatWarned.';
 
+/**
+ * Fires after any successful mutation (writeStore / deleteEvent /
+ * setDefault). Subscribers — currently the test-event language status
+ * item — re-read the store and update their UI. The event payload is
+ * the affected identity so subscribers can no-op when the active
+ * editor's identity is unrelated.
+ *
+ * CONVENTIONS exception: module-level EventEmitter; lifetime matches
+ * the extension host. Same pattern as `auth.ts:onAuthStateChanged`.
+ */
+const storeChangeEmitter = new vscode.EventEmitter<string>();
+export const onDidChangeTestEventStore = storeChangeEmitter.event;
+
 export interface TestEventStore {
     defaultEventName: string;
     events: Record<string, Record<string, unknown>>;
@@ -42,6 +55,7 @@ export async function writeStore(
     store: TestEventStore,
 ): Promise<void> {
     await ctx.globalState.update(storeKey(identity), store);
+    storeChangeEmitter.fire(identity);
 }
 
 export async function deleteEvent(
@@ -63,6 +77,7 @@ export async function deleteEvent(
     const remaining = Object.keys(store.events);
     if (remaining.length === 0 && store.defaultEventName === '') {
         await ctx.globalState.update(storeKey(identity), undefined);
+        storeChangeEmitter.fire(identity);
         return undefined;
     }
     await writeStore(ctx, identity, store);
