@@ -690,7 +690,7 @@ No blocking gaps.
 | A4 | The `softprops/action-gh-release@v2` `body:` parameter handles multi-line/quoted commit messages safely (no shell injection class issues) | Code Examples (workflow YAML) | Release body looks corrupted. Mitigation: use `body_path:` with a tempfile if it breaks. [ASSUMED — but widely used pattern] |
 | A5 | Anonymous rate limit on `api.github.com` is 60 req/hr per IP, sufficient for 24h debounce per user | CONTEXT decision | Multiple users behind a shared NAT could throttle each other. Mitigation: 24h debounce makes hitting 60/hr extremely unlikely in practice. [CITED: docs.github.com/rest/overview/resources-in-the-rest-api#rate-limiting] |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Does `vsce package --pre-release` v3.9.1 accept `+SHA7` build metadata?**
    - What we know: SemVer 2.0 allows it; the Marketplace historically does not; `vsce package` has been inconsistent across versions.
