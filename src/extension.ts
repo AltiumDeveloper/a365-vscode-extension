@@ -27,6 +27,7 @@ import { resolveScriptParameters } from './testEvents/resolver';
 import { TestEventFs } from './testEvents/eventFs';
 import { registerTestEventCommands } from './testEvents/commands';
 import { registerTestEventStatusItem } from './testEvents/statusItem';
+import { registerUpdater } from './updater';
 
 let outputChannel: vscode.OutputChannel;
 
@@ -115,6 +116,7 @@ export function activate(context: vscode.ExtensionContext) {
     const testEventCommandDisposables = registerTestEventCommands(context, outputChannel);
     const testEventStatusDisposables = registerTestEventStatusItem(context);
     const localScriptSaveBridge = registerLocalScriptSaveBridge(outputChannel, remoteFs);
+    const updaterDisposables = registerUpdater(context, outputChannel);
 
     context.subscriptions.push(
         outputChannel,
@@ -174,7 +176,8 @@ export function activate(context: vscode.ExtensionContext) {
         ...treeCommandDisposables,
         ...testEventCommandDisposables,
         ...testEventStatusDisposables,
-        localScriptSaveBridge
+        localScriptSaveBridge,
+        ...updaterDisposables
     );
 
     // Plan 999.3-06 Task 2: activation boot line so dogfooders can see
