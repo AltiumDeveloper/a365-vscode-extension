@@ -347,3 +347,20 @@ Plans:
 Plans:
 
 - [x] 07-01-PLAN.md — vitest bootstrap + extract dedupLogPage helper + integrate + 5-case unit test ✅ Complete 2026-05-25
+
+### Phase 8: distinct-vsix-version-per-build
+
+**Goal:** Every push to `main` produces a uniquely-versioned VSIX (`${BASE}-ci.${RUN}+${SHA7}`) attached to an auto-created GitHub Release; the extension polls GitHub Releases on a 24h-debounced activation hook (toggleable via `altium365.checkForUpdates` setting) and a palette-visible manual command, offering a one-click download → install → reload flow when a newer release exists.
+**Requirements**: CI-VER-01, CI-VER-02, CI-VER-03, CI-VER-04, UPD-01, UPD-02, UPD-03, UPD-04, UPD-05, UPD-06, UPD-07
+**Depends on:** Phase 7
+**Plans:** 3 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 08-01-PLAN.md — CI versioning + GitHub Release publishing in .github/workflows/ci.yml (CI-VER-01..04)
+- [ ] 08-02-PLAN.md — Pure SemVer comparator src/semverCompare.ts + vitest spec test/compareVersions.test.ts (UPD-01)
+
+**Wave 2** *(blocked on Wave 1 — 08-02 specifically)*
+
+- [ ] 08-03-PLAN.md — src/updater.ts (registerUpdater factory + GitHub poll + redirect-following download + install + reload) wired into src/extension.ts + package.json command/setting (UPD-02..07)
