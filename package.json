@@ -269,7 +269,7 @@
     },
     "jsonValidation": [
       {
-        "fileMatch": "altium365-event://**/*.json",
+        "fileMatch": "altium365-event:/**/*.json",
         "url": "./schemas/test-event.schema.json"
       }
     ],

@@ -8,10 +8,16 @@ import { readStore, writeStore, TestEventStore } from './store';
  * commands (Plan 999.3-04) and the JSONSchema binding declared in
  * package.json `contributes.jsonValidation` (Plan 999.3-03 / D-16).
  *
- * URI shape (Pitfall 1 — encodeURIComponent on both authority and path
- * segment to survive identities containing ':' and win32-style backslashes):
+ * URI shape (Pitfall 1 — encodeURIComponent on identity and event-name
+ * to survive identities containing ':' and win32-style backslashes).
  *
- *     altium365-event://<encodeURIComponent(identity)>/<encodeURIComponent(eventName)>.json
+ * Identity lives in the FIRST PATH SEGMENT (not authority) because
+ * `vscode.Uri.parse` lowercases the authority per RFC 3986 §3.2.2,
+ * which silently corrupts mixed-case identities (e.g. uppercase hex in
+ * GraphQL-returned UUIDs) → store-key miss on Edit → empty payload tab.
+ * Path segments are preserved verbatim.
+ *
+ *     altium365-event:/<encodeURIComponent(identity)>/<encodeURIComponent(eventName)>.json
  *
  * Two-layer JSONSchema strategy (RESEARCH §Q2):
  *   1. package.json `jsonValidation` declarative binding (Plan 999.3-03 Task 2).
@@ -35,12 +41,17 @@ function parseEventUri(
     if (uri.scheme !== SCHEME) {
         return undefined;
     }
-    const identity = decodeURIComponent(uri.authority || '');
     const raw = uri.path.startsWith('/') ? uri.path.slice(1) : uri.path;
-    if (!raw.toLowerCase().endsWith('.json')) {
+    const slash = raw.indexOf('/');
+    if (slash <= 0) {
         return undefined;
     }
-    const eventName = decodeURIComponent(raw.slice(0, raw.length - '.json'.length));
+    const identity = decodeURIComponent(raw.slice(0, slash));
+    const rest = raw.slice(slash + 1);
+    if (!rest.toLowerCase().endsWith('.json')) {
+        return undefined;
+    }
+    const eventName = decodeURIComponent(rest.slice(0, rest.length - '.json'.length));
     if (!identity || !eventName) {
         return undefined;
     }
@@ -48,8 +59,10 @@ function parseEventUri(
 }
 
 export function buildEventUri(identity: string, eventName: string): vscode.Uri {
+    // Empty authority + identity in first path segment — see file header
+    // for why authority is unsafe (Uri.parse lowercases per RFC 3986).
     return vscode.Uri.parse(
-        `${SCHEME}://${encodeURIComponent(identity)}/${encodeURIComponent(eventName)}.json`,
+        `${SCHEME}:/${encodeURIComponent(identity)}/${encodeURIComponent(eventName)}.json`,
     );
 }
 
