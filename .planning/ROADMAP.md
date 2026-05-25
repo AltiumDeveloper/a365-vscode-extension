@@ -353,7 +353,7 @@ Plans:
 **Goal:** Every push to `main` produces a uniquely-versioned VSIX (`${BASE}-ci.${RUN}+${SHA7}`) attached to an auto-created GitHub Release; the extension polls GitHub Releases on a 24h-debounced activation hook (toggleable via `altium365.checkForUpdates` setting) and a palette-visible manual command, offering a one-click download → install → reload flow when a newer release exists. Phase 8 also rebrands the extension to `altium.developer` (displayName "Altium Developer") so the first published release ships under the final identity — `altium365.*` command IDs and config keys are explicitly preserved.
 **Requirements**: CI-VER-01, CI-VER-02, CI-VER-03, CI-VER-04, UPD-01, UPD-02, UPD-03, UPD-04, UPD-05, UPD-06, UPD-07, UPD-08
 **Depends on:** Phase 7
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 **Wave 1**
@@ -363,4 +363,4 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 — 08-02 specifically)*
 
-- [ ] 08-03-PLAN.md — src/updater.ts (registerUpdater factory + GitHub poll + redirect-following download + install + reload) wired into src/extension.ts + package.json rebrand (name='developer', displayName='Altium Developer') + command/setting (UPD-02..08)
+- [x] 08-03-PLAN.md — src/updater.ts (registerUpdater factory + GitHub poll + redirect-following download + install + reload) wired into src/extension.ts + package.json rebrand (name='developer', displayName='Altium Developer') + command/setting (UPD-02..08)

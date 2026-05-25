@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 8 context gathered
-last_updated: "2026-05-25T22:58:35.890Z"
+stopped_at: 08-03 complete
+last_updated: "2026-05-25T23:03:35.780Z"
 last_activity: 2026-05-25
 progress:
   total_phases: 13
-  completed_phases: 10
+  completed_phases: 11
   total_plans: 51
-  completed_plans: 51
-  percent: 77
+  completed_plans: 52
+  percent: 85
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-05-19)
 ## Current Position
 
 Phase: 08 (distinct-vsix-version-per-build) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
 Last activity: 2026-05-25
 
@@ -76,6 +76,7 @@ Phase 7 plan structure (single plan):
 | Phase 04-ui-polish P04 | 6 min | 4 tasks | 5 files |
 | Phase 08 P02 | 2min | 2 tasks | 2 files |
 | Phase 08 P01 | 5min | 1 tasks | 1 files |
+| Phase 08 P03 | 12min | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -143,6 +144,8 @@ Recent decisions affecting current work:
 - [Phase 999.3-06]: Phase 999.3 COMPLETE — 6/6 plans UAT-approved, all SCRIPT-V2-04 sub-requirements shipped
 - [Phase 08]: Plan 08-02: SemVer helper at src/semverCompare.ts (vscode-free) with leading-v support so updater can pass release.tag_name directly
 - [Phase ?]: 08-01: CI now stamps unique pre-release version per main run and publishes GitHub Release via softprops/action-gh-release@v2
+- [Phase ?]: Plan 08-03: Extension rebrand applied (name=developer, displayName=Altium Developer); all altium365.* identifiers preserved
+- [Phase ?]: Plan 08-03: Debounce stored as epoch ms in globalState, written only after successful fetch — network failures don't poison next retry
 
 ### Pending Todos
 
@@ -164,6 +167,6 @@ _None — `2026-05-22-phase-05-candidates` promoted to Phase 6 on 2026-05-22._
 
 ## Session Continuity
 
-Last session: 2026-05-25T22:58:23.500Z
-Stopped at: Phase 8 context gathered
+Last session: 2026-05-25T23:03:35.772Z
+Stopped at: 08-03 complete
 Resume file: None
