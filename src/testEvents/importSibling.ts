@@ -50,7 +50,7 @@ export async function maybePromptForSiblingImport(
 
     if (choice === 'Never for this file') {
         await ctx.globalState.update(markerKey, DECLINED_MARKER);
-        output.appendLine(`[Altium 365] User declined import of ${sibling}`);
+        output.appendLine(`[Altium 365] testEvents.importSibling: user declined import of ${sibling}`);
         return;
     }
     if (choice !== 'Import') {
@@ -68,12 +68,12 @@ export async function maybePromptForSiblingImport(
             events: { imported: parsed as Record<string, unknown> },
         });
         await ctx.globalState.update(markerKey, sibling);
-        output.appendLine(`[Altium 365] Imported ${sibling} as test event 'imported'`);
+        output.appendLine(`[Altium 365] testEvents.importSibling: imported ${sibling} as 'imported'`);
     } catch (e) {
         const msg = (e as Error).message;
         vscode.window.showErrorMessage(
             `Altium 365: failed to import ${path.basename(sibling)}: ${msg}`,
         );
-        output.appendLine(`[Altium 365] Failed to import ${sibling}: ${msg}`);
+        output.appendLine(`[Altium 365] testEvents.importSibling: failed to import ${sibling}: ${msg}`);
     }
 }

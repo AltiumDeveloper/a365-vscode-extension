@@ -60,7 +60,7 @@ export async function resolveScriptParameters(
         if (explicit) {
             if (!fs.existsSync(explicit)) {
                 output.appendLine(
-                    `[Altium 365] resolveScriptParameters: inputParametersPath '${explicit}' does not exist; ignoring`,
+                    `[Altium 365] testEvents.resolver: inputParametersPath '${explicit}' does not exist; ignoring`,
                 );
             } else {
                 try {
@@ -68,14 +68,14 @@ export async function resolveScriptParameters(
                     const parsed = JSON.parse(raw);
                     if (!parsed || typeof parsed !== 'object') {
                         output.appendLine(
-                            `[Altium 365] resolveScriptParameters: ${explicit} is not a JSON object; ignoring`,
+                            `[Altium 365] testEvents.resolver: ${explicit} is not a JSON object; ignoring`,
                         );
                         return undefined;
                     }
                     return stringifyEvent(parsed as Record<string, unknown>);
                 } catch (e) {
                     output.appendLine(
-                        `[Altium 365] resolveScriptParameters: failed to read ${explicit}: ${(e as Error).message}`,
+                        `[Altium 365] testEvents.resolver: failed to read ${explicit}: ${(e as Error).message}`,
                     );
                     return undefined;
                 }
@@ -100,7 +100,7 @@ export async function resolveScriptParameters(
                 return undefined;
             }
             output.appendLine(
-                `[Altium 365] resolveScriptParameters: no events for ${identity.identity}; dispatching testEvents.create`,
+                `[Altium 365] testEvents.resolver: no events for ${identity.identity}; dispatching testEvents.create`,
             );
             const created = await vscode.commands.executeCommand<
                 { name: string; body: Record<string, unknown> } | undefined
@@ -116,7 +116,7 @@ export async function resolveScriptParameters(
         // undefined if the user cancelled the picker.
         if (!store.defaultEventName || !store.events[store.defaultEventName]) {
             output.appendLine(
-                `[Altium 365] resolveScriptParameters: no default event for ${identity.identity}; dispatching testEvents.setDefault`,
+                `[Altium 365] testEvents.resolver: no default event for ${identity.identity}; dispatching testEvents.setDefault`,
             );
             await vscode.commands.executeCommand(
                 'altium365.testEvents.setDefault',

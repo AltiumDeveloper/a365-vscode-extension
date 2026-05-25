@@ -174,6 +174,23 @@ export function activate(context: vscode.ExtensionContext) {
         localScriptSaveBridge
     );
 
+    // Plan 999.3-06 Task 2: activation boot line so dogfooders can see
+    // in the output channel that the test-events subsystem booted, and
+    // get a quick read on identity-count growth over time. Filters out
+    // bloatWarned.* meta-keys so the number reflects scripts with stored
+    // events, not the flag-tracking sidecar.
+    const identityCount = context.globalState
+        .keys()
+        .filter(
+            (k) =>
+                k.startsWith('altium365.scriptParams.') &&
+                !k.startsWith('altium365.scriptParams.bloatWarned.') &&
+                !k.startsWith('altium365.scriptParams.importedFrom.')
+        ).length;
+    outputChannel.appendLine(
+        `[Altium 365] testEvents.activate: subsystem active — ${identityCount} identities tracked.`
+    );
+
     // D-15 (UAT-2 follow-up): rehydrate the localScriptCache from the
     // on-disk GRID layout BEFORE seeding the active-remote context key,
     // so remote-tmp `.py` tabs restored by VS Code from a previous
