@@ -22,8 +22,8 @@ const BLOAT_WARN_THRESHOLD = 25;
 import { pickTestEvent } from './picker';
 import { buildEventUri } from './eventFs';
 import { pickProjectId } from '../projectPicker';
-import { ensureWorkspaceToken, readOAuthConfig } from '../auth';
-import { getSelectedWorkspace } from '../workspace';
+import { ensureWorkspaceToken, getBaseAccessToken, readOAuthConfig } from '../auth';
+import { getSelectedWorkspace, listWorkspaces, WorkspaceInfo } from '../workspace';
 
 /**
  * Test-event commands (Phase 999.3 Plan 04, D-10..D-14).
@@ -243,7 +243,7 @@ async function doCreateTestEvent(
 
     let body: Record<string, unknown> = {};
     if (preset.preset === 'project') {
-        const pickedProject = await pickProjectIdSafe(context, output);
+        const pickedProject = await pickProjectIdSafe(context, output, identity);
         if (pickedProject === undefined) {
             output.appendLine(`[Altium 365] testEvents.create: project preset cancelled`);
             return undefined;
@@ -416,45 +416,166 @@ async function doSetDefaultTestEvent(
 // ─── Preset helpers ─────────────────────────────────────────────────
 
 /**
- * Wraps `pickProjectId` with the auth orchestration it needs (active
- * workspace + minted token + endpoint). If no workspace is selected or
- * token mint fails, falls back to a plain showInputBox so the preset
- * still works in offline / unauthenticated scenarios.
+ * Wraps `pickProjectId` with the auth orchestration it needs and three
+ * fallback paths so the Project-related preset works in every script
+ * context — including cross-workspace (remote script not owned by the
+ * active workspace) and offline (no active workspace at all).
+ *
+ * Resolution order:
+ *   1. Remote script identity carries `workspaceAuthId` → look up the
+ *      script's own WorkspaceInfo via `listWorkspaces` and use THAT
+ *      workspace's project list (not the active workspace). Required
+ *      so that a Create on an Edit-opened remote script always offers
+ *      projects from the script's home workspace.
+ *   2. Local script + active workspace selected → use the active
+ *      workspace (legacy behaviour, unchanged).
+ *   3. Local script + NO active workspace → 2-option QuickPick:
+ *      a. "Select workspace first" — dispatches `altium365.selectWorkspace`
+ *         then retries against the new selection.
+ *      b. "Enter project ID manually" — falls through to a plain input box.
+ *      (Cancel returns undefined.)
+ *
+ * Token-mint failures at any branch fall back to manual entry rather
+ * than aborting the create flow.
  */
 async function pickProjectIdSafe(
     context: vscode.ExtensionContext,
     output: vscode.OutputChannel,
+    identity: ScriptIdentity,
 ): Promise<string | undefined> {
-    const ws = getSelectedWorkspace(context);
     const endpoint = vscode.workspace
         .getConfiguration('altium365')
         .get<string>('graphqlEndpoint', '');
-    if (!ws || !endpoint) {
-        const entered = await vscode.window.showInputBox({
-            prompt: 'Enter projectId (no active workspace — list unavailable)',
-            placeHolder: 'projectId GUID',
-            ignoreFocusOut: true,
-        });
-        return entered === undefined ? undefined : entered.trim();
+    const cfg = readOAuthConfig();
+
+    // Branch 1 — remote script: prefer the script's owning workspace
+    // over the active one. This is the "of course the context is the
+    // script's workspace" case that surfaced in UAT.
+    if (
+        identity.kind === 'remote' &&
+        identity.workspaceAuthId &&
+        endpoint
+    ) {
+        const ws = await lookupWorkspaceByAuthId(
+            context,
+            cfg,
+            endpoint,
+            identity.workspaceAuthId,
+            output,
+        );
+        if (ws) {
+            return mintAndPickProject(context, cfg, endpoint, ws, output);
+        }
+        output.appendLine(
+            `[Altium 365] testEvents.create: could not resolve workspace for authId=${identity.workspaceAuthId}; falling back to active workspace`,
+        );
     }
+
+    // Branch 2 — local (or remote without workspaceAuthId) with an
+    // active workspace selected.
+    const active = getSelectedWorkspace(context);
+    if (active && endpoint) {
+        return mintAndPickProject(context, cfg, endpoint, active, output);
+    }
+
+    // Branch 3 — no active workspace. Offer Select-vs-Manual instead
+    // of silently dropping to a free-text input.
+    return offerSelectOrManual(context, output, endpoint, cfg);
+}
+
+async function lookupWorkspaceByAuthId(
+    context: vscode.ExtensionContext,
+    cfg: ReturnType<typeof readOAuthConfig>,
+    endpoint: string,
+    authId: string,
+    output: vscode.OutputChannel,
+): Promise<WorkspaceInfo | undefined> {
+    try {
+        const baseToken = await getBaseAccessToken(context, cfg);
+        if (!baseToken) {
+            return undefined;
+        }
+        const all = await listWorkspaces(endpoint, baseToken);
+        return all.find((w) => w.authId === authId);
+    } catch (e) {
+        output.appendLine(
+            `[Altium 365] testEvents.create: workspace lookup by authId failed: ${(e as Error).message}`,
+        );
+        return undefined;
+    }
+}
+
+async function mintAndPickProject(
+    context: vscode.ExtensionContext,
+    cfg: ReturnType<typeof readOAuthConfig>,
+    endpoint: string,
+    ws: WorkspaceInfo,
+    output: vscode.OutputChannel,
+): Promise<string | undefined> {
     let token: string;
     try {
-        token = await ensureWorkspaceToken(context, readOAuthConfig(), {
+        token = await ensureWorkspaceToken(context, cfg, {
             workspaceId: ws.workspaceId,
             authId: ws.authId,
         });
     } catch (e) {
         output.appendLine(
-            `[Altium 365] testEvents.create: workspace token mint failed: ${(e as Error).message}`,
+            `[Altium 365] testEvents.create: workspace token mint failed for "${ws.name}": ${(e as Error).message}`,
         );
         const entered = await vscode.window.showInputBox({
-            prompt: 'Enter projectId (could not mint workspace token)',
+            prompt: `Enter projectId (token mint failed for "${ws.name}")`,
             placeHolder: 'projectId GUID',
             ignoreFocusOut: true,
         });
         return entered === undefined ? undefined : entered.trim();
     }
     return pickProjectId(context, endpoint, token, '', ws, output);
+}
+
+async function offerSelectOrManual(
+    context: vscode.ExtensionContext,
+    output: vscode.OutputChannel,
+    endpoint: string,
+    cfg: ReturnType<typeof readOAuthConfig>,
+): Promise<string | undefined> {
+    type FallbackItem = vscode.QuickPickItem & { action: 'select' | 'manual' };
+    const items: FallbackItem[] = [
+        {
+            label: '$(symbol-namespace) Select workspace first',
+            description: 'Pick an Altium 365 workspace, then load its project list',
+            action: 'select',
+        },
+        {
+            label: '$(edit) Enter project ID manually',
+            description: 'Type or paste a projectId GUID',
+            action: 'manual',
+        },
+    ];
+    const choice = await vscode.window.showQuickPick(items, {
+        placeHolder: 'No active workspace — how do you want to set the projectId?',
+        ignoreFocusOut: true,
+    });
+    if (!choice) {
+        return undefined;
+    }
+    if (choice.action === 'manual') {
+        const entered = await vscode.window.showInputBox({
+            prompt: 'Enter projectId',
+            placeHolder: 'projectId GUID',
+            ignoreFocusOut: true,
+        });
+        return entered === undefined ? undefined : entered.trim();
+    }
+    // 'select' — invoke selectWorkspace, then re-check.
+    await vscode.commands.executeCommand('altium365.selectWorkspace');
+    const nowActive = getSelectedWorkspace(context);
+    if (!nowActive || !endpoint) {
+        output.appendLine(
+            `[Altium 365] testEvents.create: workspace still unset after selectWorkspace; aborting`,
+        );
+        return undefined;
+    }
+    return mintAndPickProject(context, cfg, endpoint, nowActive, output);
 }
 
 /**
