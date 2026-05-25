@@ -89,7 +89,7 @@ function getJson(endpoint: string, timeoutMs = 8000): Promise<unknown> {
 
 ```typescript
 // Mirror src/auth.ts:98-101 — module-private constants block near the top.
-const EXTENSION_ID = 'altium.altium365-scripting';  // ${publisher}.${name} from package.json:6,2
+const EXTENSION_ID = 'altium.developer';  // ${publisher}.${name} — package.json:name is renamed to 'developer' in this phase (CONTEXT.md Part 3 rebrand). Was 'altium.altium365-scripting' pre-rebrand.
 const GLOBAL_LAST_CHECK_KEY = 'altium365.lastUpdateCheckAt';
 const RELEASES_URL = 'https://api.github.com/repos/altium/a365-vscode-extension/releases';
 const DEBOUNCE_MS = 24 * 60 * 60 * 1000;

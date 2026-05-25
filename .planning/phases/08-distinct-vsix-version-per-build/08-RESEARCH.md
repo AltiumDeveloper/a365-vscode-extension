@@ -1,5 +1,7 @@
 # Phase 8: distinct-vsix-version-per-build — Research
 
+> **AMENDMENT 2026-05-25 — EXTENSION REBRAND:** Phase 8 now also renames the extension to **`altium.developer`** (displayName **"Altium Developer"**). See CONTEXT.md "Part 3 — Extension Rebrand" for the authoritative decision. Throughout this research file, every mention of the extension ID `altium.altium365-scripting`, the package name `altium365-scripting`, the displayName `Altium 365 Developer Tools`, and any VSIX filename of the form `altium365-scripting-*.vsix` is **superseded** — the correct values are `altium.developer`, `developer`, `Altium Developer`, and `developer-*.vsix` respectively. The original strings are preserved below for historical accuracy and for the Pitfall #1 narrative (which still applies — the publisher.name shape is the same gotcha, just with the new name). Command IDs (`altium365.*`) and config keys (`altium365.*`) are explicitly unchanged.
+
 **Researched:** 2026-05-25
 **Domain:** GitHub Actions CI versioning + VS Code extension self-updater
 **Confidence:** HIGH (most decisions are locked in CONTEXT.md; research validates them and surfaces gotchas)

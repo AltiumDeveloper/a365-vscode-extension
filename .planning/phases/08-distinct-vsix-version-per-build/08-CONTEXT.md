@@ -81,6 +81,24 @@ Out of scope (explicitly): Marketplace publishing, signed VSIX builds, automatic
 - **Asset selection:** filter release `assets[]` for the entry whose `name` ends with `.vsix`. If multiple match (shouldn't happen), pick the largest. If zero match, log and skip.
 - **No checksum verification in v1.** GitHub-hosted release assets are trusted; if we sign VSIX builds later, verification gets added then.
 
+### Part 3 — Extension Rebrand (REQUIRED, added 2026-05-25)
+
+**Supersedes any earlier mention of `altium.altium365-scripting`. Authoritative as of this revision.**
+
+- **Why now:** Phase 8 is the first phase that publishes a numbered release artifact and ships a self-updater that hardcodes the extension ID. Rebranding *after* releases are out means orphaned installs (the new ID is a different extension to VS Code — users would need to manually uninstall + reinstall). Rebranding *with* the first release is the cheapest moment.
+- **Rename:**
+  - `package.json:name` — `altium365-scripting` → `developer`
+  - `package.json:displayName` — `Altium 365 Developer Tools` → `Altium Developer`
+  - `package.json:publisher` — unchanged (`altium`)
+  - Resulting extension ID — `altium.altium365-scripting` → **`altium.developer`**
+- **Scope fence — explicitly OUT of scope for this rename:**
+  - Command IDs stay `altium365.*` (user keybindings, task definitions, palette muscle memory are stable contracts; `altium365.*` still reads as "talks to A365"). Decision: keep all `altium365.*` command identifiers as-is — operator confirmed 2026-05-25.
+  - View IDs, view container IDs, status-bar text, config keys (`altium365.*`) — unchanged.
+  - `package.json:description` — unchanged in this phase (orthogonal copy edit; may revisit when Marketplace listing lands).
+- **Hardcode site:** the only runtime reference to the extension ID is the updater's `EXTENSION_ID` constant — must be `'altium.developer'`. CI VSIX artifact name auto-derives from `package.json:name` so the `*.vsix` glob in the release-publish step continues to work without edit.
+- **Repo URL:** `altium/a365-vscode-extension` GitHub repo (and hence the Releases API URL) is unchanged. Repo rename is a separate, optional, future operation — GitHub redirects keep old URLs working.
+- **Backward compatibility:** none required. The extension has never been published to Marketplace; the only consumers are internal sideloaders who can uninstall the old ID and install the new one once. No migration code in `activate()`.
+
 ### Claude's Discretion (implementation details)
 
 - File layout: extracting the updater into `src/updater.ts` (parallel to `src/auth.ts`, `src/workspace.ts`) vs inlining in `src/extension.ts`. Planner picks based on size threshold — single file if < ~80 LOC, separate module if larger.
