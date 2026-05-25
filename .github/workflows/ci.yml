@@ -3,19 +3,52 @@ name: CI
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
       - run: npm ci
       - run: npm run compile
-      - run: npm run package
+      - run: npm test
+      - name: Compute version
+        id: ver
+        if: github.ref == 'refs/heads/main'
+        run: |
+          BASE=$(node -p "require('./package.json').version")
+          SHA7=$(git rev-parse --short=7 HEAD)
+          VERSION="${BASE}-ci.${GITHUB_RUN_NUMBER}+${SHA7}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          npm version "$VERSION" --no-git-tag-version --allow-same-version
+      - name: Package VSIX (main, pre-release)
+        if: github.ref == 'refs/heads/main'
+        run: npx vsce package --pre-release
+      - name: Package VSIX (non-main)
+        if: github.ref != 'refs/heads/main'
+        run: npm run package
       - uses: actions/upload-artifact@v4
         with:
           name: altium365-vsix
           path: '*.vsix'
+      - name: Create GitHub Release
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.ver.outputs.version }}
+          name: v${{ steps.ver.outputs.version }}
+          body: ${{ github.event.head_commit.message }}
+          prerelease: true
+          files: '*.vsix'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
