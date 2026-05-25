@@ -245,6 +245,8 @@ Phases execute in numeric order: 1 → 2 → 02.1 → 02.2 → 02.3 → 3 → 4 
 | 4. UI Polish | 4/4 | Complete | 2026-05-21 |
 | 5. Progress Feedback for Async Ops | 3/3 | Complete   | 2026-05-22 |
 | 6. Script Execution UX & Unified Params | 1/3 | In Progress|  |
+| 7. Remote execute log-dedup fix | 1/1 | Complete | 2026-05-25 |
+| 8. distinct-vsix-version-per-build | 4/4 | Complete (3 UAT tests deferred) | 2026-05-25 |
 
 ## Backlog
 
@@ -353,7 +355,7 @@ Plans:
 **Goal:** Every push to `main` produces a uniquely-versioned VSIX (`${BASE}-ci.${RUN}+${SHA7}`) attached to an auto-created GitHub Release; the extension polls GitHub Releases on a 24h-debounced activation hook (toggleable via `altium365.checkForUpdates` setting) and a palette-visible manual command, offering a one-click download → install → reload flow when a newer release exists. Phase 8 also rebrands the extension to `altium.developer` (displayName "Altium Developer") so the first published release ships under the final identity — `altium365.*` command IDs and config keys are explicitly preserved.
 **Requirements**: CI-VER-01, CI-VER-02, CI-VER-03, CI-VER-04, UPD-01, UPD-02, UPD-03, UPD-04, UPD-05, UPD-06, UPD-07, UPD-08
 **Depends on:** Phase 7
-**Plans:** 3/4 plans complete (08-04 = gap closure)
+**Plans:** 4/4 plans complete (08-04 = gap closure shipped 2026-05-25)
 
 Plans:
 **Wave 1**
@@ -367,4 +369,4 @@ Plans:
 
 **Wave 3 — Gap closure** *(blocked on Wave 2; closes 08-UAT.md Gaps 1 + 2)*
 
-- [ ] 08-04-PLAN.md — Fix RELEASES_URL owner (altium→AltiumDeveloper) in src/updater.ts + complete rebrand of remaining "Altium 365" display strings in package.json (21 command categories + view title + submenu label); altium365.* identifiers preserved (UPD-02 / UPD-05 alignment)
+- [x] 08-04-PLAN.md — Fix RELEASES_URL owner (altium→AltiumDeveloper) in src/updater.ts + complete rebrand of remaining "Altium 365" display strings in package.json (22 command categories + view title + submenu label + 4 sibling descriptions); altium365.* identifiers preserved (UPD-02 / UPD-05 alignment)
