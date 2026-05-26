@@ -480,11 +480,24 @@ export async function refreshTokens(
     if (!tok?.refresh_token) {
         return undefined;
     }
-    const refreshed = (await postForm(cfg.tokenEndpoint, {
-        grant_type: 'refresh_token',
-        refresh_token: tok.refresh_token,
-        client_id: cfg.clientId,
-    })) as TokenSet;
+    let refreshed: TokenSet;
+    try {
+        refreshed = (await postForm(cfg.tokenEndpoint, {
+            grant_type: 'refresh_token',
+            refresh_token: tok.refresh_token,
+            client_id: cfg.clientId,
+        })) as TokenSet;
+    } catch (e) {
+        // Most refresh failures are unrecoverable from the extension side
+        // (invalid_grant = revoked / expired refresh_token, invalid_client,
+        // etc.). Drain tokens so the caller's catch lands the user on the
+        // welcome view instead of an infinite stale-token retry loop.
+        // Network/IdP-down errors also clear, which is acceptable: the
+        // user will simply Sign In again when connectivity is restored
+        // (cheaper than a more nuanced retry classifier).
+        await clearAllTokens(context);
+        throw e;
+    }
     if (!refreshed.refresh_token && tok.refresh_token) {
         refreshed.refresh_token = tok.refresh_token;
     }
