@@ -401,3 +401,14 @@ Plans:
 **Wave 3 — Gap closure** *(blocked on Wave 2; closes 08-UAT.md Gaps 1 + 2)*
 
 - [x] 08-04-PLAN.md — Fix RELEASES_URL owner (altium→AltiumDeveloper) in src/updater.ts + complete rebrand of remaining "Altium 365" display strings in package.json (22 command categories + view title + submenu label + 4 sibling descriptions); altium365.* identifiers preserved (UPD-02 / UPD-05 alignment)
+
+### Phase 9: Editor IntelliSense for injected PYTHONPATH libraries
+
+**Goal:** Users can open workspace and remote-temp Python scripts in VS Code and get IntelliSense for the same bundled helper and vendored libraries that runtime `PYTHONPATH` injection provides, with consented and reversible editor-side configuration.
+**Requirements**: none explicitly mapped (project-level traceability only)
+**Depends on:** Phase 8
+**Plans:** 1/2 plans executed
+
+Plans:
+- [x] 09-01-PLAN.md — Canonical managed-path builder + no-clobber reconciliation tests
+- [ ] 09-02-PLAN.md — Consent-gated activation wiring, explicit command, cleanup, and IntelliSense UAT

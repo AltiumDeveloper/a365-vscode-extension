@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: 4 atomic commits — offline_access scope; getBaseAccessToken welcome-view reset; exchangeWorkspaceToken refresh guard; refreshTokens revocation drain
+status: executing
 stopped_at: Phase 9 context gathered
-last_updated: "2026-05-26T20:39:25.588Z"
-last_activity: 2026-05-26 -- Phase 08.1 auth-refresh hardening hotfix
+last_updated: "2026-05-26T21:54:02.877Z"
+last_activity: 2026-05-26
 progress:
   total_phases: 15
   completed_phases: 11
-  total_plans: 52
-  completed_plans: 53
+  total_plans: 54
+  completed_plans: 54
   percent: 73
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-19)
 
 **Core value:** A developer can open VS Code, sign in once, and go from browsing their A365 workspace to running or deploying a script — without leaving the editor or hand-crafting API calls.
-**Current focus:** Phase 08.1 — auth refresh hardening (hotfix)
+**Current focus:** Phase 09 — editor-intellisense-for-injected-pythonpath-libraries
 
 ## Current Position
 
-Phase: 08.1 — COMPLETE (hotfix shipped, UAT deferred)
-Plan: 1 of 1
-Status: 4 atomic commits — offline_access scope; getBaseAccessToken welcome-view reset; exchangeWorkspaceToken refresh guard; refreshTokens revocation drain
-Last activity: 2026-05-26 -- Phase 08.1 auth-refresh hardening hotfix
+Phase: 09 (editor-intellisense-for-injected-pythonpath-libraries) — EXECUTING
+Plan: 2 of 2
+Status: Ready to execute
+Last activity: 2026-05-26
 
 Progress: [██████████] 100%
 
@@ -78,6 +78,7 @@ Phase 7 plan structure (single plan):
 | Phase 08 P01 | 5min | 1 tasks | 1 files |
 | Phase 08 P03 | 12min | 3 tasks | 3 files |
 | Phase 08 P04 | 5min | 2 tasks | 2 files |
+| Phase 09 P01 | 3 min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
