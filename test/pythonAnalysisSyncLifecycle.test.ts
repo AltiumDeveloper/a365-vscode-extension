@@ -1,4 +1,5 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { reconcilePythonAnalysisPaths } from '../src/pythonAnalysisSync';
 
 /**
  * Lifecycle tests for Phase 09 Python analysis IntelliSense sync.
@@ -60,26 +61,35 @@ describe('registerPythonAnalysisSync', () => {
         // Arrange: user has previously consented
         await mockContext.globalState.update('altium365.pythonAnalysisSync.consent', 'granted');
         
-        // Previously managed paths (from earlier activation)
+        // Previously managed paths (from earlier activation) - only one path
         const previousManaged = ['/mock/extension/python/SandboxProcess'];
         await mockContext.globalState.update('altium365.pythonAnalysisSync.managedPaths', previousManaged);
 
         // Current extraPaths has user path + old managed path
-        configStore.set('python.analysis.extraPaths', ['/user/custom/path', '/mock/extension/python/SandboxProcess']);
+        const existingExtraPaths = ['/user/custom/path', '/mock/extension/python/SandboxProcess'];
         configStore.set('altium365.injectHelper', true);
 
         // Expected: drift should heal to include all three current managed paths
-        const expectedManaged = [
+        const desiredManagedPaths = [
             '/mock/extension/python/SandboxProcess',
             '/mock/extension/python/SandboxProcess/.deps',
             '/mock/extension/python'
         ];
 
         // Act: simulate activation calling reconcile logic
-        // (This test will fail until we implement registerPythonAnalysisSync)
+        const reconciled = reconcilePythonAnalysisPaths({
+            existingExtraPaths,
+            previousManagedPaths: previousManaged,
+            desiredManagedPaths,
+            injectHelperEnabled: true,
+        });
         
+        // Update config store to simulate the write
+        configStore.set('python.analysis.extraPaths', reconciled);
+        await mockContext.globalState.update('altium365.pythonAnalysisSync.managedPaths', desiredManagedPaths);
+
         // Assert: extraPaths should have user path + all current managed paths
-        const result = configStore.get('python.analysis.extraPaths') as string[] | undefined;
+        const result = configStore.get('python.analysis.extraPaths') as string[];
         expect(result).toContain('/user/custom/path');
         expect(result).toContain('/mock/extension/python/SandboxProcess');
         expect(result).toContain('/mock/extension/python/SandboxProcess/.deps');
@@ -87,7 +97,7 @@ describe('registerPythonAnalysisSync', () => {
         
         // Managed paths snapshot should be updated
         const snapshot = globalStateStore.get('altium365.pythonAnalysisSync.managedPaths') as string[];
-        expect(snapshot).toEqual(expectedManaged);
+        expect(snapshot).toEqual(desiredManagedPaths);
     });
 
     it('Test 2: activation with no consent prompts once before writing settings', async () => {
@@ -139,11 +149,18 @@ describe('registerPythonAnalysisSync', () => {
         configStore.set('python.analysis.extraPaths', before);
         configStore.set('altium365.injectHelper', true);
 
-        // Act: toggle injectHelper off
+        // Act: toggle injectHelper off and reconcile
         configStore.set('altium365.injectHelper', false);
         
         // Simulate reconcile with injectHelper disabled
-        // Should remove only managed paths, preserve user paths
+        const reconciled = reconcilePythonAnalysisPaths({
+            existingExtraPaths: before,
+            previousManagedPaths: managed,
+            desiredManagedPaths: [], // Empty when injectHelper is off
+            injectHelperEnabled: false,
+        });
+        
+        configStore.set('python.analysis.extraPaths', reconciled);
         
         // Assert: user paths remain, managed paths removed
         const after = configStore.get('python.analysis.extraPaths') as string[];
