@@ -197,8 +197,8 @@
         },
         "altium365.scopes": {
           "type": "string",
-          "default": "openid profile workspace:scripts.manage workspace:scripts.execute",
-          "description": "Space-delimited OAuth2 scopes."
+          "default": "openid profile offline_access workspace:scripts.manage workspace:scripts.execute",
+          "description": "Space-delimited OAuth2 scopes. Must include 'offline_access' so the IdP issues a refresh_token (required for silent token renewal on activation)."
         },
         "altium365.audience": {
           "type": "string",
@@ -234,7 +234,7 @@
               "tokenEndpoint": "https://auth.dev1.altium.com/connect/token",
               "actionWaitEndpoint": "https://actionwait.dev1.altium.com/await",
               "redirectUri": "https://auth.dev1.altium.com/api/AuthComplete",
-              "scopes": "openid profile workspace:scripts.manage workspace:scripts.execute",
+              "scopes": "openid profile offline_access workspace:scripts.manage workspace:scripts.execute",
               "audience": ""
             },
             "Uat": {
@@ -243,7 +243,7 @@
               "tokenEndpoint": "https://auth.uat1.altium.com/connect/token",
               "actionWaitEndpoint": "https://actionwait.uat.altium.com/await",
               "redirectUri": "https://auth.uat1.altium.com/api/AuthComplete",
-              "scopes": "openid profile",
+              "scopes": "openid profile offline_access workspace:scripts.manage workspace:scripts.execute",
               "audience": ""
             },
             "Prod": {
@@ -252,7 +252,7 @@
               "tokenEndpoint": "https://auth.altium.com/connect/token",
               "actionWaitEndpoint": "https://actionwait.altium.com/await",
               "redirectUri": "https://auth.altium.com/api/AuthComplete",
-              "scopes": "openid profile",
+              "scopes": "openid profile offline_access workspace:scripts.manage workspace:scripts.execute",
               "audience": ""
             }
           },
