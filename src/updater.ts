@@ -46,7 +46,7 @@ export function registerUpdater(
 ): vscode.Disposable[] {
     const enabled = vscode.workspace
         .getConfiguration('altium365')
-        .get<boolean>('checkForUpdates', true);
+        .get<boolean>('checkForUpdates', false);
     if (enabled) {
         // Fire-and-forget — activate() never awaits a network call.
         void runCheck(context, output, { manual: false });
