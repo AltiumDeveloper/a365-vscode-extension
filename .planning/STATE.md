@@ -149,6 +149,7 @@ Recent decisions affecting current work:
 - [Phase ?]: Plan 08-03: Debounce stored as epoch ms in globalState, written only after successful fetch — network failures don't poison next retry
 - [Phase 08-04]: Hotfix gap-closure — src/updater.ts RELEASES_URL owner corrected (altium → AltiumDeveloper); 22 package.json command categories + activitybar title + editorTitle submenu label + 4 sibling description references rebranded to "Altium Developer"; all altium365.* identifiers + EXTENSION_ID preserved
 - [Phase 08.1-01]: Hotfix — offline_access scope added (default + Dev/Uat/Prod env defaults) so IdP issues refresh_token; getBaseAccessToken now calls clearAllTokens() on expiry without recovery (no refresh_token or refresh threw) → onAuthStateChanged listener flips altium365.signedIn=false and surfaces viewsWelcome instead of "Failed: The access token has expired." in the tree; exchangeWorkspaceToken routed through getBaseAccessToken for fresh subject_token; refreshTokens drains tokens on postForm throw (invalid_grant / network / IdP-down) to bump user to welcome view rather than infinite stale-token loop
+- [Phase 08.1-01]: UAT silent-refresh path approved 2026-05-26 (operator confirmed tree populates after reload, no error row)
 
 ### Pending Todos
 
