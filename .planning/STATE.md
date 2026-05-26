@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: completed
-stopped_at: 08-04 complete (Phase 08 UAT gaps closed)
-last_updated: "2026-05-25T23:32:30Z"
-last_activity: 2026-05-25 -- Phase 08 gap-closure plan 04 complete
+stopped_at: 08.1-01 complete (auth refresh hardening hotfix shipped)
+last_updated: "2026-05-26T09:30:00Z"
+last_activity: 2026-05-26 -- Phase 08.1 auth-refresh hardening hotfix (4 atomic commits)
 progress:
-  total_phases: 13
-  completed_phases: 10
-  total_plans: 54
-  completed_plans: 53
-  percent: 78
+  total_phases: 14
+  completed_phases: 11
+  total_plans: 55
+  completed_plans: 54
+  percent: 79
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-19)
 
 **Core value:** A developer can open VS Code, sign in once, and go from browsing their A365 workspace to running or deploying a script — without leaving the editor or hand-crafting API calls.
-**Current focus:** Phase 08 — distinct-vsix-version-per-build
+**Current focus:** Phase 08.1 — auth refresh hardening (hotfix)
 
 ## Current Position
 
-Phase: 08 — COMPLETE (gap-closure plan 08-04 shipped)
-Plan: 4 of 4
-Status: Phase 08 complete — auto-update check now points at real repo; package.json rebrand 100%
-Last activity: 2026-05-25 -- Phase 08 gap-closure plan 04 complete
+Phase: 08.1 — COMPLETE (hotfix shipped, UAT deferred)
+Plan: 1 of 1
+Status: 4 atomic commits — offline_access scope; getBaseAccessToken welcome-view reset; exchangeWorkspaceToken refresh guard; refreshTokens revocation drain
+Last activity: 2026-05-26 -- Phase 08.1 auth-refresh hardening hotfix
 
 Progress: [██████████] 100%
 
@@ -148,6 +148,7 @@ Recent decisions affecting current work:
 - [Phase ?]: Plan 08-03: Extension rebrand applied (name=developer, displayName=Altium Developer); all altium365.* identifiers preserved
 - [Phase ?]: Plan 08-03: Debounce stored as epoch ms in globalState, written only after successful fetch — network failures don't poison next retry
 - [Phase 08-04]: Hotfix gap-closure — src/updater.ts RELEASES_URL owner corrected (altium → AltiumDeveloper); 22 package.json command categories + activitybar title + editorTitle submenu label + 4 sibling description references rebranded to "Altium Developer"; all altium365.* identifiers + EXTENSION_ID preserved
+- [Phase 08.1-01]: Hotfix — offline_access scope added (default + Dev/Uat/Prod env defaults) so IdP issues refresh_token; getBaseAccessToken now calls clearAllTokens() on expiry without recovery (no refresh_token or refresh threw) → onAuthStateChanged listener flips altium365.signedIn=false and surfaces viewsWelcome instead of "Failed: The access token has expired." in the tree; exchangeWorkspaceToken routed through getBaseAccessToken for fresh subject_token; refreshTokens drains tokens on postForm throw (invalid_grant / network / IdP-down) to bump user to welcome view rather than infinite stale-token loop
 
 ### Pending Todos
 
@@ -169,6 +170,6 @@ _None — `2026-05-22-phase-05-candidates` promoted to Phase 6 on 2026-05-22._
 
 ## Session Continuity
 
-Last session: 2026-05-25T23:32:30Z
-Stopped at: 08-04 complete (Phase 08 UAT gaps closed)
+Last session: 2026-05-26T09:30:00Z
+Stopped at: 08.1-01 complete (auth refresh hardening hotfix shipped)
 Resume file: None

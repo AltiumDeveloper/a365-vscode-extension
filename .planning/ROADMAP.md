@@ -18,7 +18,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: Remote Script Operations** - Open, edit, publish, and execute server-side scripts from the tree (completed 2026-05-21 — partial UAT, Scenarios 3+5 deferred)
 - [x] **Phase 4: UI Polish** - Trim noise from side-panel UX and workspace picker (command titles, QuickPick, icons, env header, active-workspace cue, Select context menu) (completed 2026-05-21)
 - [x] **Phase 5: Progress Feedback for Async Operations** - Consistent `withProgress` UI for every user-triggered network/IO action (completed 2026-05-22)
-- [ ] **Phase 6: Script Execution UX & Unified Parameters** - 9-item UX cleanup of the run/debug/execute flows (workspace-context routing, save-back fix, parameter unification, double-click open, redundant menu removal, GRID-named tmp files, branded title-bar dropdown, dropdown for any .py, AWS-Lambda-style test events)
+- [x] **Phase 6: Script Execution UX & Unified Parameters** - 9-item UX cleanup of the run/debug/execute flows (workspace-context routing, save-back fix, parameter unification, double-click open, redundant menu removal, GRID-named tmp files, branded title-bar dropdown, dropdown for any .py, AWS-Lambda-style test events)
+- [x] **Phase 08.1: Auth refresh hardening (INSERTED — hotfix)** - request offline_access; getBaseAccessToken resets to welcome view on expiry without recovery; exchangeWorkspaceToken refreshes base first; refreshTokens drains tokens on revocation (completed 2026-05-26)
 
 ## Phase Details
 
@@ -232,7 +233,7 @@ Note: SC-8 (AWS-Lambda-style test events) deferred to Phase 999.3 per D-23.
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 02.1 → 02.2 → 02.3 → 3 → 4 → 5 → 6
+Phases execute in numeric order: 1 → 2 → 02.1 → 02.2 → 02.3 → 3 → 4 → 5 → 6 → 7 → 8 → 08.1
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -247,6 +248,7 @@ Phases execute in numeric order: 1 → 2 → 02.1 → 02.2 → 02.3 → 3 → 4 
 | 6. Script Execution UX & Unified Params | 1/3 | In Progress|  |
 | 7. Remote execute log-dedup fix | 1/1 | Complete | 2026-05-25 |
 | 8. distinct-vsix-version-per-build | 4/4 | Complete (3 UAT tests deferred) | 2026-05-25 |
+| 08.1 Auth refresh hardening | 1/1 | Complete (UAT deferred) | 2026-05-26 |
 
 ## Backlog
 
