@@ -154,7 +154,7 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-_None — `2026-05-22-phase-05-candidates` promoted to Phase 6 on 2026-05-22._
+- `2026-05-26-editor-intellisense-for-injected-pythonpath-libraries` — sync runtime PYTHONPATH (`SandboxProcess/`, `.deps/`, `pythonDir`) into `python.analysis.extraPaths` so editor IntelliSense resolves `import altium` / `import gql` / etc. for opened scripts (area: tooling)
 
 ### Blockers/Concerns
 
