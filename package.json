@@ -272,8 +272,8 @@
         },
         "altium365.checkForUpdates": {
           "type": "boolean",
-          "default": true,
-          "description": "Automatically check GitHub Releases for newer Altium Developer extension builds once per day. Manual checks via the 'Altium Developer: Check for Updates' command are always available."
+          "default": false,
+          "description": "DEPRECATED — GitHub Releases auto-update is disabled while the extension is being prepared for the VS Code Marketplace (which handles updates natively). The 'Altium Developer: Check for Updates' command still runs the check manually if enabled."
         }
       }
     },
