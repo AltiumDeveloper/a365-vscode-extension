@@ -397,15 +397,20 @@ export async function exchangeWorkspaceToken(
     cfg: OAuthConfig,
     workspaceAuthId: string
 ): Promise<TokenSet> {
-    const base = await getStoredTokens(context);
-    if (!base) {
+    // Route through getBaseAccessToken so an expired base triggers refresh
+    // (or welcome-view reset) before we attempt the workspace token exchange.
+    // Otherwise the IdP rejects the exchange with 'subject_token expired' and
+    // the user sees a confusing error from a workspace-level operation when
+    // the actual fix is at the base-token layer.
+    const subjectAccess = await getBaseAccessToken(context, cfg);
+    if (!subjectAccess) {
         throw new Error('Sign in first.');
     }
     const requestedScopes = `a365:workspace:${workspaceAuthId} ${cfg.scopes}`.trim();
 
     const tok = (await postForm(cfg.tokenEndpoint, {
         grant_type: 'urn:ietf:params:oauth:grant-type:token-exchange',
-        subject_token: base.access_token,
+        subject_token: subjectAccess,
         subject_token_type: 'urn:ietf:params:oauth:token-type:access_token',
         scope: requestedScopes,
         client_id: cfg.clientId,
