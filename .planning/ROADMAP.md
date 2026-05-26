@@ -407,8 +407,8 @@ Plans:
 **Goal:** Users can open workspace and remote-temp Python scripts in VS Code and get IntelliSense for the same bundled helper and vendored libraries that runtime `PYTHONPATH` injection provides, with consented and reversible editor-side configuration.
 **Requirements**: none explicitly mapped (project-level traceability only)
 **Depends on:** Phase 8
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 - [x] 09-01-PLAN.md — Canonical managed-path builder + no-clobber reconciliation tests
-- [ ] 09-02-PLAN.md — Consent-gated activation wiring, explicit command, cleanup, and IntelliSense UAT
+- [x] 09-02-PLAN.md — Consent-gated activation wiring, explicit command, cleanup, and IntelliSense UAT
