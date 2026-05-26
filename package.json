@@ -142,6 +142,11 @@
         "category": "Altium Developer"
       },
       {
+        "command": "altium365.configurePythonIntelliSense",
+        "title": "Configure Python IntelliSense",
+        "category": "Altium Developer"
+      },
+      {
         "command": "altium365.workspace.selectFromNode",
         "title": "Select Workspace",
         "category": "Altium Developer"
