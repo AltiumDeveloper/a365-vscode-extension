@@ -216,3 +216,17 @@ function runPipInstall(
 export function getSandboxPythonPath(context: vscode.ExtensionContext): string[] {
     return [getSandboxDir(context), getSandboxDepsDir(context)];
 }
+
+/**
+ * Build the canonical list of Python analysis extra paths for editor
+ * IntelliSense. This mirrors the exact runtime PYTHONPATH order from
+ * prepareRun (extension.ts:900-902) so editor import resolution matches
+ * subprocess behavior. Order: SandboxProcess, SandboxProcess/.deps, python.
+ * 
+ * Used by Phase 09 consent-gated IntelliSense sync to populate
+ * python.analysis.extraPaths without duplicating path-assembly logic.
+ */
+export function getManagedPythonAnalysisPaths(context: vscode.ExtensionContext): string[] {
+    const pythonDir = context.asAbsolutePath('python');
+    return [...getSandboxPythonPath(context), pythonDir];
+}
