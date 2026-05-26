@@ -150,6 +150,7 @@ Recent decisions affecting current work:
 - [Phase 08-04]: Hotfix gap-closure — src/updater.ts RELEASES_URL owner corrected (altium → AltiumDeveloper); 22 package.json command categories + activitybar title + editorTitle submenu label + 4 sibling description references rebranded to "Altium Developer"; all altium365.* identifiers + EXTENSION_ID preserved
 - [Phase 08.1-01]: Hotfix — offline_access scope added (default + Dev/Uat/Prod env defaults) so IdP issues refresh_token; getBaseAccessToken now calls clearAllTokens() on expiry without recovery (no refresh_token or refresh threw) → onAuthStateChanged listener flips altium365.signedIn=false and surfaces viewsWelcome instead of "Failed: The access token has expired." in the tree; exchangeWorkspaceToken routed through getBaseAccessToken for fresh subject_token; refreshTokens drains tokens on postForm throw (invalid_grant / network / IdP-down) to bump user to welcome view rather than infinite stale-token loop
 - [Phase 08.1-01]: UAT silent-refresh path approved 2026-05-26 (operator confirmed tree populates after reload, no error row)
+- [Post-08.1]: GitHub-Releases auto-updater disabled by default (private repo → unauthenticated API 404s; Marketplace will handle updates natively); removal tracked as backlog Phase 999.4
 
 ### Pending Todos
 

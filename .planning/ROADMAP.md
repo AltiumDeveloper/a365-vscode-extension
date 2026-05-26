@@ -283,6 +283,35 @@ Plans:
 
 **Captured at:** 2026-05-21 (post Phase 3 closure)
 
+### Phase 999.4: Remove GitHub-Releases auto-updater (BACKLOG)
+
+**Goal:** Once the extension is published to the VS Code Marketplace, remove the in-extension auto-update logic wholesale — Marketplace handles updates natively and the GitHub-Releases path is redundant (and broken on a private repo since unauthenticated `api.github.com/repos/.../releases` 404s).
+
+**Trigger:** First Marketplace release published, OR repo decision finalized as "Marketplace-only distribution".
+
+**Disabled (interim) in commit `b556e17` 2026-05-26:** `altium365.checkForUpdates` setting default → `false`; runtime fallback also `false`. Module stays in tree until removed.
+
+**Captured items:**
+
+1. **Delete `src/updater.ts`** (~280 LOC) including `registerUpdater`, `runCheck`, `fetchLatestRelease`, `downloadVsix`, `installVsix`.
+2. **Delete `src/semverCompare.ts`** + `test/compareVersions.test.ts` (only consumer is the updater).
+3. **Remove from `package.json`:** `altium365.checkForUpdates` command (line ~160 area), `altium365.checkForUpdates` configuration (line ~273), and any related menu entries.
+4. **Remove from `src/extension.ts`:** `import { registerUpdater } from './updater'` + the `registerUpdater(...)` call in `activate`.
+5. **Remove from `.github/workflows/ci.yml`:** the entire GitHub Release publishing step (`softprops/action-gh-release@v2`), the version-stamping logic in `package.json`/CI build, and the `permissions: contents: write` line if not needed elsewhere. Keep the basic compile + VSIX artifact upload as a build smoke test.
+6. **Update README:** remove the "Auto-update" section; add "Install from Marketplace" pointing at the published listing.
+
+**Out of scope:** Marketplace listing setup itself (separate task — vsce publish, publisher token, store assets, etc.).
+
+**Requirements:** UPD-01 through UPD-08 are superseded; mark as deprecated when this phase runs.
+**Depends on:** Marketplace publication (external event).
+**Plans:** 0 plans
+
+Plans:
+
+- [ ] TBD — promote with `/gsd-review-backlog` once Marketplace publishing is committed
+
+**Captured at:** 2026-05-26 (post Phase 08.1 hotfix; repo confirmed private → updater unreachable)
+
 ### Phase 999.3: Script Test-Events (COMPLETED)
 
 **Goal:** AWS-Lambda-style named "test events" for script parameters. Users save and switch between multiple named parameter templates per script, used identically for local run, local debug, and remote execute. Subsumes the current ad-hoc `*.params.json` files and the projectId-prompt fallback shipped in Phase 6.
