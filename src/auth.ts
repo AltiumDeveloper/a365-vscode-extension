@@ -546,8 +546,13 @@ function isExpired(tok: TokenSet): boolean {
 
 /**
  * Returns the base (refresh-aware) access token. Refreshes on expiry when a
- * refresh_token is available; falls through with the stale token on refresh
- * failure (the caller will see a 401 and the user re-authenticates).
+ * refresh_token is available. When the stored token has expired and we cannot
+ * recover (no refresh_token, or refresh failed), drains all tokens via
+ * `clearAllTokens` — that fires `signedIn:false`, which the extension's
+ * onAuthStateChanged listener turns into `setContext altium365.signedIn=false`
+ * + tree refresh, surfacing the viewsWelcome "Sign In" prompt instead of a
+ * stale-token 401 error row in the side panel.
+ *
  * Use this for base-scope GraphQL callers (e.g., listWorkspaces) that must
  * never receive a workspace-scoped token (WR-05).
  */
@@ -559,11 +564,21 @@ export async function getBaseAccessToken(
     if (!base) {
         return undefined;
     }
-    if (isExpired(base) && base.refresh_token) {
+    if (isExpired(base)) {
+        if (!base.refresh_token) {
+            // No refresh path available (legacy sign-in pre-offline_access, or
+            // IdP didn't issue one). Drain so the user lands on the welcome
+            // view instead of seeing a 401 in the side panel.
+            await clearAllTokens(context);
+            return undefined;
+        }
         try {
             base = await refreshTokens(context, cfg);
         } catch {
-            // fall through; user will be asked to sign in again
+            // Refresh failed (revoked / network / IdP misconfig). Drain
+            // tokens so the welcome view shows; user re-signs in.
+            await clearAllTokens(context);
+            return undefined;
         }
     }
     return base?.access_token;
