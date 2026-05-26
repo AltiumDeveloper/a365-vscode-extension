@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: completed
-stopped_at: 08.1-01 complete (auth refresh hardening hotfix shipped)
-last_updated: "2026-05-26T09:30:00Z"
-last_activity: 2026-05-26 -- Phase 08.1 auth-refresh hardening hotfix (4 atomic commits)
+status: 4 atomic commits — offline_access scope; getBaseAccessToken welcome-view reset; exchangeWorkspaceToken refresh guard; refreshTokens revocation drain
+stopped_at: Phase 9 context gathered
+last_updated: "2026-05-26T20:39:25.588Z"
+last_activity: 2026-05-26 -- Phase 08.1 auth-refresh hardening hotfix
 progress:
-  total_phases: 14
+  total_phases: 15
   completed_phases: 11
-  total_plans: 55
-  completed_plans: 54
-  percent: 79
+  total_plans: 52
+  completed_plans: 53
+  percent: 73
 ---
 
 # Project State
@@ -86,6 +86,7 @@ Phase 7 plan structure (single plan):
 - Phase 02.1 inserted after Phase 02: Side-panel UX closure (G-01..G-05 from human UAT) (URGENT)
 - Phase 02.2 inserted after Phase 02.1: Auth hardening — close carry-forward CR-01/CR-02/WR-01 (02-REVIEW.md) and WR-05 (02.1-REVIEW.md) before Phase 3 remote script mutations (URGENT)
 - Phase 8 added: distinct-vsix-version-per-build
+- Phase 9 added: Editor IntelliSense for injected PYTHONPATH libraries
 
 ### Decisions
 
@@ -173,6 +174,6 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-05-26T09:30:00Z
-Stopped at: 08.1-01 complete (auth refresh hardening hotfix shipped)
-Resume file: None
+Last session: 2026-05-26T20:39:25.580Z
+Stopped at: Phase 9 context gathered
+Resume file: .planning/phases/09-editor-intellisense-for-injected-pythonpath-libraries/09-CONTEXT.md
