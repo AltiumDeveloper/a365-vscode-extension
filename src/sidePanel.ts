@@ -464,6 +464,13 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
         this.scriptsCache.set(workspaceId, scriptNodes);
         this.extensionPointsCache.set(workspaceId, extensionPointsData.extensionPoints);
         this.assignmentsCache.set(workspaceId, extensionPointsData.assignments);
+        
+        // Count only extension points with non-DEFAULT assignments
+        const nonEmptyEPCount = extensionPointsData.extensionPoints.filter(ep => {
+            const assignments = extensionPointsData.assignments.get(ep.extensionPointId) || [];
+            return assignments.some(a => a.type !== 'DEFAULT');
+        }).length;
+        
         return [
             {
                 kind: 'projectsCategory',
@@ -483,7 +490,7 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
                 workspaceId,
                 workspaceAuthId: element.info.authId,
                 workspaceUrl: element.workspaceUrl,
-                count: extensionPointsData.extensionPoints.length,
+                count: nonEmptyEPCount,
             },
         ];
     }
@@ -492,9 +499,18 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
         element: Extract<A365Node, { kind: 'extensionPointsCategory' }>
     ): A365Node[] {
         const extensionPoints = this.extensionPointsCache.get(element.workspaceId) || [];
+        const workspaceAssignments = this.assignmentsCache.get(element.workspaceId);
         
         const grouped = new Map<string, ExtensionPointInfo[]>();
         for (const ep of extensionPoints) {
+            // Only include EPs that have non-DEFAULT assignments
+            if (workspaceAssignments) {
+                const assignments = workspaceAssignments.get(ep.extensionPointId) || [];
+                if (!assignments.some(a => a.type !== 'DEFAULT')) {
+                    continue;  // Skip this EP - no non-DEFAULT assignments
+                }
+            }
+            
             const entityType = ep.entityType || 'Other';
             if (!grouped.has(entityType)) {
                 grouped.set(entityType, []);
@@ -518,9 +534,18 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
     ): A365Node[] {
         const extensionPoints = this.extensionPointsCache.get(element.workspaceId) || [];
         const filtered = extensionPoints.filter(ep => ep.entityType === element.entityType);
+        const workspaceAssignments = this.assignmentsCache.get(element.workspaceId);
         
         const grouped = new Map<string, ExtensionPointInfo[]>();
         for (const ep of filtered) {
+            // Only include EPs that have non-DEFAULT assignments
+            if (workspaceAssignments) {
+                const assignments = workspaceAssignments.get(ep.extensionPointId) || [];
+                if (!assignments.some(a => a.type !== 'DEFAULT')) {
+                    continue;  // Skip this EP - no non-DEFAULT assignments
+                }
+            }
+            
             const epType = ep.type || 'Other';
             if (!grouped.has(epType)) {
                 grouped.set(epType, []);
@@ -548,7 +573,16 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
             ep => ep.entityType === element.entityType && ep.type === element.epType
         );
         
-        return filtered
+        // Only show extension points that have non-DEFAULT assignments
+        const workspaceAssignments = this.assignmentsCache.get(element.workspaceId);
+        const nonEmptyEPs = filtered.filter(ep => {
+            if (!workspaceAssignments) return false;
+            const assignments = workspaceAssignments.get(ep.extensionPointId) || [];
+            // Has at least one non-DEFAULT assignment
+            return assignments.some(a => a.type !== 'DEFAULT');
+        });
+        
+        return nonEmptyEPs
             .sort((a, b) => a.name.localeCompare(b.name))
             .map((ep): A365Node => ({
                 kind: 'extensionPointNode',
@@ -569,7 +603,10 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
         
         const assignments = workspaceAssignments.get(element.extensionPoint.extensionPointId) || [];
         
-        return assignments
+        // Filter out DEFAULT assignments - they add noise and aren't actionable
+        const filteredAssignments = assignments.filter(a => a.type !== 'DEFAULT');
+        
+        return filteredAssignments
             .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
             .map((assignment): A365Node => ({
                 kind: 'assignmentNode',
