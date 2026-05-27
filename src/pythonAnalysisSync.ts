@@ -116,6 +116,9 @@ import { getManagedPythonAnalysisPaths } from './sandboxDeps';
 
 const LOG_PREFIX = '[Altium 365] pythonAnalysisSync:';
 
+// Mutex to serialize reconciliation calls and prevent concurrent config/file writes
+let reconcileLock: Promise<void> = Promise.resolve();
+
 /**
  * Register Python analysis IntelliSense sync lifecycle:
  * - Probe for Python/Pylance extensions (warn if missing)
@@ -288,47 +291,57 @@ async function reconcileNow(
     context: vscode.ExtensionContext,
     output: vscode.OutputChannel
 ): Promise<void> {
-    const config = vscode.workspace.getConfiguration('python.analysis');
-    const injectHelper = vscode.workspace
-        .getConfiguration('altium365')
-        .get<boolean>('injectHelper', true);
+    // Serialize all reconciliation calls to prevent concurrent config/file writes
+    reconcileLock = reconcileLock.then(async () => {
+        const config = vscode.workspace.getConfiguration('python.analysis');
+        const injectHelper = vscode.workspace
+            .getConfiguration('altium365')
+            .get<boolean>('injectHelper', true);
 
-    const existingExtraPaths = config.get<string[]>('extraPaths', []);
-    const previousManagedPaths = context.globalState.get<string[]>(MANAGED_PATHS_KEY, []);
-    const desiredManagedPaths = injectHelper ? getManagedPythonAnalysisPaths(context) : [];
+        const existingExtraPaths = config.get<string[]>('extraPaths', []);
+        const previousManagedPaths = context.globalState.get<string[]>(MANAGED_PATHS_KEY, []);
+        const desiredManagedPaths = injectHelper ? getManagedPythonAnalysisPaths(context) : [];
 
-    const reconciled = reconcilePythonAnalysisPaths({
-        existingExtraPaths,
-        previousManagedPaths,
-        desiredManagedPaths,
-        injectHelperEnabled: injectHelper,
-    });
+        const reconciled = reconcilePythonAnalysisPaths({
+            existingExtraPaths,
+            previousManagedPaths,
+            desiredManagedPaths,
+            injectHelperEnabled: injectHelper,
+        });
 
-    // Wrap config write in try/catch - can fail if workspace is readonly or config scope has issues
-    try {
-        await config.update('extraPaths', reconciled, vscode.ConfigurationTarget.Workspace);
-    } catch (e) {
+        // Wrap config write in try/catch - can fail if workspace is readonly or config scope has issues
+        try {
+            await config.update('extraPaths', reconciled, vscode.ConfigurationTarget.Workspace);
+        } catch (e) {
+            output.appendLine(
+                `${LOG_PREFIX} failed to update python.analysis.extraPaths: ${(e as Error).message}`
+            );
+            vscode.window.showErrorMessage(
+                'Altium Developer: Failed to update Python IntelliSense paths. ' +
+                'Check workspace settings are writable.'
+            );
+            return; // Abort before updating globalState to avoid drift
+        }
+
+        // Update managed paths snapshot
+        const snapshot = getManagedPythonAnalysisPathsSnapshot(desiredManagedPaths);
+        await context.globalState.update(MANAGED_PATHS_KEY, snapshot);
+
         output.appendLine(
-            `${LOG_PREFIX} failed to update python.analysis.extraPaths: ${(e as Error).message}`
+            `${LOG_PREFIX} reconciled extraPaths (${reconciled.length} total, ` +
+                `${desiredManagedPaths.length} managed)`
         );
-        vscode.window.showErrorMessage(
-            'Altium Developer: Failed to update Python IntelliSense paths. ' +
-            'Check workspace settings are writable.'
+
+        // D-03/D-04: fallback pyrightconfig.json for temp files (if proof requires it)
+        await reconcilePyrightConfigFallback(context, output, injectHelper, desiredManagedPaths);
+    }).catch((e) => {
+        // Log but don't block future reconciliations
+        output.appendLine(
+            `${LOG_PREFIX} reconciliation failed: ${(e as Error).message}`
         );
-        return; // Abort before updating globalState to avoid drift
-    }
-
-    // Update managed paths snapshot
-    const snapshot = getManagedPythonAnalysisPathsSnapshot(desiredManagedPaths);
-    await context.globalState.update(MANAGED_PATHS_KEY, snapshot);
-
-    output.appendLine(
-        `${LOG_PREFIX} reconciled extraPaths (${reconciled.length} total, ` +
-            `${desiredManagedPaths.length} managed)`
-    );
-
-    // D-03/D-04: fallback pyrightconfig.json for temp files (if proof requires it)
-    await reconcilePyrightConfigFallback(context, output, injectHelper, desiredManagedPaths);
+    });
+    
+    await reconcileLock;
 }
 
 /**
