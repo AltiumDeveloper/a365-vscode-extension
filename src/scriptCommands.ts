@@ -15,6 +15,38 @@ import {
 import { withScriptProgress } from './progress';
 
 /**
+ * Extract script metadata from either a script node or a script assignment node.
+ * Returns undefined if the node is neither, or if it's a non-script assignment.
+ */
+function extractScriptContext(
+    node: any
+): { scriptId: string; scriptName: string; workspaceAuthId: string; workspaceUrl: string } | undefined {
+    if (node.kind === 'script') {
+        return {
+            scriptId: node.script.scriptId,
+            scriptName: node.script.name,
+            workspaceAuthId: node.workspaceAuthId,
+            workspaceUrl: node.workspaceUrl,
+        };
+    }
+    
+    if (node.kind === 'assignmentNode') {
+        if (node.assignment.type !== 'SCRIPT') {
+            return undefined;
+        }
+        
+        return {
+            scriptId: node.assignment.scriptId || '',
+            scriptName: node.assignment.name,
+            workspaceAuthId: node.workspaceAuthId,
+            workspaceUrl: node.workspaceUrl,
+        };
+    }
+    
+    return undefined;
+}
+
+/**
  * Registers the four `altium365.script.*` commands declared in package.json.
  *
  * Status:
@@ -119,13 +151,24 @@ function resolveScriptContext(
     context: vscode.ExtensionContext,
     node?: A365Node
 ): ScriptContext | undefined {
-    if (node && node.kind === 'script') {
-        return {
-            workspaceId: node.workspaceId,
-            workspaceAuthId: node.workspaceAuthId,
-            scriptId: node.script.scriptId,
-            scriptName: node.script.name,
-        };
+    // Try extracting from node (script or assignment node)
+    if (node) {
+        const scriptCtx = extractScriptContext(node);
+        if (scriptCtx) {
+            // scriptCtx contains authId and url, but we need workspaceId too
+            // Recover workspaceId from the node if available
+            const workspaceId = 
+                'workspaceId' in node ? (node as any).workspaceId : '';
+            return {
+                workspaceId,
+                ...scriptCtx,
+            };
+        }
+        // If node is an assignment but extractScriptContext returned undefined,
+        // it means it's a non-script assignment (workflow/default)
+        if (node.kind === 'assignmentNode') {
+            return undefined;
+        }
     }
     const active = vscode.window.activeTextEditor?.document.uri;
     if (!active) {
