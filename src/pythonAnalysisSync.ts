@@ -123,6 +123,9 @@ export function getManagedPythonAnalysisPathsSnapshot(
 }
 
 import * as vscode from 'vscode';
+import * as fs from 'fs/promises';
+import * as os from 'os';
+import * as path from 'path';
 import { getManagedPythonAnalysisPaths } from './sandboxDeps';
 
 const LOG_PREFIX = '[Altium 365] pythonAnalysisSync:';
@@ -366,10 +369,6 @@ async function reconcilePyrightConfigFallback(
     injectHelperEnabled: boolean,
     desiredManagedPaths: string[]
 ): Promise<void> {
-    const fs = await import('fs/promises');
-    const os = await import('os');
-    const path = await import('path');
-
     // Temp root for remote scripts (from scriptCommands.ts pattern)
     const tempRoot = path.join(os.tmpdir(), 'altium365');
     const configPath = path.join(tempRoot, 'pyrightconfig.json');
