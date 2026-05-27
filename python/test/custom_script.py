@@ -27,6 +27,9 @@ def onExecute(context: ExecutionContext, input_parameters: dict) -> dict:
             }
         }
     """)
+
+    # updated
+
     query.variable_values = {
         "projectId": project_id,
         "title": "Demo task",

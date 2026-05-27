@@ -317,28 +317,26 @@ export interface AssignmentInfo {
 }
 
 // Query fetches extension points with nested assignments in a single round-trip.
-// Pagination: 100 items sufficient for v1 (mirrors LIST_SCRIPTS_QUERY pattern).
+// Returns direct array (no connection wrapper) - verified against live API 2026-05-28
 const LIST_EXTENSION_POINTS_QUERY = `
     query ListExtensionPoints {
-        gloCusExtensionPoints(first: 100) {
-            nodes {
-                extensionPointId
-                name
-                description
-                entityType
-                type
-                assignments {
-                    nodes {
-                        assignmentId
-                        name
-                        description
-                        type
-                        active
-                        ... on GloCusScriptAssignment {
-                            scriptId
-                            scriptVersionId
-                            scriptFileToken
-                        }
+        gloCusExtensionPoints {
+            extensionPointId
+            name
+            description
+            entityType
+            type
+            assignments {
+                nodes {
+                    assignmentId
+                    name
+                    description
+                    type
+                    active
+                    ... on GloCusScriptAssignment {
+                        scriptId
+                        scriptVersionId
+                        scriptFileToken
                     }
                 }
             }
@@ -351,7 +349,8 @@ export async function listExtensionPoints(
     workspaceToken: string
 ): Promise<{ extensionPoints: ExtensionPointInfo[]; assignments: Map<string, AssignmentInfo[]> }> {
     const data = await graphqlRequest(endpoint, workspaceToken, LIST_EXTENSION_POINTS_QUERY);
-    const nodes = data?.gloCusExtensionPoints?.nodes;
+    // gloCusExtensionPoints returns direct array, not { nodes: [...] } connection
+    const nodes = data?.gloCusExtensionPoints;
     if (!Array.isArray(nodes)) {
         return { extensionPoints: [], assignments: new Map() };
     }
