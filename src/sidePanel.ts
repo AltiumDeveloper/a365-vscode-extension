@@ -221,6 +221,85 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
                 item.iconPath = new vscode.ThemeIcon('file-code');
                 return item;
             }
+            case 'extensionPointsCategory': {
+                const item = new vscode.TreeItem(
+                    `Extension Points (${n.count})`,
+                    vscode.TreeItemCollapsibleState.Collapsed
+                );
+                item.contextValue = CTX_EXTENSION_POINTS_CATEGORY;
+                item.iconPath = new vscode.ThemeIcon('symbol-namespace');
+                return item;
+            }
+            case 'entityTypeGroupNode': {
+                const item = new vscode.TreeItem(
+                    `${n.entityType} (${n.epCount})`,
+                    vscode.TreeItemCollapsibleState.Collapsed
+                );
+                const iconMap: Record<string, string> = {
+                    'Project': 'folder',
+                    'BOM': 'list-tree',
+                    'Workspace': 'workspace',
+                    'Library': 'library',
+                };
+                item.iconPath = new vscode.ThemeIcon(iconMap[n.entityType] || 'symbol-namespace');
+                item.contextValue = CTX_ENTITY_TYPE_GROUP;
+                return item;
+            }
+            case 'epTypeGroupNode': {
+                const item = new vscode.TreeItem(
+                    `${n.epType} (${n.epCount})`,
+                    vscode.TreeItemCollapsibleState.Collapsed
+                );
+                const iconMap: Record<string, string> = {
+                    'UIAction.ContextMenu': 'symbol-method',
+                    'Event': 'symbol-event',
+                    'Project.ERC': 'checklist',
+                    'BOM.Checks': 'checklist',
+                };
+                item.iconPath = new vscode.ThemeIcon(iconMap[n.epType] || 'symbol-key');
+                item.contextValue = CTX_EP_TYPE_GROUP;
+                return item;
+            }
+            case 'extensionPointNode': {
+                const item = new vscode.TreeItem(
+                    `${n.extensionPoint.name} (${n.assignmentCount})`,
+                    vscode.TreeItemCollapsibleState.Collapsed
+                );
+                item.iconPath = new vscode.ThemeIcon('symbol-interface');
+                item.contextValue = CTX_EXTENSION_POINT;
+                item.tooltip = n.extensionPoint.description || n.extensionPoint.name;
+                return item;
+            }
+            case 'assignmentNode': {
+                const item = new vscode.TreeItem(
+                    n.assignment.name || 'Unnamed Assignment',
+                    vscode.TreeItemCollapsibleState.None
+                );
+                
+                if (n.assignment.type === 'SCRIPT') {
+                    item.iconPath = new vscode.ThemeIcon('file-code');
+                    item.contextValue = CTX_ASSIGNMENT_SCRIPT;
+                    // NOTE: TreeItem.command NOT set here — Plan 10-03 Task 2 extends altium365.script.edit
+                    // to support assignment nodes. Click will fail until 10-03 wires the handler.
+                    // This is expected; full flow tested after 10-03 completes.
+                } else if (n.assignment.type === 'WORKFLOW') {
+                    item.iconPath = new vscode.ThemeIcon(
+                        'workflow',
+                        new vscode.ThemeColor('descriptionForeground')
+                    );
+                    item.contextValue = CTX_ASSIGNMENT_WORKFLOW;
+                } else if (n.assignment.type === 'DEFAULT') {
+                    item.iconPath = new vscode.ThemeIcon(
+                        'circle-outline',
+                        new vscode.ThemeColor('descriptionForeground')
+                    );
+                    item.contextValue = CTX_ASSIGNMENT_DEFAULT;
+                }
+                
+                const paramsSummary = 'none'; // TODO: Extract from extension point definition when available
+                item.tooltip = `${n.assignment.name || 'Unnamed'}\n\nParameters: ${paramsSummary}`;
+                return item;
+            }
             case 'project': {
                 const item = new vscode.TreeItem(
                     n.project.name,
