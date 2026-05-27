@@ -6,6 +6,8 @@ import {
     readOAuthConfig,
 } from './auth';
 import {
+    AssignmentInfo,
+    ExtensionPointInfo,
     ProjectInfo,
     ScriptInfo,
     WorkspaceInfo,
@@ -22,6 +24,13 @@ export const CTX_PROJECT = 'projectNode';
 export const CTX_SCRIPT = 'scriptNode';
 export const CTX_PROJECTS_CATEGORY = 'projectsCategoryNode';
 export const CTX_SCRIPTS_CATEGORY = 'scriptsCategoryNode';
+export const CTX_EXTENSION_POINTS_CATEGORY = 'extensionPointsCategoryNode';
+export const CTX_ENTITY_TYPE_GROUP = 'entityTypeGroupNode';
+export const CTX_EP_TYPE_GROUP = 'epTypeGroupNode';
+export const CTX_EXTENSION_POINT = 'extensionPointNode';
+export const CTX_ASSIGNMENT_SCRIPT = 'assignmentNode-script';
+export const CTX_ASSIGNMENT_WORKFLOW = 'assignmentNode-workflow';
+export const CTX_ASSIGNMENT_DEFAULT = 'assignmentNode-default';
 
 const OUTPUT_PREFIX = '[Altium 365] tree:';
 
@@ -47,6 +56,42 @@ export type A365Node =
           workspaceAuthId: string;
           workspaceUrl: string;
           script: ScriptInfo;
+      }
+    | {
+          kind: 'extensionPointsCategory';
+          workspaceId: string;
+          workspaceAuthId: string;
+          workspaceUrl: string;
+          count: number;
+      }
+    | {
+          kind: 'entityTypeGroupNode';
+          workspaceId: string;
+          workspaceAuthId: string;
+          entityType: string;
+          epCount: number;
+      }
+    | {
+          kind: 'epTypeGroupNode';
+          workspaceId: string;
+          workspaceAuthId: string;
+          entityType: string;
+          epType: string;
+          epCount: number;
+      }
+    | {
+          kind: 'extensionPointNode';
+          workspaceId: string;
+          workspaceAuthId: string;
+          extensionPoint: ExtensionPointInfo;
+          assignmentCount: number;
+      }
+    | {
+          kind: 'assignmentNode';
+          workspaceId: string;
+          workspaceAuthId: string;
+          workspaceUrl: string;
+          assignment: AssignmentInfo;
       }
     | { kind: 'info'; label: string }
     | { kind: 'error'; label: string; parent: A365Node | undefined };
