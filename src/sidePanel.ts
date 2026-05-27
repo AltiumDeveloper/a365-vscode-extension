@@ -288,6 +288,18 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
             if (element.kind === 'scriptsCategory') {
                 return this.scriptsCache.get(element.workspaceId) ?? [];
             }
+            if (element.kind === 'extensionPointsCategory') {
+                return this.loadEntityTypeGroups(element);
+            }
+            if (element.kind === 'entityTypeGroupNode') {
+                return this.loadEpTypeGroups(element);
+            }
+            if (element.kind === 'epTypeGroupNode') {
+                return this.loadExtensionPoints(element);
+            }
+            if (element.kind === 'extensionPointNode') {
+                return this.loadAssignments(element);
+            }
             return [];
         } catch (e) {
             const msg = (e as Error).message;
@@ -393,5 +405,97 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
                 count: extensionPointsData.extensionPoints.length,
             },
         ];
+    }
+
+    private loadEntityTypeGroups(
+        element: Extract<A365Node, { kind: 'extensionPointsCategory' }>
+    ): A365Node[] {
+        const extensionPoints = this.extensionPointsCache.get(element.workspaceId) || [];
+        
+        const grouped = new Map<string, ExtensionPointInfo[]>();
+        for (const ep of extensionPoints) {
+            const entityType = ep.entityType || 'Other';
+            if (!grouped.has(entityType)) {
+                grouped.set(entityType, []);
+            }
+            grouped.get(entityType)!.push(ep);
+        }
+        
+        return Array.from(grouped.entries())
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([entityType, eps]): A365Node => ({
+                kind: 'entityTypeGroupNode',
+                workspaceId: element.workspaceId,
+                workspaceAuthId: element.workspaceAuthId,
+                entityType,
+                epCount: eps.length,
+            }));
+    }
+
+    private loadEpTypeGroups(
+        element: Extract<A365Node, { kind: 'entityTypeGroupNode' }>
+    ): A365Node[] {
+        const extensionPoints = this.extensionPointsCache.get(element.workspaceId) || [];
+        const filtered = extensionPoints.filter(ep => ep.entityType === element.entityType);
+        
+        const grouped = new Map<string, ExtensionPointInfo[]>();
+        for (const ep of filtered) {
+            const epType = ep.type || 'Other';
+            if (!grouped.has(epType)) {
+                grouped.set(epType, []);
+            }
+            grouped.get(epType)!.push(ep);
+        }
+        
+        return Array.from(grouped.entries())
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([epType, eps]): A365Node => ({
+                kind: 'epTypeGroupNode',
+                workspaceId: element.workspaceId,
+                workspaceAuthId: element.workspaceAuthId,
+                entityType: element.entityType,
+                epType,
+                epCount: eps.length,
+            }));
+    }
+
+    private loadExtensionPoints(
+        element: Extract<A365Node, { kind: 'epTypeGroupNode' }>
+    ): A365Node[] {
+        const extensionPoints = this.extensionPointsCache.get(element.workspaceId) || [];
+        const filtered = extensionPoints.filter(
+            ep => ep.entityType === element.entityType && ep.type === element.epType
+        );
+        
+        return filtered
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map((ep): A365Node => ({
+                kind: 'extensionPointNode',
+                workspaceId: element.workspaceId,
+                workspaceAuthId: element.workspaceAuthId,
+                extensionPoint: ep,
+                assignmentCount: ep.assignmentCount || 0,
+            }));
+    }
+
+    private loadAssignments(
+        element: Extract<A365Node, { kind: 'extensionPointNode' }>
+    ): A365Node[] {
+        const workspaceAssignments = this.assignmentsCache.get(element.workspaceId);
+        if (!workspaceAssignments) {
+            return [];
+        }
+        
+        const assignments = workspaceAssignments.get(element.extensionPoint.extensionPointId) || [];
+        
+        return assignments
+            .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+            .map((assignment): A365Node => ({
+                kind: 'assignmentNode',
+                workspaceId: element.workspaceId,
+                workspaceAuthId: element.workspaceAuthId,
+                workspaceUrl: '',
+                assignment,
+            }));
     }
 }
