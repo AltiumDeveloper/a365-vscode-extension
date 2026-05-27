@@ -418,9 +418,9 @@ Plans:
 **Goal:** Users can navigate extension points (customizable product surfaces) organized by entity type and extension point type, with assignments nested underneath, while the Scripts category remains as a parallel authoritative list
 **Requirements**: PANEL-12, PANEL-13
 **Depends on:** Phase 9
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 - [x] 10-01-PLAN.md — GraphQL schema verification and extension points query implementation
 - [x] 10-02-PLAN.md — Extend sidebar tree with Extension Points category and 4-level hierarchy
-- [ ] 10-03-PLAN.md — Extend script commands to work on assignment nodes and wire context menus
+- [x] 10-03-PLAN.md — Extend script commands to work on assignment nodes and wire context menus
