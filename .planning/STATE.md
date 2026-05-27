@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: verifying
-stopped_at: Completed 09-02-PLAN.md
-last_updated: "2026-05-26T22:02:19.357Z"
-last_activity: 2026-05-26
+status: completed
+stopped_at: Phase 10 context gathered
+last_updated: "2026-05-27T22:25:49.439Z"
+last_activity: 2026-05-26 -- Phase 09 marked complete
 progress:
-  total_phases: 15
+  total_phases: 16
   completed_phases: 12
   total_plans: 54
   completed_plans: 55
-  percent: 80
+  percent: 75
 ---
 
 # Project State
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-05-19)
 
 ## Current Position
 
-Phase: 09 (editor-intellisense-for-injected-pythonpath-libraries) — EXECUTING
+Phase: 09 — COMPLETE
 Plan: 2 of 2
-Status: Phase complete — ready for verification
-Last activity: 2026-05-26
+Status: Phase 09 complete
+Last activity: 2026-05-26 -- Phase 09 marked complete
 
 Progress: [██████████] 100%
 
@@ -89,6 +89,7 @@ Phase 7 plan structure (single plan):
 - Phase 02.2 inserted after Phase 02.1: Auth hardening — close carry-forward CR-01/CR-02/WR-01 (02-REVIEW.md) and WR-05 (02.1-REVIEW.md) before Phase 3 remote script mutations (URGENT)
 - Phase 8 added: distinct-vsix-version-per-build
 - Phase 9 added: Editor IntelliSense for injected PYTHONPATH libraries
+- Phase 10 added: Rework sidebar around extension points
 
 ### Decisions
 
@@ -176,6 +177,6 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-05-26T22:02:19.350Z
-Stopped at: Completed 09-02-PLAN.md
-Resume file: None
+Last session: 2026-05-27T22:25:49.431Z
+Stopped at: Phase 10 context gathered
+Resume file: .planning/phases/10-rework-sidebar-around-extension-points/10-CONTEXT.md
