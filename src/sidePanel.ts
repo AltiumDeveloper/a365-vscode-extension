@@ -279,9 +279,11 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
                 if (n.assignment.type === 'SCRIPT') {
                     item.iconPath = new vscode.ThemeIcon('file-code');
                     item.contextValue = CTX_ASSIGNMENT_SCRIPT;
-                    // NOTE: TreeItem.command NOT set here — Plan 10-03 Task 2 extends altium365.script.edit
-                    // to support assignment nodes. Click will fail until 10-03 wires the handler.
-                    // This is expected; full flow tested after 10-03 completes.
+                    item.command = {
+                        command: 'altium365.script.edit',
+                        title: 'Edit Script',
+                        arguments: [n],
+                    };
                 } else if (n.assignment.type === 'WORKFLOW') {
                     item.iconPath = new vscode.ThemeIcon(
                         'workflow',
