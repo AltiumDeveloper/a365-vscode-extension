@@ -412,3 +412,15 @@ Plans:
 Plans:
 - [x] 09-01-PLAN.md — Canonical managed-path builder + no-clobber reconciliation tests
 - [x] 09-02-PLAN.md — Consent-gated activation wiring, explicit command, cleanup, and IntelliSense UAT
+
+### Phase 10: Rework sidebar around extension points
+
+**Goal:** Users can navigate extension points (customizable product surfaces) organized by entity type and extension point type, with assignments nested underneath, while the Scripts category remains as a parallel authoritative list
+**Requirements**: TBD (no explicit REQ-IDs mapped in REQUIREMENTS.md for Phase 10)
+**Depends on:** Phase 9
+**Plans:** 3 plans
+
+Plans:
+- [ ] 10-01-PLAN.md — GraphQL schema verification and extension points query implementation
+- [ ] 10-02-PLAN.md — Extend sidebar tree with Extension Points category and 4-level hierarchy
+- [ ] 10-03-PLAN.md — Extend script commands to work on assignment nodes and wire context menus
