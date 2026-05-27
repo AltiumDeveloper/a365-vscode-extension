@@ -13,6 +13,7 @@ import {
     WorkspaceInfo,
     getSelectedWorkspace,
     getWorkspaceApiUrl,
+    listExtensionPoints,
     listProjects,
     listScripts,
     listWorkspaces,
@@ -103,6 +104,8 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
     private workspacesCache?: A365Node[];
     private projectsCache = new Map<string, A365Node[]>();
     private scriptsCache = new Map<string, A365Node[]>();
+    private extensionPointsCache = new Map<string, ExtensionPointInfo[]>();
+    private assignmentsCache = new Map<string, Map<string, AssignmentInfo[]>>();
 
     constructor(
         private ctx: vscode.ExtensionContext,
@@ -115,6 +118,8 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
             this.workspacesCache = undefined;
             this.projectsCache.clear();
             this.scriptsCache.clear();
+            this.extensionPointsCache.clear();
+            this.assignmentsCache.clear();
             this._onDidChange.fire(undefined);
             return;
         }
@@ -141,6 +146,16 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
         if (node.kind === 'scriptsCategory') {
             // WR-03 fix: see projectsCategory above — same staleness pattern.
             this.scriptsCache.delete(node.workspaceId);
+            const parent = this.workspacesCache?.find(
+                (w): w is Extract<A365Node, { kind: 'workspace' }> =>
+                    w.kind === 'workspace' && w.info.workspaceId === node.workspaceId
+            );
+            this._onDidChange.fire(parent);
+            return;
+        }
+        if (node.kind === 'extensionPointsCategory') {
+            this.extensionPointsCache.delete(node.workspaceId);
+            this.assignmentsCache.delete(node.workspaceId);
             const parent = this.workspacesCache?.find(
                 (w): w is Extract<A365Node, { kind: 'workspace' }> =>
                     w.kind === 'workspace' && w.info.workspaceId === node.workspaceId
@@ -328,9 +343,10 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
         // own apiServiceUrl, not the env-global graphqlEndpoint, since a
         // workspace can live on a different cluster than the env gateway.
         const endpoint = getWorkspaceApiUrl(element.info, this.getEndpoint());
-        const [projects, scripts] = await Promise.all([
+        const [projects, scripts, extensionPointsData] = await Promise.all([
             listProjects(endpoint, wsToken),
             listScripts(endpoint, wsToken),
+            listExtensionPoints(endpoint, wsToken),
         ]);
         const sortedProjects = [...projects].sort((a, b) =>
             (a.name || '').localeCompare(b.name || '')
@@ -353,6 +369,8 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
         }));
         this.projectsCache.set(workspaceId, projectNodes);
         this.scriptsCache.set(workspaceId, scriptNodes);
+        this.extensionPointsCache.set(workspaceId, extensionPointsData.extensionPoints);
+        this.assignmentsCache.set(workspaceId, extensionPointsData.assignments);
         return [
             {
                 kind: 'projectsCategory',
@@ -366,6 +384,13 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
                 workspaceAuthId: element.info.authId,
                 workspaceUrl: element.workspaceUrl,
                 count: scriptNodes.length,
+            },
+            {
+                kind: 'extensionPointsCategory',
+                workspaceId,
+                workspaceAuthId: element.info.authId,
+                workspaceUrl: element.workspaceUrl,
+                count: extensionPointsData.extensionPoints.length,
             },
         ];
     }
