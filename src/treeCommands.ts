@@ -66,6 +66,20 @@ export function registerTreeCommands(
                     case 'script':
                         id = node.script.scriptId;
                         break;
+                    case 'extensionPointNode':
+                        id = node.extensionPoint.extensionPointId;
+                        await vscode.env.clipboard.writeText(id);
+                        vscode.window.showInformationMessage(
+                            'Extension Point ID copied to clipboard.'
+                        );
+                        return;
+                    case 'assignmentNode':
+                        id = node.assignment.assignmentId;
+                        await vscode.env.clipboard.writeText(id);
+                        vscode.window.showInformationMessage(
+                            'Assignment ID copied to clipboard.'
+                        );
+                        return;
                     default:
                         output.appendLine(
                             '[Altium 365] tree.copyId: ignored kind=' + node.kind
