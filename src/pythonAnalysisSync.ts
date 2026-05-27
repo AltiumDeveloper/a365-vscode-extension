@@ -97,8 +97,19 @@ export function reconcilePythonAnalysisPaths(input: ReconcileInput): string[] {
  * VS Code path normalization uses forward slashes and lowercases on Windows.
  */
 function normalizePath(p: string): string {
-    const normalized = p.replace(/\\/g, '/');
-    return process.platform === 'win32' ? normalized.toLowerCase() : normalized;
+    try {
+        // Let VS Code handle platform-specific path normalization
+        const uri = vscode.Uri.file(p);
+        // fsPath is already normalized and case-correct per platform
+        const fsPath = uri.fsPath;
+        // Convert backslashes for consistent comparison
+        const normalized = fsPath.replace(/\\/g, '/');
+        return process.platform === 'win32' ? normalized.toLowerCase() : normalized;
+    } catch {
+        // Fallback for invalid paths - use original logic
+        const normalized = p.replace(/\\/g, '/');
+        return process.platform === 'win32' ? normalized.toLowerCase() : normalized;
+    }
 }
 
 /**
