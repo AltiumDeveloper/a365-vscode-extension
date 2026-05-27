@@ -304,8 +304,19 @@ async function reconcileNow(
         injectHelperEnabled: injectHelper,
     });
 
-    // Update workspace config
-    await config.update('extraPaths', reconciled, vscode.ConfigurationTarget.Workspace);
+    // Wrap config write in try/catch - can fail if workspace is readonly or config scope has issues
+    try {
+        await config.update('extraPaths', reconciled, vscode.ConfigurationTarget.Workspace);
+    } catch (e) {
+        output.appendLine(
+            `${LOG_PREFIX} failed to update python.analysis.extraPaths: ${(e as Error).message}`
+        );
+        vscode.window.showErrorMessage(
+            'Altium Developer: Failed to update Python IntelliSense paths. ' +
+            'Check workspace settings are writable.'
+        );
+        return; // Abort before updating globalState to avoid drift
+    }
 
     // Update managed paths snapshot
     const snapshot = getManagedPythonAnalysisPathsSnapshot(desiredManagedPaths);
