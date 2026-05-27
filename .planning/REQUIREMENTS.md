@@ -18,6 +18,8 @@
 - [x] **PANEL-09**: The active workspace (the one whose token was last exchanged) is visually distinguished from inactive workspaces in the tree
 - [x] **PANEL-10**: The A365 view title bar exposes a globe-icon action that runs `altium365.selectEnvironment`
 - [x] **PANEL-11**: Workspace and project context menus include `Open in Browser`, which opens the node's A365 URL in the system browser
+- [x] **PANEL-12**: Extension Points appears as a third category under each workspace, organized by entity type and extension point type
+- [ ] **PANEL-13**: Extension points display nested assignments with type-aware icons and actions
 
 ### Remote Scripts
 
@@ -93,6 +95,8 @@
 | PANEL-09 | Phase 02.1: Side-Panel UX Closure | Complete |
 | PANEL-10 | Phase 02.1: Side-Panel UX Closure | Complete |
 | PANEL-11 | Phase 02.1: Side-Panel UX Closure | Complete |
+| PANEL-12 | Phase 10: Extension Points | Complete |
+| PANEL-13 | Phase 10: Extension Points | Pending |
 | SCRIPT-01 | Phase 2: Side Panel | Deferred to Phase 3 (BLOCKED on live-workspace endpoint verification) |
 | SCRIPT-02 | Phase 3: Remote Script Operations | Pending |
 | SCRIPT-03 | Phase 3: Remote Script Operations | Pending |
@@ -101,8 +105,8 @@
 | SCRIPT-V2-04 | Phase 999.3: Script Test-Events | Pending |
 
 **Coverage:**
-- v1 requirements: 21 total
-- Mapped to phases: 21
+- v1 requirements: 23 total
+- Mapped to phases: 23
 - Unmapped: 0 ✓
 
 ---
