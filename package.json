@@ -441,6 +441,36 @@
           "group": "9_clipboard@1"
         },
         {
+          "command": "altium365.script.runLocal",
+          "when": "view == altium365.tree && viewItem == assignmentNode-script",
+          "group": "1_run@1"
+        },
+        {
+          "command": "altium365.script.debugLocal",
+          "when": "view == altium365.tree && viewItem == assignmentNode-script",
+          "group": "1_run@2"
+        },
+        {
+          "command": "altium365.script.executeRemote",
+          "when": "view == altium365.tree && viewItem == assignmentNode-script",
+          "group": "1_run@3"
+        },
+        {
+          "command": "altium365.script.edit",
+          "when": "view == altium365.tree && viewItem == assignmentNode-script",
+          "group": "2_edit@1"
+        },
+        {
+          "command": "altium365.tree.copyId",
+          "when": "view == altium365.tree && viewItem == extensionPointNode",
+          "group": "9_clipboard@1"
+        },
+        {
+          "command": "altium365.tree.copyId",
+          "when": "view == altium365.tree && viewItem =~ /^assignmentNode/",
+          "group": "9_clipboard@1"
+        },
+        {
           "command": "altium365.workspace.openInBrowser",
           "when": "view == altium365.tree && viewItem =~ /^workspaceNode/",
           "group": "9_open@1"
