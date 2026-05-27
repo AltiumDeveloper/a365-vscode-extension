@@ -797,27 +797,29 @@ export async function listExtensionPoints(
 
 **If this table is not empty:** All GraphQL API structure claims are ASSUMED and must be verified against a live A365 Dev/Uat environment during Wave 0 execution. The planner MUST add a checkpoint task: "Verify GraphQL schema for `gloCusExtensionPoints` and `GloCusAssignment` via introspection query or live testing."
 
-## Open Questions
+## Open Questions (RESOLVED via Plan 10-01 Checkpoint)
+
+**Resolution status:** All 4 open questions below are resolved via the blocking human-verify checkpoint in Plan 10-01 Task 1. The checkpoint requires live GraphQL introspection against the Dev environment before any implementation proceeds. Actual field names, parameter formats, entity/EP type enumerations, and reference patterns will be documented in the checkpoint output and used to finalize Task 2 implementation.
 
 1. **GraphQL schema structure for extension points and assignments**
    - What we know: Context mentions `gloCusExtensionPoints` and `GloCusAssignment` types exist in the A365 GraphQL API
    - What's unclear: Exact field names, nesting structure, pagination strategy, whether assignments are nested or require separate queries
-   - Recommendation: Add Wave 0 task to run GraphQL introspection query against Dev environment and verify all field names before implementing queries. If introspection is blocked, implement with best-guess schema and add checkpoint for human verification before merging.
+   - Resolution: Plan 10-01 Task 1 checkpoint runs GraphQL introspection query against Dev environment and verifies all field names before implementing queries. If introspection is blocked, checkpoint includes manual verification of actual API shape.
 
 2. **Assignment parameter schema format**
    - What we know: D-12 requires showing parameter expectations in assignment tooltips
    - What's unclear: How parameters are represented in the GraphQL response (JSON schema? List of key/type pairs? Prose description?)
-   - Recommendation: If parameter schema is complex (nested JSON), implement a simple serializer that converts it to human-readable format (e.g., "projectId (string), status (enum), reason (optional string)"). If format is unknown, show raw JSON in Wave 0 and refine based on UAT feedback.
+   - Resolution: Plan 10-01 checkpoint verifies actual parameter field format. Plan 10-02 Task 4 implements tooltip rendering based on verified format (raw JSON if complex, formatted string if structured).
 
 3. **Entity type and EP type enumeration**
    - What we know: D-04 specifies entity types like "Project", "BOM"; EP types like "UIAction.ContextMenu", "Event"
    - What's unclear: Full enumeration of possible values, whether these are free-text or constrained enums in the GraphQL schema
-   - Recommendation: Do not hardcode entity/EP type icon mappings for all possible values. Use a default icon for unmapped types (`symbol-namespace` for entity types, `symbol-key` for EP types) and add specific mappings as users encounter them in UAT.
+   - Resolution: Plan 10-02 Task 4 uses icon mappings for known types with fallback defaults (`symbol-namespace` for entity types, `symbol-key` for EP types). UAT will surface additional types for future mapping.
 
 4. **Cross-workspace extension points**
    - What we know: Extension points are queried per workspace (similar to scripts)
    - What's unclear: Whether extension points can reference scripts from a different workspace, and how to handle that in the tree
-   - Recommendation: Assume same-workspace references for Phase 10. If a cross-workspace reference is encountered, show an error node or grayed-out assignment with tooltip "Script in different workspace — not supported yet."
+   - Resolution: Plan 10-01 checkpoint verifies whether assignment scriptId references are workspace-scoped. If cross-workspace references exist, Plan 10-03 extractScriptContext will show error "Script in different workspace — not supported yet."
 
 ## Environment Availability
 
