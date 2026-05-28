@@ -245,7 +245,8 @@
               "actionWaitEndpoint": "https://actionwait.dev1.altium.com/await",
               "redirectUri": "https://auth.dev1.altium.com/api/AuthComplete",
               "scopes": "openid profile offline_access workspace:scripts.manage workspace:scripts.execute",
-              "audience": ""
+              "audience": "",
+              "appId": "grid:global::platform:app/696d58cb-3803-4c8a-9711-c9bad5e8ba81"
             },
             "Uat": {
               "graphqlEndpoint": "https://eur.uat-365.altium.com/napi/gateway/graphql",
@@ -254,7 +255,8 @@
               "actionWaitEndpoint": "https://actionwait.uat.altium.com/await",
               "redirectUri": "https://auth.uat1.altium.com/api/AuthComplete",
               "scopes": "openid profile offline_access workspace:scripts.manage workspace:scripts.execute",
-              "audience": ""
+              "audience": "",
+              "appId": "grid:global::platform:app/4b70ae94-c06d-44a1-967f-76b26cd2c81a"
             },
             "Prod": {
               "graphqlEndpoint": "https://eur.365.altium.com/napi/gateway/graphql",
@@ -263,7 +265,8 @@
               "actionWaitEndpoint": "https://actionwait.altium.com/await",
               "redirectUri": "https://auth.altium.com/api/AuthComplete",
               "scopes": "openid profile offline_access workspace:scripts.manage workspace:scripts.execute",
-              "audience": ""
+              "audience": "",
+              "appId": "grid:global::platform:app/71277081-7c79-4309-af3c-f3fd36b68c69"
             }
           },
           "description": "Named environments. Each entry can override graphqlEndpoint, authEndpoint, tokenEndpoint, actionWaitEndpoint, redirectUri, scopes, audience. Use 'Altium Developer: Select Environment' to switch.",
@@ -276,7 +279,8 @@
               "actionWaitEndpoint": { "type": "string" },
               "redirectUri": { "type": "string" },
               "scopes": { "type": "string" },
-              "audience": { "type": "string" }
+              "audience": { "type": "string" },
+              "appId": { "type": "string" }
             }
           }
         },
