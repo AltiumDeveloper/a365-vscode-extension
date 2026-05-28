@@ -11,8 +11,10 @@ import {
     ProjectInfo,
     ScriptInfo,
     WorkspaceInfo,
+    checkAppInstalled,
     getSelectedWorkspace,
     getWorkspaceApiUrl,
+    installApp,
     listExtensionPoints,
     listProjects,
     listScripts,
@@ -416,6 +418,40 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
         // own apiServiceUrl, not the env-global graphqlEndpoint, since a
         // workspace can live on a different cluster than the env gateway.
         const endpoint = getWorkspaceApiUrl(element.info, this.getEndpoint());
+
+        // App installation gate (260528-dwb): Check if extension app is installed
+        // before attempting workspace-scoped queries. Prompt user to install if needed.
+        const cfg = vscode.workspace.getConfiguration('altium365');
+        const activeEnvName = cfg.get<string>('activeEnvironment') || '';
+        const envs = cfg.get<Record<string, any>>('environments') || {};
+        const appId = envs[activeEnvName]?.appId;
+
+        if (appId) {
+            const installed = await checkAppInstalled(endpoint, wsToken, appId);
+            if (!installed) {
+                const choice = await vscode.window.showInformationMessage(
+                    'The Altium Developer extension needs to be installed in this workspace. Install now? (Requires workspace admin permissions)',
+                    'Install Now',
+                    'Cancel'
+                );
+                if (choice === 'Install Now') {
+                    try {
+                        await installApp(endpoint, wsToken, appId);
+                        vscode.window.showInformationMessage('Extension app installed successfully');
+                    } catch (err) {
+                        const msg = (err as Error).message;
+                        if (msg.includes('workspace administrator')) {
+                            throw new Error(msg);
+                        } else {
+                            throw new Error('Failed to install extension app: ' + msg);
+                        }
+                    }
+                } else {
+                    throw new Error('Extension app installation cancelled - workspace requires the app to be installed');
+                }
+            }
+        }
+
         const [projects, scripts, extensionPointsData] = await Promise.all([
             listProjects(endpoint, wsToken),
             listScripts(endpoint, wsToken),
