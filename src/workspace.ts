@@ -758,47 +758,19 @@ export async function getExecutionLogs(
 }
 
 // =============================================================================
-// Quick Task 260528-dhr — App Installation Check and Install Flow
+// Quick Task 260528-dhr+260528-dp1 — App Installation Check and Install Flow
 // =============================================================================
 //
 // Prevent AUTH_NOT_AUTHENTICATED errors by checking if the extension app is
 // installed in the workspace before making protected API calls. Only workspace
 // admins can install apps — non-admins receive actionable escalation messages.
+//
+// App GRIDs are configured per-environment in package.json defaults and read
+// from the active environment config (not inferred from URL patterns).
 
 export interface InstalledAppInfo {
     id: string;
     name: string;
-}
-
-/**
- * App GRIDs by environment (verified 2026-05-28).
- * - Dev: grid:global::platform:app/696d58cb-3803-4c8a-9711-c9bad5e8ba81
- * - UAT: grid:global::platform:app/4b70ae94-c06d-44a1-967f-76b26cd2c81a
- * - Prod: grid:global::platform:app/71277081-7c79-4309-af3c-f3fd36b68c69
- */
-const APP_GRID_DEV = 'grid:global::platform:app/696d58cb-3803-4c8a-9711-c9bad5e8ba81';
-const APP_GRID_UAT = 'grid:global::platform:app/4b70ae94-c06d-44a1-967f-76b26cd2c81a';
-const APP_GRID_PROD = 'grid:global::platform:app/71277081-7c79-4309-af3c-f3fd36b68c69';
-
-/**
- * Determine the correct app GRID for a given GraphQL endpoint.
- *
- * Inspects the endpoint URL to identify the environment (Dev/UAT/Prod) and
- * returns the corresponding app GRID. Uses case-insensitive string matching.
- *
- * @param graphqlEndpoint - The GraphQL API endpoint URL
- * @returns The app GRID string for the detected environment
- */
-export function getAppIdForEnvironment(graphqlEndpoint: string): string {
-    const endpoint = graphqlEndpoint.toLowerCase();
-    if (endpoint.includes('dev') || endpoint.includes('dev1') || endpoint.includes('dev-365')) {
-        return APP_GRID_DEV;
-    }
-    if (endpoint.includes('uat')) {
-        return APP_GRID_UAT;
-    }
-    // Default to production for unknown or prod endpoints
-    return APP_GRID_PROD;
 }
 
 const CHECK_APP_INSTALLED_QUERY = `
@@ -813,18 +785,20 @@ const CHECK_APP_INSTALLED_QUERY = `
 /**
  * Check if the Altium Developer extension app is installed in the workspace.
  *
- * Queries `gloAppInstalledApps` and returns true if any installed app matches
- * one of the known app GRIDs (Dev/UAT/Prod). This check should be performed
- * before making workspace-scoped GraphQL calls that require app installation
- * to avoid AUTH_NOT_AUTHENTICATED errors.
+ * Queries `gloAppInstalledApps` and returns true if the installed apps include
+ * the provided app GRID. This check should be performed before making
+ * workspace-scoped GraphQL calls that require app installation to avoid
+ * AUTH_NOT_AUTHENTICATED errors.
  *
  * @param endpoint - The GraphQL API endpoint URL
  * @param workspaceToken - Workspace-scoped access token
+ * @param appId - App GRID to check (obtain from active environment config)
  * @returns True if the extension app is installed, false otherwise
  */
 export async function checkAppInstalled(
     endpoint: string,
-    workspaceToken: string
+    workspaceToken: string,
+    appId: string
 ): Promise<boolean> {
     const data = await graphqlRequest(endpoint, workspaceToken, CHECK_APP_INSTALLED_QUERY);
     const apps = data?.gloAppInstalledApps;
@@ -832,11 +806,7 @@ export async function checkAppInstalled(
         return false;
     }
     const installedAppIds = new Set(apps.map((app: InstalledAppInfo) => app.id));
-    return (
-        installedAppIds.has(APP_GRID_DEV) ||
-        installedAppIds.has(APP_GRID_UAT) ||
-        installedAppIds.has(APP_GRID_PROD)
-    );
+    return installedAppIds.has(appId);
 }
 
 const INSTALL_APP_MUTATION = `
@@ -860,7 +830,7 @@ const INSTALL_APP_MUTATION = `
  *
  * @param endpoint - The GraphQL API endpoint URL
  * @param workspaceToken - Workspace-scoped access token
- * @param appId - The app GRID to install (obtain via getAppIdForEnvironment)
+ * @param appId - The app GRID to install (obtain from active environment config)
  * @returns The installed app GRID
  * @throws GraphQLError with admin escalation message on permission errors
  */
