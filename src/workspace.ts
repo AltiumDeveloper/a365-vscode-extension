@@ -571,7 +571,6 @@ const EXECUTE_ASSIGNMENT_MUTATION = `
     mutation ExecuteAssignment($input: GloCusExecuteAssignmentInput!) {
         gloCusExecuteAssignment(input: $input) {
             scriptExecutionId
-            status
         }
     }
 `;
@@ -593,7 +592,7 @@ export async function executeAssignment(
     }
     return {
         scriptExecutionId: exec.scriptExecutionId,
-        status: exec.status || 'Unknown',
+        status: 'Pending',  // Default status since mutation doesn't return it
     };
 }
 
