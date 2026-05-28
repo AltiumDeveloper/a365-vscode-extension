@@ -270,10 +270,7 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
                         arguments: [n],
                     };
                 } else if (n.assignment.type === 'WORKFLOW') {
-                    item.iconPath = new vscode.ThemeIcon(
-                        'workflow',
-                        new vscode.ThemeColor('descriptionForeground')
-                    );
+                    item.iconPath = new vscode.ThemeIcon('git-pull-request');
                     item.contextValue = CTX_ASSIGNMENT_WORKFLOW;
                 } else if (n.assignment.type === 'DEFAULT') {
                     item.iconPath = new vscode.ThemeIcon(
