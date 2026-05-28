@@ -138,7 +138,7 @@
       },
       {
         "command": "altium365.workspace.openInBrowser",
-        "title": "Open Workspace in Browser",
+        "title": "Open in Browser",
         "category": "Altium Developer"
       },
       {
@@ -153,7 +153,12 @@
       },
       {
         "command": "altium365.project.openInBrowser",
-        "title": "Open Project in Browser",
+        "title": "Open in Browser",
+        "category": "Altium Developer"
+      },
+      {
+        "command": "altium365.assignment.openInBrowser",
+        "title": "Open in Browser",
         "category": "Altium Developer"
       },
       {
@@ -331,6 +336,10 @@
         {
           "command": "altium365.project.openInBrowser",
           "when": "false"
+        },
+        {
+          "command": "altium365.assignment.openInBrowser",
+          "when": "false"
         }
       ],
       "editor/title": [
@@ -478,6 +487,11 @@
         {
           "command": "altium365.project.openInBrowser",
           "when": "view == altium365.tree && viewItem == projectNode",
+          "group": "9_open@1"
+        },
+        {
+          "command": "altium365.assignment.openInBrowser",
+          "when": "view == altium365.tree && viewItem =~ /^assignmentNode/",
           "group": "9_open@1"
         }
       ]

@@ -194,5 +194,37 @@ export function registerTreeCommands(
                 }
             }
         ),
+        vscode.commands.registerCommand(
+            'altium365.assignment.openInBrowser',
+            async (node?: A365Node) => {
+                if (!node || node.kind !== 'assignmentNode') {
+                    output.appendLine(
+                        '[Altium 365] assignment.openInBrowser: ignored kind=' +
+                            (node?.kind ?? 'undefined')
+                    );
+                    return;
+                }
+                // Build URL: https://{workspace-url}/customization-manager/scripts/{extension-point-id}/{assignment-id}/edit
+                if (!node.workspaceUrl) {
+                    vscode.window.showInformationMessage(
+                        'This assignment does not have a workspace URL'
+                    );
+                    return;
+                }
+                const url = `${node.workspaceUrl}/customization-manager/scripts/${node.extensionPointId}/${node.assignment.assignmentId}/edit`;
+                try {
+                    await openExternalHttpUrl(url, output, 'assignment.openInBrowser');
+                } catch (e) {
+                    const err = e as Error;
+                    vscode.window.showErrorMessage(
+                        'Altium 365: Open in Browser failed: ' + err.message
+                    );
+                    output.appendLine(
+                        '[Altium 365] assignment.openInBrowser failed: ' +
+                            (err.stack ?? err.message)
+                    );
+                }
+            }
+        ),
     ];
 }

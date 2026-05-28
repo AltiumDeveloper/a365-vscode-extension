@@ -68,6 +68,7 @@ export type A365Node =
           kind: 'entityTypeGroupNode';
           workspaceId: string;
           workspaceAuthId: string;
+          workspaceUrl: string;
           entityType: string;
           epCount: number;
       }
@@ -75,6 +76,7 @@ export type A365Node =
           kind: 'extensionPointNode';
           workspaceId: string;
           workspaceAuthId: string;
+          workspaceUrl: string;
           extensionPoint: ExtensionPointInfo;
       }
     | {
@@ -82,6 +84,7 @@ export type A365Node =
           workspaceId: string;
           workspaceAuthId: string;
           workspaceUrl: string;
+          extensionPointId: string;
           assignment: AssignmentInfo;
       }
     | { kind: 'info'; label: string }
@@ -476,18 +479,10 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
         element: Extract<A365Node, { kind: 'extensionPointsCategory' }>
     ): A365Node[] {
         const extensionPoints = this.extensionPointsCache.get(element.workspaceId) || [];
-        const workspaceAssignments = this.assignmentsCache.get(element.workspaceId);
         
+        // Group by entity type
         const grouped = new Map<string, ExtensionPointInfo[]>();
         for (const ep of extensionPoints) {
-            // Only include EPs that have non-DEFAULT assignments
-            if (workspaceAssignments) {
-                const assignments = workspaceAssignments.get(ep.extensionPointId) || [];
-                if (!assignments.some(a => a.type !== 'DEFAULT')) {
-                    continue;  // Skip this EP - no non-DEFAULT assignments
-                }
-            }
-            
             const entityType = ep.entityType || 'Other';
             if (!grouped.has(entityType)) {
                 grouped.set(entityType, []);
@@ -495,12 +490,23 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
             grouped.get(entityType)!.push(ep);
         }
         
-        return Array.from(grouped.entries())
+        // Only include entity type groups that have non-DEFAULT assignments
+        const workspaceAssignments = this.assignmentsCache.get(element.workspaceId);
+        const nonEmptyGroups = Array.from(grouped.entries()).filter(([_, eps]) => {
+            return eps.some(ep => {
+                if (!workspaceAssignments) return false;
+                const assignments = workspaceAssignments.get(ep.extensionPointId) || [];
+                return assignments.some(a => a.type !== 'DEFAULT');
+            });
+        });
+        
+        return nonEmptyGroups
             .sort(([a], [b]) => a.localeCompare(b))
             .map(([entityType, eps]): A365Node => ({
                 kind: 'entityTypeGroupNode',
                 workspaceId: element.workspaceId,
                 workspaceAuthId: element.workspaceAuthId,
+                workspaceUrl: element.workspaceUrl,
                 entityType,
                 epCount: eps.length,
             }));
@@ -529,6 +535,7 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
                 kind: 'extensionPointNode',
                 workspaceId: element.workspaceId,
                 workspaceAuthId: element.workspaceAuthId,
+                workspaceUrl: element.workspaceUrl,
                 extensionPoint: ep,
             }));
     }
@@ -558,7 +565,8 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
                 kind: 'assignmentNode',
                 workspaceId: element.workspaceId,
                 workspaceAuthId: element.workspaceAuthId,
-                workspaceUrl: '',
+                workspaceUrl: element.workspaceUrl,
+                extensionPointId: element.extensionPoint.extensionPointId,
                 assignment,
             }));
     }
