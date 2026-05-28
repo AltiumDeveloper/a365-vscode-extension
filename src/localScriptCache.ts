@@ -5,8 +5,8 @@ import * as os from 'os';
 import * as path from 'path';
 import { buildScriptUri, AltiumRemoteScriptFs } from './remoteScriptFs';
 import { withScriptProgress } from './progress';
-import { updateAssignment, getWorkspaceApiUrl, getSelectedWorkspace } from './workspace';
-import { ensureWorkspaceToken, readOAuthConfig } from './auth';
+import { updateAssignment, getWorkspaceApiUrl, getSelectedWorkspace, listWorkspaces, WorkspaceInfo } from './workspace';
+import { ensureWorkspaceToken, readOAuthConfig, getBaseAccessToken } from './auth';
 
 /**
  * In-memory mapping from local tmp file path -> remote script identity.
@@ -195,38 +195,48 @@ export function registerLocalScriptSaveBridge(
                     // auto-update the assignment to the latest published version.
                     if (identity.assignmentId) {
                         try {
-                            const selected = getSelectedWorkspace(context);
-                            if (selected && selected.authId === identity.workspaceAuthId) {
+                            // Resolve workspace from authId (same pattern as remoteScriptFs.resolveWorkspace)
+                            let workspace: WorkspaceInfo | undefined = getSelectedWorkspace(context);
+                            if (!workspace || workspace.authId !== identity.workspaceAuthId) {
+                                // Selected workspace doesn't match — fetch all workspaces and find by authId
                                 const cfg = readOAuthConfig();
-                                const wsToken = await ensureWorkspaceToken(context, cfg, {
-                                    workspaceId: selected.workspaceId,
-                                    authId: selected.authId,
-                                });
-                                const apiUrl = getWorkspaceApiUrl(selected, 
-                                    vscode.workspace.getConfiguration('altium365').get<string>('graphqlEndpoint', '')
-                                );
-                                
-                                // Fetch latest script version (writeFile just created it)
-                                const { getScript } = await import('./workspace');
-                                const scriptDetail = await getScript(apiUrl, wsToken, identity.scriptId);
-                                
-                                // Update assignment to latest version
-                                await updateAssignment(
-                                    apiUrl,
-                                    wsToken,
-                                    identity.assignmentId,
-                                    identity.scriptId,
-                                    scriptDetail.latestVersionId
-                                );
-                                
-                                output.appendLine(
-                                    `[Altium 365] Auto-updated assignment ${identity.assignmentId} to version ${scriptDetail.latestVersionId}`
-                                );
-                            } else {
-                                output.appendLine(
-                                    `[Altium 365] Skipped assignment update — workspace not selected`
-                                );
+                                const baseToken = await getBaseAccessToken(context, cfg);
+                                if (!baseToken) {
+                                    throw new Error('No base access token available');
+                                }
+                                const envGlobal = vscode.workspace.getConfiguration('altium365').get<string>('graphqlEndpoint', '');
+                                const list = await listWorkspaces(envGlobal, baseToken);
+                                workspace = list.find((w) => w.authId === identity.workspaceAuthId);
+                                if (!workspace) {
+                                    throw new Error(`Workspace ${identity.workspaceAuthId} not found`);
+                                }
                             }
+                            
+                            const cfg = readOAuthConfig();
+                            const wsToken = await ensureWorkspaceToken(context, cfg, {
+                                workspaceId: workspace.workspaceId,
+                                authId: workspace.authId,
+                            });
+                            const apiUrl = getWorkspaceApiUrl(workspace, 
+                                vscode.workspace.getConfiguration('altium365').get<string>('graphqlEndpoint', '')
+                            );
+                            
+                            // Fetch latest script version (writeFile just created it)
+                            const { getScript } = await import('./workspace');
+                            const scriptDetail = await getScript(apiUrl, wsToken, identity.scriptId);
+                            
+                            // Update assignment to latest version
+                            await updateAssignment(
+                                apiUrl,
+                                wsToken,
+                                identity.assignmentId,
+                                identity.scriptId,
+                                scriptDetail.latestVersionId
+                            );
+                            
+                            output.appendLine(
+                                `[Altium 365] Auto-updated assignment ${identity.assignmentId} to version ${scriptDetail.latestVersionId}`
+                            );
                         } catch (e) {
                             // Non-fatal — publish succeeded, assignment update is best-effort
                             output.appendLine(
