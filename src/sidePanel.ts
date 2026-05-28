@@ -76,7 +76,6 @@ export type A365Node =
           workspaceId: string;
           workspaceAuthId: string;
           extensionPoint: ExtensionPointInfo;
-          assignmentCount: number;
       }
     | {
           kind: 'assignmentNode';
@@ -238,7 +237,7 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
             }
             case 'extensionPointNode': {
                 const item = new vscode.TreeItem(
-                    `${n.extensionPoint.name} (${n.assignmentCount})`,
+                    n.extensionPoint.name,
                     vscode.TreeItemCollapsibleState.Collapsed
                 );
                 // Icon based on extension point type for visual clarity
@@ -536,7 +535,6 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
                 workspaceId: element.workspaceId,
                 workspaceAuthId: element.workspaceAuthId,
                 extensionPoint: ep,
-                assignmentCount: ep.assignmentCount || 0,
             }));
     }
 
