@@ -5,6 +5,8 @@ import * as os from 'os';
 import * as path from 'path';
 import { buildScriptUri, AltiumRemoteScriptFs } from './remoteScriptFs';
 import { withScriptProgress } from './progress';
+import { updateAssignment, getWorkspaceApiUrl, getSelectedWorkspace } from './workspace';
+import { ensureWorkspaceToken, readOAuthConfig } from './auth';
 
 /**
  * In-memory mapping from local tmp file path -> remote script identity.
@@ -30,6 +32,9 @@ export interface LocalScriptIdentity {
     workspaceAuthId: string;
     scriptId: string;
     scriptName: string;
+    /** Optional assignment ID when script was opened via an assignment node.
+     * Used to automatically update the assignment to latest version on publish. */
+    assignmentId?: string;
 }
 
 const registry = new Map<string, LocalScriptIdentity>();
@@ -146,8 +151,13 @@ export function rehydrateLocalScriptCacheFromDisk(): number {
  * not a directory" during UAT-7). Calls the FSP's `writeFile` directly
  * with `create:true, overwrite:true`, matching the contract used when
  * VS Code saves a doc opened on the altium365: URI.
+ * 
+ * Phase 10: After successful publish, if the script was opened via an
+ * assignment node, automatically updates that assignment to the latest
+ * script version using the `updateAssignment` GraphQL mutation.
  */
 export function registerLocalScriptSaveBridge(
+    context: vscode.ExtensionContext,
     output: vscode.OutputChannel,
     remoteFs: AltiumRemoteScriptFs
 ): vscode.Disposable {
@@ -180,6 +190,50 @@ export function registerLocalScriptSaveBridge(
                         `Altium 365: published ${identity.scriptName}`,
                         3000
                     );
+                    
+                    // Phase 10: If script was opened from an assignment node,
+                    // auto-update the assignment to the latest published version.
+                    if (identity.assignmentId) {
+                        try {
+                            const selected = getSelectedWorkspace(context);
+                            if (selected && selected.authId === identity.workspaceAuthId) {
+                                const cfg = readOAuthConfig();
+                                const wsToken = await ensureWorkspaceToken(context, cfg, {
+                                    workspaceId: selected.workspaceId,
+                                    authId: selected.authId,
+                                });
+                                const apiUrl = getWorkspaceApiUrl(selected, 
+                                    vscode.workspace.getConfiguration('altium365').get<string>('graphqlEndpoint', '')
+                                );
+                                
+                                // Fetch latest script version (writeFile just created it)
+                                const { getScript } = await import('./workspace');
+                                const scriptDetail = await getScript(apiUrl, wsToken, identity.scriptId);
+                                
+                                // Update assignment to latest version
+                                await updateAssignment(
+                                    apiUrl,
+                                    wsToken,
+                                    identity.assignmentId,
+                                    identity.scriptId,
+                                    scriptDetail.latestVersionId
+                                );
+                                
+                                output.appendLine(
+                                    `[Altium 365] Auto-updated assignment ${identity.assignmentId} to version ${scriptDetail.latestVersionId}`
+                                );
+                            } else {
+                                output.appendLine(
+                                    `[Altium 365] Skipped assignment update — workspace not selected`
+                                );
+                            }
+                        } catch (e) {
+                            // Non-fatal — publish succeeded, assignment update is best-effort
+                            output.appendLine(
+                                `[Altium 365] Assignment auto-update failed (non-fatal): ${(e as Error).message}`
+                            );
+                        }
+                    }
                 } catch (e) {
                     const err = e as Error;
                     output.appendLine(

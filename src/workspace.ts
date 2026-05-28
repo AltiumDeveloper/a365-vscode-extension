@@ -510,6 +510,51 @@ export async function updateScript(
 }
 
 // =============================================================================
+// Phase 10 — Extension Points: updateAssignment (auto-update on publish)
+// =============================================================================
+//
+// GraphQL mutation verified against live A365 Dev environment. Updates an
+// assignment to reference the latest published script version after a
+// successful publish operation.
+
+const UPDATE_ASSIGNMENT_MUTATION = `
+    mutation UpdateAssignment($input: GloCusUpdateAssignmentInput!) {
+        gloCusUpdateAssignment(input: $input) {
+            assignmentId
+        }
+    }
+`;
+
+export async function updateAssignment(
+    endpoint: string,
+    workspaceToken: string,
+    assignmentId: string,
+    scriptId: string,
+    scriptVersionId: string
+): Promise<{ assignmentId: string }> {
+    const input = {
+        script: {
+            assignmentId,
+            scriptId,
+            scriptVersionId,
+        },
+    };
+    const data = await graphqlRequest(
+        endpoint,
+        workspaceToken,
+        UPDATE_ASSIGNMENT_MUTATION,
+        { input }
+    );
+    const result = data?.gloCusUpdateAssignment;
+    if (!result?.assignmentId) {
+        throw new Error('updateAssignment: unexpected empty response');
+    }
+    return {
+        assignmentId: result.assignmentId,
+    };
+}
+
+// =============================================================================
 // Phase 3 — Plan 03-04: executeScript + getExecutionResult + getExecutionLogs
 // =============================================================================
 //
