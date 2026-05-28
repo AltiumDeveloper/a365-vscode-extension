@@ -6,6 +6,7 @@ import {
 } from './auth';
 import {
     executeScript,
+    executeAssignment,
     ExecutionResult,
     getExecutionLogs,
     getExecutionResult,
@@ -69,6 +70,8 @@ export interface ExecuteRemoteArgs {
     scriptName: string;
     workspaceName: string;
     envGlobalEndpoint: string;
+    /** Optional: if provided, executes via gloCusExecuteAssignment instead of gloScrExecuteScript */
+    assignmentId?: string;
 }
 
 const POLL_INTERVAL_MS = 1500;
@@ -195,18 +198,29 @@ export async function executeRemoteScript(args: ExecuteRemoteArgs): Promise<void
 
     // ----- Block C: OutputChannel header (D-09) -----
     args.output.show(true);
+    const executionType = args.assignmentId ? 'assignment' : 'script';
     args.output.appendLine(
-        `\n[Altium 365] Executing ${args.scriptName} ` +
-            `(scriptId=${args.scriptId}, workspace=${args.workspaceName})`
+        `\n[Altium 365] Executing ${executionType} ${args.scriptName} ` +
+            `(scriptId=${args.scriptId}${args.assignmentId ? `, assignmentId=${args.assignmentId}` : ''}, workspace=${args.workspaceName})`
     );
 
     // ----- Block D: kick-off mutation (D-11 surface OUTSIDE withProgress) -----
     let execId: string;
     try {
-        const r = await executeScript(apiUrl, wsToken, {
-            scriptId: args.scriptId,
-            parameters,
-        });
+        let r: { scriptExecutionId: string; status: string };
+        if (args.assignmentId) {
+            // Phase 10: Execute via assignment (correct way to trigger extension points)
+            r = await executeAssignment(apiUrl, wsToken, {
+                assignmentId: args.assignmentId,
+                parameters,
+            });
+        } else {
+            // Legacy: Execute script directly
+            r = await executeScript(apiUrl, wsToken, {
+                scriptId: args.scriptId,
+                parameters,
+            });
+        }
         execId = r.scriptExecutionId;
         args.output.appendLine(
             `[Altium 365] Execution started: scriptExecutionId=${execId} ` +

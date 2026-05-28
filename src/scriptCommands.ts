@@ -510,6 +510,12 @@ async function executeRemoteFromUi(
         );
         return;
     }
+    
+    // Phase 10: Check if executing from an assignment node
+    const assignmentId = node && 'kind' in node && node.kind === 'assignmentNode'
+        ? (node as any).assignment?.assignmentId
+        : undefined;
+    
     // Recover workspace name + authId from the selected workspace (if it
     // matches) for diagnostic logging in the OutputChannel header. This is
     // best-effort — the real impl in 03-04 re-resolves WorkspaceInfo via
@@ -540,6 +546,7 @@ async function executeRemoteFromUi(
             scriptName: sc.scriptName,
             workspaceName,
             envGlobalEndpoint,
+            assignmentId,  // Pass assignmentId if executing from assignment node
         });
     } catch (e) {
         const err = e as Error & { code?: string };
