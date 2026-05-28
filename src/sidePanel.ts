@@ -393,11 +393,11 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
             this.workspacesCache = empty;
             return empty;
         }
-        const workspaceUrl = endpoint.replace(/\/api(\/.*)?$/, '') || endpoint;
         const nodes: A365Node[] = list.map((info) => ({
             kind: 'workspace' as const,
             info,
-            workspaceUrl,
+            // Use DesWorkspaceInfo.url for web UI links (not apiServiceUrl)
+            workspaceUrl: info.url || '',
             url: info.url,
         }));
         this.workspacesCache = nodes;
