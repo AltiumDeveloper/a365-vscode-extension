@@ -765,8 +765,26 @@ export async function getExecutionLogs(
 // installed in the workspace before making protected API calls. Only workspace
 // admins can install apps — non-admins receive actionable escalation messages.
 //
-// App GRIDs are configured per-environment in package.json defaults and read
-// from the active environment config (not inferred from URL patterns).
+// Integration pattern for command handlers:
+//   const cfg = vscode.workspace.getConfiguration('altium365');
+//   const activeEnvName = cfg.get<string>('activeEnvironment') || '';
+//   const envs = cfg.get<Record<string, EnvironmentSpec>>('environments') || {};
+//   const activeEnv = envs[activeEnvName];
+//   const appId = activeEnv?.appId;
+//   if (!appId) {
+//     vscode.window.showErrorMessage('Active environment missing appId. Switch environment to refresh.');
+//     return;
+//   }
+//   const installed = await checkAppInstalled(endpoint, workspaceToken, appId);
+//   if (!installed) {
+//     const choice = await vscode.window.showInformationMessage(
+//       'Extension app not installed in workspace. Install now?', 'Install Now'
+//     );
+//     if (choice === 'Install Now') {
+//       await installApp(endpoint, workspaceToken, appId);
+//       vscode.window.showInformationMessage('Extension app installed successfully.');
+//     }
+//   }
 
 export interface InstalledAppInfo {
     id: string;
