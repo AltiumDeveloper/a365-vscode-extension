@@ -211,7 +211,9 @@ export function registerTreeCommands(
                     );
                     return;
                 }
-                const url = `${node.workspaceUrl}/customization-manager/scripts/${node.extensionPointId}/${node.assignment.assignmentId}/edit`;
+                // Strip trailing slash from workspaceUrl to avoid double slashes
+                const baseUrl = node.workspaceUrl.replace(/\/$/, '');
+                const url = `${baseUrl}/customization-manager/scripts/${node.extensionPointId}/${node.assignment.assignmentId}/edit`;
                 try {
                     await openExternalHttpUrl(url, output, 'assignment.openInBrowser');
                 } catch (e) {
