@@ -756,3 +756,147 @@ export async function getExecutionLogs(
         typeof page.nextToken === 'string' ? (page.nextToken as string) : '';
     return { logs, nextToken: nt };
 }
+
+// =============================================================================
+// Quick Task 260528-dhr — App Installation Check and Install Flow
+// =============================================================================
+//
+// Prevent AUTH_NOT_AUTHENTICATED errors by checking if the extension app is
+// installed in the workspace before making protected API calls. Only workspace
+// admins can install apps — non-admins receive actionable escalation messages.
+
+export interface InstalledAppInfo {
+    id: string;
+    name: string;
+}
+
+/**
+ * App GRIDs by environment (verified 2026-05-28).
+ * - Dev: grid:global::platform:app/696d58cb-3803-4c8a-9711-c9bad5e8ba81
+ * - UAT: grid:global::platform:app/4b70ae94-c06d-44a1-967f-76b26cd2c81a
+ * - Prod: grid:global::platform:app/71277081-7c79-4309-af3c-f3fd36b68c69
+ */
+const APP_GRID_DEV = 'grid:global::platform:app/696d58cb-3803-4c8a-9711-c9bad5e8ba81';
+const APP_GRID_UAT = 'grid:global::platform:app/4b70ae94-c06d-44a1-967f-76b26cd2c81a';
+const APP_GRID_PROD = 'grid:global::platform:app/71277081-7c79-4309-af3c-f3fd36b68c69';
+
+/**
+ * Determine the correct app GRID for a given GraphQL endpoint.
+ *
+ * Inspects the endpoint URL to identify the environment (Dev/UAT/Prod) and
+ * returns the corresponding app GRID. Uses case-insensitive string matching.
+ *
+ * @param graphqlEndpoint - The GraphQL API endpoint URL
+ * @returns The app GRID string for the detected environment
+ */
+export function getAppIdForEnvironment(graphqlEndpoint: string): string {
+    const endpoint = graphqlEndpoint.toLowerCase();
+    if (endpoint.includes('dev') || endpoint.includes('dev1') || endpoint.includes('dev-365')) {
+        return APP_GRID_DEV;
+    }
+    if (endpoint.includes('uat')) {
+        return APP_GRID_UAT;
+    }
+    // Default to production for unknown or prod endpoints
+    return APP_GRID_PROD;
+}
+
+const CHECK_APP_INSTALLED_QUERY = `
+    query CheckAppInstalled {
+        gloAppInstalledApps {
+            id
+            name
+        }
+    }
+`;
+
+/**
+ * Check if the Altium Developer extension app is installed in the workspace.
+ *
+ * Queries `gloAppInstalledApps` and returns true if any installed app matches
+ * one of the known app GRIDs (Dev/UAT/Prod). This check should be performed
+ * before making workspace-scoped GraphQL calls that require app installation
+ * to avoid AUTH_NOT_AUTHENTICATED errors.
+ *
+ * @param endpoint - The GraphQL API endpoint URL
+ * @param workspaceToken - Workspace-scoped access token
+ * @returns True if the extension app is installed, false otherwise
+ */
+export async function checkAppInstalled(
+    endpoint: string,
+    workspaceToken: string
+): Promise<boolean> {
+    const data = await graphqlRequest(endpoint, workspaceToken, CHECK_APP_INSTALLED_QUERY);
+    const apps = data?.gloAppInstalledApps;
+    if (!Array.isArray(apps)) {
+        return false;
+    }
+    const installedAppIds = new Set(apps.map((app: InstalledAppInfo) => app.id));
+    return (
+        installedAppIds.has(APP_GRID_DEV) ||
+        installedAppIds.has(APP_GRID_UAT) ||
+        installedAppIds.has(APP_GRID_PROD)
+    );
+}
+
+const INSTALL_APP_MUTATION = `
+    mutation InstallApp($input: GloInstallAppInput!) {
+        gloInstallApp(input: $input) {
+            gloApp {
+                id
+            }
+        }
+    }
+`;
+
+/**
+ * Install the extension app in the workspace.
+ *
+ * IMPORTANT: This function should ONLY be called after explicit user consent
+ * via a UI prompt (e.g., vscode.window.showInformationMessage with action
+ * buttons). Only workspace administrators have permission to install apps.
+ * Non-admin users will receive a clear error message instructing them to
+ * contact their workspace admin.
+ *
+ * @param endpoint - The GraphQL API endpoint URL
+ * @param workspaceToken - Workspace-scoped access token
+ * @param appId - The app GRID to install (obtain via getAppIdForEnvironment)
+ * @returns The installed app GRID
+ * @throws GraphQLError with admin escalation message on permission errors
+ */
+export async function installApp(
+    endpoint: string,
+    workspaceToken: string,
+    appId: string
+): Promise<string> {
+    try {
+        const data = await graphqlRequest(
+            endpoint,
+            workspaceToken,
+            INSTALL_APP_MUTATION,
+            { input: { id: appId } }
+        );
+        const installedApp = data?.gloInstallApp?.gloApp;
+        if (!installedApp?.id) {
+            throw new Error('installApp: unexpected empty response');
+        }
+        return installedApp.id;
+    } catch (err) {
+        // Map permission-related GraphQL errors to actionable admin escalation message
+        if (err instanceof GraphQLError) {
+            const code = err.code?.toUpperCase();
+            if (
+                code === 'AUTH_FORBIDDEN' ||
+                code === 'PERMISSION_DENIED' ||
+                code === 'FORBIDDEN' ||
+                code === 'UNAUTHORIZED'
+            ) {
+                throw new Error(
+                    'Only workspace administrators can install apps. Contact your workspace admin to install the Altium Developer extension app.'
+                );
+            }
+        }
+        // Re-throw other errors (network, GraphQL schema issues, etc.)
+        throw err;
+    }
+}
