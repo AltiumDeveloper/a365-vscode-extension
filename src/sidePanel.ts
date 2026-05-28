@@ -271,18 +271,10 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
                         arguments: [n],
                     };
                 } else if (n.assignment.type === 'WORKFLOW') {
-                    item.iconPath = new vscode.ThemeIcon(
-                        'git-pull-request',
-                        new vscode.ThemeColor('descriptionForeground')
-                    );
+                    item.iconPath = new vscode.ThemeIcon('git-pull-request');
                     item.contextValue = CTX_ASSIGNMENT_WORKFLOW;
-                    // Dim the text by using a TreeItem with a custom label color
-                    item.description = '(not supported)';
                 } else if (n.assignment.type === 'DEFAULT') {
-                    item.iconPath = new vscode.ThemeIcon(
-                        'circle-outline',
-                        new vscode.ThemeColor('descriptionForeground')
-                    );
+                    item.iconPath = new vscode.ThemeIcon('circle-outline');
                     item.contextValue = CTX_ASSIGNMENT_DEFAULT;
                 }
                 
@@ -555,7 +547,13 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
         const filteredAssignments = assignments.filter(a => a.type !== 'DEFAULT');
         
         return filteredAssignments
-            .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+            .sort((a, b) => {
+                // Sort by type first (SCRIPT before WORKFLOW), then by name
+                const typeOrder = { 'SCRIPT': 0, 'WORKFLOW': 1, 'DEFAULT': 2 };
+                const typeCompare = (typeOrder[a.type] || 99) - (typeOrder[b.type] || 99);
+                if (typeCompare !== 0) return typeCompare;
+                return (a.name || '').localeCompare(b.name || '');
+            })
             .map((assignment): A365Node => ({
                 kind: 'assignmentNode',
                 workspaceId: element.workspaceId,
