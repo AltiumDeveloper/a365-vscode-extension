@@ -36,6 +36,10 @@ export const CTX_ASSIGNMENT_DEFAULT = 'assignmentNode-default';
 
 const OUTPUT_PREFIX = '[Altium 365] tree:';
 
+// Feature flag: Enable workspace app installation checks
+// Set to false to disable automatic app installation prompts (260528-dwb)
+const ENABLE_APP_INSTALLATION_CHECK = false;
+
 export type A365Node =
     | { kind: 'workspace'; info: WorkspaceInfo; workspaceUrl: string; url?: string }
     | {
@@ -424,53 +428,56 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
 
         // App installation gate (260528-dwb): Check if extension app is installed
         // before attempting workspace-scoped queries. Prompt user to install if needed.
-        const cfg = vscode.workspace.getConfiguration('altium365');
-        const activeEnvName = cfg.get<string>('activeEnvironment') || '';
-        const envs = cfg.get<Record<string, any>>('environments') || {};
-        const appId = envs[activeEnvName]?.appId;
+        // DISABLED via ENABLE_APP_INSTALLATION_CHECK flag (2026-05-28)
+        if (ENABLE_APP_INSTALLATION_CHECK) {
+            const cfg = vscode.workspace.getConfiguration('altium365');
+            const activeEnvName = cfg.get<string>('activeEnvironment') || '';
+            const envs = cfg.get<Record<string, any>>('environments') || {};
+            const appId = envs[activeEnvName]?.appId;
 
-        if (appId) {
-            const cacheKey = `${workspaceId}:${appId}`;
-            const stateKey = 'altium365.installedApps';
-            
-            // Check globalState first (persists across sessions)
-            const persistedApps = this.ctx.globalState.get<Record<string, boolean>>(stateKey) || {};
-            if (persistedApps[cacheKey] === true) {
-                // Skip check - persisted from previous session
-                this.installedAppCache.set(cacheKey, true);
-            } else {
-                // Check in-memory cache
-                const cached = this.installedAppCache.get(cacheKey);
+            if (appId) {
+                const cacheKey = `${workspaceId}:${appId}`;
+                const stateKey = 'altium365.installedApps';
                 
-                if (cached !== true) {
-                    const installed = await checkAppInstalled(endpoint, wsToken, appId);
-                    if (installed) {
-                        this.installedAppCache.set(cacheKey, true);
-                        persistedApps[cacheKey] = true;
-                        await this.ctx.globalState.update(stateKey, persistedApps);
-                    } else {
-                        const choice = await vscode.window.showInformationMessage(
-                            'The Altium Developer extension needs to be installed in this workspace. Install now? (Requires workspace admin permissions)',
-                            'Install Now',
-                            'Cancel'
-                        );
-                        if (choice === 'Install Now') {
-                            try {
-                                await installApp(endpoint, wsToken, appId);
-                                this.installedAppCache.set(cacheKey, true);
-                                persistedApps[cacheKey] = true;
-                                await this.ctx.globalState.update(stateKey, persistedApps);
-                                vscode.window.showInformationMessage('Extension app installed successfully');
-                            } catch (err) {
-                                const msg = (err as Error).message;
-                                if (msg.includes('workspace administrator')) {
-                                    throw new Error(msg);
-                                } else {
-                                    throw new Error('Failed to install extension app: ' + msg);
-                                }
-                            }
+                // Check globalState first (persists across sessions)
+                const persistedApps = this.ctx.globalState.get<Record<string, boolean>>(stateKey) || {};
+                if (persistedApps[cacheKey] === true) {
+                    // Skip check - persisted from previous session
+                    this.installedAppCache.set(cacheKey, true);
+                } else {
+                    // Check in-memory cache
+                    const cached = this.installedAppCache.get(cacheKey);
+                    
+                    if (cached !== true) {
+                        const installed = await checkAppInstalled(endpoint, wsToken, appId);
+                        if (installed) {
+                            this.installedAppCache.set(cacheKey, true);
+                            persistedApps[cacheKey] = true;
+                            await this.ctx.globalState.update(stateKey, persistedApps);
                         } else {
-                            throw new Error('Extension app installation cancelled - workspace requires the app to be installed');
+                            const choice = await vscode.window.showInformationMessage(
+                                'The Altium Developer extension needs to be installed in this workspace. Install now? (Requires workspace admin permissions)',
+                                'Install Now',
+                                'Cancel'
+                            );
+                            if (choice === 'Install Now') {
+                                try {
+                                    await installApp(endpoint, wsToken, appId);
+                                    this.installedAppCache.set(cacheKey, true);
+                                    persistedApps[cacheKey] = true;
+                                    await this.ctx.globalState.update(stateKey, persistedApps);
+                                    vscode.window.showInformationMessage('Extension app installed successfully');
+                                } catch (err) {
+                                    const msg = (err as Error).message;
+                                    if (msg.includes('workspace administrator')) {
+                                        throw new Error(msg);
+                                    } else {
+                                        throw new Error('Failed to install extension app: ' + msg);
+                                    }
+                                }
+                            } else {
+                                throw new Error('Extension app installation cancelled - workspace requires the app to be installed');
+                            }
                         }
                     }
                 }
