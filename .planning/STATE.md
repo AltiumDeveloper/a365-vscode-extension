@@ -175,6 +175,7 @@ Recent decisions affecting current work:
 |---|-------------|------|--------|-----------|
 | 260528-dhr | Add workspace app installation check and install flow, update default client ID to 4BA91DBF-BF57-4B0C-8D67-5E76CEC51A9D | 2026-05-28 | 8f12069 | [260528-dhr-add-workspace-app-installation-check-and](./quick/260528-dhr-add-workspace-app-installation-check-and/) |
 | 260528-dp1 | Fix workspace app installation to use environment-specific app GRIDs from environment config instead of URL guessing | 2026-05-28 | f476dca | [260528-dp1-fix-workspace-app-installation-to-use-en](./quick/260528-dp1-fix-workspace-app-installation-to-use-en/) |
+| 260528-dwb | Integrate app installation check into workspace operations - prompt user and install when app not detected | 2026-05-28 | 204feb6 | [260528-dwb-integrate-app-installation-check-into-wo](./quick/260528-dwb-integrate-app-installation-check-into-wo/) |
 
 ## Deferred Items
 
