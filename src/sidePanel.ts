@@ -27,7 +27,6 @@ export const CTX_PROJECTS_CATEGORY = 'projectsCategoryNode';
 export const CTX_SCRIPTS_CATEGORY = 'scriptsCategoryNode';
 export const CTX_EXTENSION_POINTS_CATEGORY = 'extensionPointsCategoryNode';
 export const CTX_ENTITY_TYPE_GROUP = 'entityTypeGroupNode';
-export const CTX_EP_TYPE_GROUP = 'epTypeGroupNode';
 export const CTX_EXTENSION_POINT = 'extensionPointNode';
 export const CTX_ASSIGNMENT_SCRIPT = 'assignmentNode-script';
 export const CTX_ASSIGNMENT_WORKFLOW = 'assignmentNode-workflow';
@@ -70,14 +69,6 @@ export type A365Node =
           workspaceId: string;
           workspaceAuthId: string;
           entityType: string;
-          epCount: number;
-      }
-    | {
-          kind: 'epTypeGroupNode';
-          workspaceId: string;
-          workspaceAuthId: string;
-          entityType: string;
-          epType: string;
           epCount: number;
       }
     | {
@@ -245,27 +236,22 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
                 item.contextValue = CTX_ENTITY_TYPE_GROUP;
                 return item;
             }
-            case 'epTypeGroupNode': {
-                const item = new vscode.TreeItem(
-                    `${n.epType} (${n.epCount})`,
-                    vscode.TreeItemCollapsibleState.Collapsed
-                );
-                const iconMap: Record<string, string> = {
-                    'UIAction.ContextMenu': 'symbol-method',
-                    'Event': 'symbol-event',
-                    'Project.ERC': 'checklist',
-                    'BOM.Checks': 'checklist',
-                };
-                item.iconPath = new vscode.ThemeIcon(iconMap[n.epType] || 'symbol-key');
-                item.contextValue = CTX_EP_TYPE_GROUP;
-                return item;
-            }
             case 'extensionPointNode': {
                 const item = new vscode.TreeItem(
                     `${n.extensionPoint.name} (${n.assignmentCount})`,
                     vscode.TreeItemCollapsibleState.Collapsed
                 );
-                item.iconPath = new vscode.ThemeIcon('symbol-interface');
+                // Icon based on extension point type for visual clarity
+                const iconMap: Record<string, string> = {
+                    'UIAction.ContextMenu': 'symbol-method',
+                    'Event': 'symbol-event',
+                    'Project.ERC': 'checklist',
+                    'BOM.Checks': 'checklist',
+                    'OnAfterReleaseLifecycleStateChanged': 'symbol-event',
+                    'ContextMenu': 'menu',
+                    'OnCommit': 'git-commit',
+                };
+                item.iconPath = new vscode.ThemeIcon(iconMap[n.extensionPoint.type] || 'symbol-interface');
                 item.contextValue = CTX_EXTENSION_POINT;
                 item.tooltip = n.extensionPoint.description || n.extensionPoint.name;
                 return item;
@@ -373,9 +359,6 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
                 return this.loadEntityTypeGroups(element);
             }
             if (element.kind === 'entityTypeGroupNode') {
-                return this.loadEpTypeGroups(element);
-            }
-            if (element.kind === 'epTypeGroupNode') {
                 return this.loadExtensionPoints(element);
             }
             if (element.kind === 'extensionPointNode') {
@@ -529,48 +512,12 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
             }));
     }
 
-    private loadEpTypeGroups(
+    private loadExtensionPoints(
         element: Extract<A365Node, { kind: 'entityTypeGroupNode' }>
     ): A365Node[] {
         const extensionPoints = this.extensionPointsCache.get(element.workspaceId) || [];
-        const filtered = extensionPoints.filter(ep => ep.entityType === element.entityType);
-        const workspaceAssignments = this.assignmentsCache.get(element.workspaceId);
-        
-        const grouped = new Map<string, ExtensionPointInfo[]>();
-        for (const ep of filtered) {
-            // Only include EPs that have non-DEFAULT assignments
-            if (workspaceAssignments) {
-                const assignments = workspaceAssignments.get(ep.extensionPointId) || [];
-                if (!assignments.some(a => a.type !== 'DEFAULT')) {
-                    continue;  // Skip this EP - no non-DEFAULT assignments
-                }
-            }
-            
-            const epType = ep.type || 'Other';
-            if (!grouped.has(epType)) {
-                grouped.set(epType, []);
-            }
-            grouped.get(epType)!.push(ep);
-        }
-        
-        return Array.from(grouped.entries())
-            .sort(([a], [b]) => a.localeCompare(b))
-            .map(([epType, eps]): A365Node => ({
-                kind: 'epTypeGroupNode',
-                workspaceId: element.workspaceId,
-                workspaceAuthId: element.workspaceAuthId,
-                entityType: element.entityType,
-                epType,
-                epCount: eps.length,
-            }));
-    }
-
-    private loadExtensionPoints(
-        element: Extract<A365Node, { kind: 'epTypeGroupNode' }>
-    ): A365Node[] {
-        const extensionPoints = this.extensionPointsCache.get(element.workspaceId) || [];
         const filtered = extensionPoints.filter(
-            ep => ep.entityType === element.entityType && ep.type === element.epType
+            ep => ep.entityType === element.entityType
         );
         
         // Only show extension points that have non-DEFAULT assignments
