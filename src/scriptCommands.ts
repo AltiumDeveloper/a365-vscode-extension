@@ -386,11 +386,15 @@ async function debugLocalFromScriptNode(
 }
 
 /**
- * Shared helper for runLocal / debugLocal: resolves the script context,
+ * Shared helper for runLocal / debugLocal / editScript: resolves the script context,
  * downloads the body via the `altium365:` FSP, and writes it to
  * `os.tmpdir()/altium365-<scriptId>-<basename>.py`. Returns the temp
  * path, or undefined on error / no-selection (user message already
  * shown).
+ * 
+ * When the node is an assignmentNode, tracks the assignmentId in the local
+ * script cache so publish operations can auto-update the assignment to the
+ * latest script version.
  */
 async function downloadScriptToTmp(
     context: vscode.ExtensionContext,
@@ -405,6 +409,11 @@ async function downloadScriptToTmp(
         );
         return undefined;
     }
+    
+    // Extract assignmentId if opened from an assignment node
+    const assignmentId = node && 'kind' in node && node.kind === 'assignmentNode'
+        ? (node as any).assignment?.assignmentId
+        : undefined;
     return withScriptProgress(
         `${actionLabel}: loading...`,
         async (signal) => {
@@ -442,10 +451,13 @@ async function downloadScriptToTmp(
                     // UAT-6: register the tmp path so (a) the save bridge can publish
                     // back on save, and (b) resolveScriptContext can recognize this
                     // editor as belonging to the remote script.
+                    // Phase 10: also track assignmentId if opened from an assignment node,
+                    // so publish can auto-update the assignment to latest version.
                     registerLocalScript(tmpPath, {
                         workspaceAuthId: sc.workspaceAuthId,
                         scriptId: sc.scriptId,
                         scriptName: sc.scriptName,
+                        assignmentId,
                     });
                     output.appendLine(
                         `[Altium 365] ${actionLabel}: wrote ${bytes.byteLength} bytes to ${tmpPath}`

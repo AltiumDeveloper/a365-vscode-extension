@@ -116,7 +116,7 @@ export function activate(context: vscode.ExtensionContext) {
     const treeCommandDisposables = registerTreeCommands(context, outputChannel);
     const testEventCommandDisposables = registerTestEventCommands(context, outputChannel);
     const testEventStatusDisposables = registerTestEventStatusItem(context);
-    const localScriptSaveBridge = registerLocalScriptSaveBridge(outputChannel, remoteFs);
+    const localScriptSaveBridge = registerLocalScriptSaveBridge(context, outputChannel, remoteFs);
     const updaterDisposables = registerUpdater(context, outputChannel);
     const pythonAnalysisSyncDisposables = registerPythonAnalysisSync(context, outputChannel);
 
