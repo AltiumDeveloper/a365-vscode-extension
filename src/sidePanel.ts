@@ -256,8 +256,9 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
                 return item;
             }
             case 'assignmentNode': {
+                const assignmentName = n.assignment.name || 'Unnamed Assignment';
                 const item = new vscode.TreeItem(
-                    n.assignment.name || 'Unnamed Assignment',
+                    assignmentName,
                     vscode.TreeItemCollapsibleState.None
                 );
                 
@@ -275,6 +276,8 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
                         new vscode.ThemeColor('descriptionForeground')
                     );
                     item.contextValue = CTX_ASSIGNMENT_WORKFLOW;
+                    // Dim the text by using a TreeItem with a custom label color
+                    item.description = '(not supported)';
                 } else if (n.assignment.type === 'DEFAULT') {
                     item.iconPath = new vscode.ThemeIcon(
                         'circle-outline',
@@ -284,7 +287,7 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
                 }
                 
                 const paramsSummary = 'none'; // TODO: Extract from extension point definition when available
-                item.tooltip = `${n.assignment.name || 'Unnamed'}\n\nParameters: ${paramsSummary}`;
+                item.tooltip = `${assignmentName}\n\nParameters: ${paramsSummary}`;
                 return item;
             }
             case 'project': {
