@@ -555,6 +555,49 @@ export async function updateAssignment(
 }
 
 // =============================================================================
+// Phase 10 — Extension Points: executeAssignment (trigger extension points)
+// =============================================================================
+//
+// Execute an assignment via gloCusExecuteAssignment mutation. This is the
+// correct way to trigger extension points. The mutation returns a scriptExecutionId
+// (same as gloScrExecuteScript) so we can use the same polling/logging infrastructure.
+
+export interface ExecuteAssignmentInput {
+    assignmentId: string;
+    parameters?: Array<{ key: string; value: string }>;
+}
+
+const EXECUTE_ASSIGNMENT_MUTATION = `
+    mutation ExecuteAssignment($input: GloCusExecuteAssignmentInput!) {
+        gloCusExecuteAssignment(input: $input) {
+            scriptExecutionId
+            status
+        }
+    }
+`;
+
+export async function executeAssignment(
+    endpoint: string,
+    workspaceToken: string,
+    input: ExecuteAssignmentInput
+): Promise<{ scriptExecutionId: string; status: string }> {
+    const data = await graphqlRequest(
+        endpoint,
+        workspaceToken,
+        EXECUTE_ASSIGNMENT_MUTATION,
+        { input }
+    );
+    const exec = data?.gloCusExecuteAssignment;
+    if (!exec || !exec.scriptExecutionId) {
+        throw new Error('executeAssignment: unexpected empty response');
+    }
+    return {
+        scriptExecutionId: exec.scriptExecutionId,
+        status: exec.status || 'Unknown',
+    };
+}
+
+// =============================================================================
 // Phase 3 — Plan 03-04: executeScript + getExecutionResult + getExecutionLogs
 // =============================================================================
 //
