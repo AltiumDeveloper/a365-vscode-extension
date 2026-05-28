@@ -455,6 +455,7 @@ interface EnvironmentSpec {
     redirectUri?: string;
     scopes?: string;
     audience?: string;
+    appId?: string;
 }
 
 async function doSelectEnvironment(context: vscode.ExtensionContext) {
