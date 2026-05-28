@@ -580,11 +580,20 @@ export async function executeAssignment(
     workspaceToken: string,
     input: ExecuteAssignmentInput
 ): Promise<{ scriptExecutionId: string; status: string }> {
+    // Transform parameters from { key, value } to { name, value } for assignment API
+    const transformedInput = {
+        assignmentId: input.assignmentId,
+        parameters: input.parameters?.map(p => ({
+            name: p.key,
+            value: p.value,
+        })),
+    };
+    
     const data = await graphqlRequest(
         endpoint,
         workspaceToken,
         EXECUTE_ASSIGNMENT_MUTATION,
-        { input }
+        { input: transformedInput }
     );
     const exec = data?.gloCusExecuteAssignment;
     if (!exec || !exec.scriptExecutionId) {
