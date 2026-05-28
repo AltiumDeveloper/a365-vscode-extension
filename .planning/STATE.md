@@ -4,8 +4,8 @@ milestone: v1.0
 milestone_name: milestone
 status: verifying
 stopped_at: Completed 10-03-PLAN.md
-last_updated: "2026-05-28T08:48:22.000Z"
-last_activity: 2026-05-28 - Completed quick task 260528-dhr: Add workspace app installation check and install flow, update default client ID to 4BA91DBF-BF57-4B0C-8D67-5E76CEC51A9D
+last_updated: "2026-05-28T08:56:45.000Z"
+last_activity: 2026-05-28 - Completed quick task 260528-dp1: Fix workspace app installation to use environment-specific app GRIDs from environment config instead of URL guessing
 progress:
   total_phases: 16
   completed_phases: 13
@@ -174,6 +174,7 @@ Recent decisions affecting current work:
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 260528-dhr | Add workspace app installation check and install flow, update default client ID to 4BA91DBF-BF57-4B0C-8D67-5E76CEC51A9D | 2026-05-28 | 8f12069 | [260528-dhr-add-workspace-app-installation-check-and](./quick/260528-dhr-add-workspace-app-installation-check-and/) |
+| 260528-dp1 | Fix workspace app installation to use environment-specific app GRIDs from environment config instead of URL guessing | 2026-05-28 | f476dca | [260528-dp1-fix-workspace-app-installation-to-use-en](./quick/260528-dp1-fix-workspace-app-installation-to-use-en/) |
 
 ## Deferred Items
 
