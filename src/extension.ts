@@ -228,6 +228,16 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.window.onDidChangeActiveTextEditor(updateActiveRemoteContext),
     );
 
+    // Update remote script context when debug session ends
+    // When debugging a remote script, the context key needs to be refreshed
+    // after the debug session terminates, since the same editor remains active
+    // (onDidChangeActiveTextEditor doesn't fire) but the context may be stale.
+    context.subscriptions.push(
+        vscode.debug.onDidTerminateDebugSession(() => {
+            updateActiveRemoteContext(vscode.window.activeTextEditor);
+        })
+    );
+
     void updateSignedInContext(context);
 }
 
