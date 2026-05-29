@@ -621,16 +621,15 @@ export async function getActiveAccessToken(
         GLOBAL_SELECTED_WORKSPACE_KEY
     );
     if (selected?.workspaceId && selected?.authId) {
-        try {
-            return await ensureWorkspaceToken(context, cfg, {
-                workspaceId: selected.workspaceId,
-                authId: selected.authId,
-            });
-        } catch {
-            return await getBaseAccessToken(context, cfg);
-        }
+        // Always use workspace-scoped token when a workspace is selected
+        // Do NOT fall back to base token on failure - scripts require workspace scope
+        return await ensureWorkspaceToken(context, cfg, {
+            workspaceId: selected.workspaceId,
+            authId: selected.authId,
+        });
     }
-    return await getBaseAccessToken(context, cfg);
+    // No workspace selected - return undefined to trigger workspace selection prompt
+    return undefined;
 }
 
 export function readOAuthConfig(): OAuthConfig {

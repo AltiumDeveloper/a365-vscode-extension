@@ -4,6 +4,183 @@ from gql import gql, transport
 from typing import List, Optional
 
 
+_SHARED_FRAGMENTS = """
+fragment LocationFields on DesignDataLocation_Preview {
+  x
+  y
+}
+
+fragment RectangleFields on DesignDataRectangle_Preview {
+  bottom
+  left
+  right
+  top
+}
+
+fragment PinCoreFields on DesignDataPin_Preview {
+  documentId
+  name
+  number
+  uniqueId
+  variantId
+  variantName
+  functions
+  electricalType
+  description
+  propagationDelay
+  parameters {
+    name
+    value
+  }
+}
+
+fragment NetParameterFields on DesignDataNetParameter_Preview {
+  name
+  value
+}
+
+fragment ComponentParameterFields on DesignDataComponentParameter_Preview {
+  name
+  value
+}
+
+fragment PartParameterFields on DesignDataPartParameter_Preview {
+  name
+  value
+}
+"""
+
+_SHARED_DESIGN_DATA_FIELDS = """
+        designData {
+          nets {
+            name
+            calculatedNetName
+            color
+            netClasses
+            diffPair {
+              positiveNet
+              negativeNet
+            }
+            rules {
+              name
+              attributes {
+                name
+                value
+              }
+            }
+            location {
+              ...LocationFields
+            }
+            boundingRectangle {
+              ...RectangleFields
+            }
+            netItems {
+              documentId
+              kind
+              portName
+              uniqueId
+              variantId
+              variantName
+              location {
+                ...LocationFields
+              }
+              boundingRectangle {
+                ...RectangleFields
+              }
+            }
+            lines {
+              documentId
+              uniqueId
+              boundingRectangle {
+                ...RectangleFields
+              }
+              location {
+                ...LocationFields
+              }
+            }
+            parameters {
+              ...NetParameterFields
+            }
+            pins {
+              ...PinCoreFields
+              boundingRectangle {
+                ...RectangleFields
+              }
+              location {
+                ...LocationFields
+              }
+            }
+          }
+          components {
+            documentId
+            logicalDesignator
+            physicalDesignator
+            designComponentId
+            libraryComponentId
+            variantId
+            variantName
+            comment
+            description
+            componentType
+            boundingRectangle {
+              ...RectangleFields
+            }
+            location {
+              ...LocationFields
+            }
+            parameters {
+              ...ComponentParameterFields
+            }
+            parts {
+              documentId
+              itemGuid
+              logicalDesignator
+              physicalDesignator
+              revisionGuid
+              designPartId
+              variantId
+              variantName
+              variationKind
+              vaultGuid
+              boundingRectangle {
+                ...RectangleFields
+              }
+              location {
+                ...LocationFields
+              }
+              parameters {
+                ...PartParameterFields
+              }
+              pins {
+                ...PinCoreFields
+              }
+            }
+          }
+          variants {
+            name
+            variantGuid
+            variations {
+              alternatePart
+              componentDesignator
+              componentUniqueId
+              kind
+            }
+          }
+        }
+"""
+
+_SHARED_LATEST_GENERATION_FIELDS = """
+        status
+        message
+        revisionId
+""" + _SHARED_DESIGN_DATA_FIELDS + """
+        designId
+        message
+        revisionId
+        status
+"""
+
+
 def get_project_grid(input_parameters: dict, workspace_id: Optional[str] = None) -> str:
     """Constructs the project grid identifier for GraphQL queries.
 
@@ -47,51 +224,7 @@ def build_status_query() -> str:
         A GraphQL query string targeting the latestGeneration endpoint.
     """
 
-    return """
-fragment LocationFields on DesignDataLocation_Preview {
-  x
-  y
-}
-
-fragment RectangleFields on DesignDataRectangle_Preview {
-  bottom
-  left
-  right
-  top
-}
-
-fragment PinCoreFields on DesignDataPin_Preview {
-  documentId
-  name
-  number
-  uniqueId
-  variantId
-  variantName
-  functions
-  electricalType
-  description
-  propagationDelay
-  parameters {
-    name
-    value
-  }
-}
-
-fragment NetParameterFields on DesignDataNetParameter_Preview {
-  name
-  value
-}
-
-fragment ComponentParameterFields on DesignDataComponentParameter_Preview {
-  name
-  value
-}
-
-fragment PartParameterFields on DesignDataPartParameter_Preview {
-  name
-  value
-}
-
+    return _SHARED_FRAGMENTS + """
 query ($designGrid: ID!, $revisionId: String) {
   design {
     preview {
@@ -99,128 +232,7 @@ query ($designGrid: ID!, $revisionId: String) {
         designGrid: $designGrid
         revisionId: $revisionId
       ) {
-        status
-        message
-        revisionId
-        designData {
-          nets {
-            name
-            calculatedNetName
-            color
-            netClasses
-            diffPair {
-              positiveNet
-              negativeNet
-            }
-            rules {
-              name
-              attributes {
-                name
-                value
-              }
-            }
-            location {
-              ...LocationFields
-            }
-            boundingRectangle {
-              ...RectangleFields
-            }
-            netItems {
-              documentId
-              kind
-              portName
-              uniqueId
-              variantId
-              variantName
-              location {
-                ...LocationFields
-              }
-              boundingRectangle {
-                ...RectangleFields
-              }
-            }
-            lines {
-              documentId
-              uniqueId
-              boundingRectangle {
-                ...RectangleFields
-              }
-              location {
-                ...LocationFields
-              }
-            }
-            parameters {
-              ...NetParameterFields
-            }
-            pins {
-              ...PinCoreFields
-              boundingRectangle {
-                ...RectangleFields
-              }
-              location {
-                ...LocationFields
-              }
-            }
-          }
-          components {
-            documentId
-            logicalDesignator
-            physicalDesignator
-            uniqueId
-            variantId
-            variantName
-            comment
-            description
-            tagTypes
-            boundingRectangle {
-              ...RectangleFields
-            }
-            location {
-              ...LocationFields
-            }
-            parameters {
-              ...ComponentParameterFields
-            }
-            parts {
-              documentId
-              itemGuid
-              logicalDesignator
-              physicalDesignator
-              revisionGuid
-              uniqueId
-              variantId
-              variantName
-              variationKind
-              vaultGuid
-              boundingRectangle {
-                ...RectangleFields
-              }
-              location {
-                ...LocationFields
-              }
-              parameters {
-                ...PartParameterFields
-              }
-              pins {
-                ...PinCoreFields
-              }
-            }
-          }
-          variants {
-            name
-            variantGuid
-            variations {
-              alternatePart
-              componentDesignator
-              componentUniqueId
-              kind
-            }
-          }
-        }
-        designId
-        message
-        revisionId
-        status
+""" + _SHARED_LATEST_GENERATION_FIELDS + """
       }
     }
   }
@@ -228,7 +240,7 @@ query ($designGrid: ID!, $revisionId: String) {
     """
 
 
-def _try_get_upload_grid(input_parameters: dict) -> str | None:
+def _try_get_upload_grid(input_parameters: dict) -> Optional[str]:
     """Returns the upload grid, if provided in the input parameters.
 
     Args:
@@ -252,179 +264,14 @@ def _build_upload_status_query() -> str:
         A GraphQL query string targeting the latestGeneration endpoint.
     """
 
-    return """
-fragment LocationFields on DesignDataLocation_Preview {
-  x
-  y
-}
-
-fragment RectangleFields on DesignDataRectangle_Preview {
-  bottom
-  left
-  right
-  top
-}
-
-fragment PinCoreFields on DesignDataPin_Preview {
-  documentId
-  name
-  number
-  uniqueId
-  variantId
-  variantName
-  functions
-  electricalType
-  description
-  propagationDelay
-  parameters {
-    name
-    value
-  }
-}
-
-fragment NetParameterFields on DesignDataNetParameter_Preview {
-  name
-  value
-}
-
-fragment ComponentParameterFields on DesignDataComponentParameter_Preview {
-  name
-  value
-}
-
-fragment PartParameterFields on DesignDataPartParameter_Preview {
-  name
-  value
-}
-
-query ($designGrid: ID!) {
+    return _SHARED_FRAGMENTS + """
+query ($uploadId: String!) {
   design {
     preview {
       latestGenerationByUploadId(
-        uploadGrid: $designGrid
+        uploadId: $uploadId
       ) {
-        status
-        message
-        revisionId
-        designData {
-          nets {
-            name
-            calculatedNetName
-            color
-            netClasses
-            diffPair {
-              positiveNet
-              negativeNet
-            }
-            rules {
-              name
-              attributes {
-                name
-                value
-              }
-            }
-            location {
-              ...LocationFields
-            }
-            boundingRectangle {
-              ...RectangleFields
-            }
-            netItems {
-              documentId
-              kind
-              portName
-              uniqueId
-              variantId
-              variantName
-              location {
-                ...LocationFields
-              }
-              boundingRectangle {
-                ...RectangleFields
-              }
-            }
-            lines {
-              documentId
-              uniqueId
-              boundingRectangle {
-                ...RectangleFields
-              }
-              location {
-                ...LocationFields
-              }
-            }
-            parameters {
-              ...NetParameterFields
-            }
-            pins {
-              ...PinCoreFields
-              boundingRectangle {
-                ...RectangleFields
-              }
-              location {
-                ...LocationFields
-              }
-            }
-          }
-          components {
-            documentId
-            logicalDesignator
-            physicalDesignator
-            uniqueId
-            variantId
-            variantName
-            comment
-            description
-            tagTypes
-            boundingRectangle {
-              ...RectangleFields
-            }
-            location {
-              ...LocationFields
-            }
-            parameters {
-              ...ComponentParameterFields
-            }
-            parts {
-              documentId
-              itemGuid
-              logicalDesignator
-              physicalDesignator
-              revisionGuid
-              uniqueId
-              variantId
-              variantName
-              variationKind
-              vaultGuid
-              boundingRectangle {
-                ...RectangleFields
-              }
-              location {
-                ...LocationFields
-              }
-              parameters {
-                ...PartParameterFields
-              }
-              pins {
-                ...PinCoreFields
-              }
-            }
-          }
-          variants {
-            name
-            variantGuid
-            variations {
-              alternatePart
-              componentDesignator
-              componentUniqueId
-              kind
-            }
-          }
-        }
-        designId
-        message
-        revisionId
-        status
+""" + _SHARED_LATEST_GENERATION_FIELDS + """
       }
     }
   }
@@ -454,23 +301,24 @@ def get_design_data(context: ExecutionContext, input_parameters: dict) -> Projec
     print("Preparing query")
 
     variables = {}
-    design_id =  _try_get_upload_grid(input_parameters)
+    primary_id = _try_get_upload_grid(input_parameters)
     latest_generation_field = 'unset_latest_generation_field'
-    if design_id:
-        print(f"Upload grid provided: {design_id}.")
+    if primary_id:
+        print(f"Upload grid provided: {primary_id}.")
         query = _build_upload_status_query()
         latest_generation_field = 'latestGenerationByUploadId'
+        variables["uploadId"] = primary_id
     else:
-        design_id = get_project_grid(input_parameters, context.workspace_id)
-        print(f"Project ID: {design_id}")
+        primary_id = get_project_grid(input_parameters, context.workspace_id)
+        print(f"Project ID: {primary_id}")
         query = build_status_query()
         latest_generation_field = 'latestGeneration'
+        variables["designGrid"] = primary_id
         
         revision_id = input_parameters.get("ProjectRevisionId")
         if revision_id:
             variables["revisionId"] = revision_id
-    
-    variables["designGrid"] = design_id
+
     gql_query = gql(query)
 
     try:
@@ -499,8 +347,8 @@ def get_design_data(context: ExecutionContext, input_parameters: dict) -> Projec
         raise RuntimeError(f"Design data generation failed: {error_msg}")
 
     if status != "COMPLETED":
-        print(f"Design data generation is not completed yet for design: '{design_id}'. Please try again later.")
-        raise RuntimeError(f"Design data generation status is not completed yet for design: '{design_id}'. Please try again later.")
+        print(f"Design data generation is not completed yet for design: '{primary_id}'. Please try again later.")
+        raise RuntimeError(f"Design data generation status is not completed yet for design: '{primary_id}'. Please try again later.")
 
     design_data_dict = latest_generation.get('designData', {})
 
