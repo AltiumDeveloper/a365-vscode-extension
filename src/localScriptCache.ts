@@ -51,13 +51,18 @@ export function registerLocalScript(
     fsPath: string,
     identity: LocalScriptIdentity
 ): void {
-    registry.set(normalizeLocalScriptKey(fsPath), identity);
+    const normalizedKey = normalizeLocalScriptKey(fsPath);
+    registry.set(normalizedKey, identity);
+    console.log(`[Altium 365] registerLocalScript: ${path.basename(fsPath)} → ${normalizedKey.substring(0, 60)}... (cache size: ${registry.size})`);
 }
 
 export function getLocalScript(
     fsPath: string
 ): LocalScriptIdentity | undefined {
-    return registry.get(normalizeLocalScriptKey(fsPath));
+    const normalizedKey = normalizeLocalScriptKey(fsPath);
+    const result = registry.get(normalizedKey);
+    console.log(`[Altium 365] getLocalScript: ${path.basename(fsPath)} → ${normalizedKey.substring(0, 60)}... → ${result ? 'FOUND' : 'NOT FOUND'} (cache size: ${registry.size})`);
+    return result;
 }
 
 /**

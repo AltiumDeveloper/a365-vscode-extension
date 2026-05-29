@@ -46,6 +46,16 @@ export function updateActiveRemoteContext(editor: vscode.TextEditor | undefined)
         editor?.document.uri.scheme === 'file'
         && getLocalScript(editor.document.uri.fsPath)
     );
+    
+    // Debug logging to diagnose context key issues
+    if (editor?.document.uri.scheme === 'file') {
+        const fsPath = editor.document.uri.fsPath;
+        const identity = getLocalScript(fsPath);
+        outputChannel.appendLine(
+            `[Altium 365] updateActiveRemoteContext: ${path.basename(fsPath)} → isRemote=${isRemote} (identity=${identity ? 'found' : 'not found'})`
+        );
+    }
+    
     void vscode.commands.executeCommand(
         'setContext', 'altium365.activeIsRemoteScript', isRemote);
 }
