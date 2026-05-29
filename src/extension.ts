@@ -57,7 +57,7 @@ export function updateActiveRemoteContext(editor: vscode.TextEditor | undefined)
 }
 
 export function activate(context: vscode.ExtensionContext) {
-    outputChannel = vscode.window.createOutputChannel('Altium 365');
+    outputChannel = vscode.window.createOutputChannel('Altium Developer');
 
     const treeProvider = new A365TreeDataProvider(
         context,
