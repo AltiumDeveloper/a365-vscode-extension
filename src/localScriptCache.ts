@@ -41,10 +41,19 @@ const registry = new Map<string, LocalScriptIdentity>();
 
 /** Case-normalized fsPath key — lowercase on win32/darwin, raw on linux. Single source of truth for cross-module identity equality (per .planning/phases/999.3-script-test-events-backlog/999.3-RESEARCH.md §Don't Hand-Roll Q5). */
 export function normalizeLocalScriptKey(fsPath: string): string {
+    // Resolve symlinks to canonical path (fixes macOS /var vs /private/var mismatch)
+    let resolved: string;
+    try {
+        resolved = fsSync.realpathSync(fsPath);
+    } catch {
+        // File might not exist yet (edge case), use original path
+        resolved = fsPath;
+    }
+    
     // Normalize for case-insensitive filesystems (Windows, default macOS).
     return process.platform === 'win32' || process.platform === 'darwin'
-        ? fsPath.toLowerCase()
-        : fsPath;
+        ? resolved.toLowerCase()
+        : resolved;
 }
 
 export function registerLocalScript(
