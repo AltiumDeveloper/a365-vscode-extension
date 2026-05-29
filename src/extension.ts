@@ -598,10 +598,11 @@ async function resolvePythonPath(): Promise<string> {
  * If the script is tracked in localScriptCache (downloaded A365 script),
  * resolve its workspace from the cache and listWorkspaces.
  * 
- * If not found in cache, use the currently active workspace.
+ * If not found in cache, use the currently active workspace, or prompt
+ * the user to select one if none is active.
  * 
  * Returns target object with workspaceId + workspaceAuthId, or undefined
- * if no workspace context is available (prompts user to select one).
+ * if user cancels the workspace selection.
  */
 async function resolveWorkspaceForScript(
     context: vscode.ExtensionContext,
@@ -640,7 +641,7 @@ async function resolveWorkspaceForScript(
         }
     }
     
-    // Not in cache or lookup failed - use active workspace (will prompt if none selected)
+    // Not in cache or lookup failed - use active workspace, or prompt if none selected
     const selected = getSelectedWorkspace(context);
     if (selected) {
         return {
@@ -649,6 +650,26 @@ async function resolveWorkspaceForScript(
         };
     }
     
+    // No active workspace - prompt user to select one
+    const choice = await vscode.window.showWarningMessage(
+        'Scripts require a workspace to be selected. Select a workspace now?',
+        'Select Workspace',
+        'Cancel'
+    );
+    
+    if (choice === 'Select Workspace') {
+        await doSelectWorkspace(context);
+        // Check if user actually selected a workspace
+        const newSelected = getSelectedWorkspace(context);
+        if (newSelected) {
+            return {
+                workspaceId: newSelected.workspaceId,
+                workspaceAuthId: newSelected.authId
+            };
+        }
+    }
+    
+    // User cancelled or workspace selection failed
     return undefined;
 }
 
@@ -667,9 +688,12 @@ async function runScript(context: vscode.ExtensionContext, uri?: vscode.Uri) {
         vscode.window.showErrorMessage('No Python script selected.');
         return;
     }
-    // Check if this is a downloaded A365 script (tracked in localScriptCache)
-    // If yes, use its workspace context; otherwise use active workspace
+    // Resolve workspace context - prompts user if no workspace is active
     const workspaceTarget = await resolveWorkspaceForScript(context, target.fsPath);
+    if (!workspaceTarget) {
+        // User cancelled workspace selection - stop here
+        return;
+    }
     return runScriptAtPath(context, target.fsPath, workspaceTarget);
 }
 
@@ -726,9 +750,12 @@ async function debugScript(context: vscode.ExtensionContext, uri?: vscode.Uri) {
         vscode.window.showErrorMessage('No Python script selected.');
         return;
     }
-    // Check if this is a downloaded A365 script (tracked in localScriptCache)
-    // If yes, use its workspace context; otherwise use active workspace
+    // Resolve workspace context - prompts user if no workspace is active
     const workspaceTarget = await resolveWorkspaceForScript(context, target.fsPath);
+    if (!workspaceTarget) {
+        // User cancelled workspace selection - stop here
+        return;
+    }
     return debugScriptAtPath(context, target.fsPath, workspaceTarget);
 }
 
