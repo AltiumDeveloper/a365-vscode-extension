@@ -3,11 +3,10 @@ import * as fs from 'fs/promises';
 import * as os from 'os';
 import * as path from 'path';
 import { A365Node } from './sidePanel';
-import { getSelectedWorkspace, listWorkspaces } from './workspace';
+import { getSelectedWorkspace, resolveWorkspaceFromAuthId } from './workspace';
 import { buildScriptUri, parseScriptUri } from './remoteScriptFs';
 import { executeRemoteScript } from './remoteExecution';
 import { runScriptAtPath, debugScriptAtPath, updateActiveRemoteContext } from './extension';
-import { getBaseAccessToken, readOAuthConfig } from './auth';
 import {
     registerLocalScript,
     getLocalScript,
@@ -530,71 +529,33 @@ async function executeRemoteFromUi(
         ? (node as any).assignment?.assignmentId
         : undefined;
     
-    // Resolve workspace when workspaceId is empty (script opened before sidebar loaded).
-    // This happens when VS Code starts with a remote script tab already open — the script
-    // is in localScriptCache with workspaceAuthId but no workspaceId (because sidebar
-    // hasn't loaded workspaces yet). We must look up the workspace via listWorkspaces.
-    let workspaceId = sc.workspaceId;
-    let workspaceName = '<workspace-name unknown>';
-    let workspaceAuthId = sc.workspaceAuthId;
-    
-    if (!workspaceId || workspaceId.trim().length === 0) {
-        // Need to lookup workspace via listWorkspaces
-        const cfg = readOAuthConfig();
-        const baseToken = await getBaseAccessToken(context, cfg);
-        if (!baseToken) {
-            vscode.window.showErrorMessage(
-                'Altium 365: Execute Remotely — sign in required. Run "Altium 365: Sign In" first.'
-            );
-            return;
-        }
-        try {
-            const workspaces = await listWorkspaces(envGlobalEndpoint, baseToken);
-            const matchingWorkspace = workspaces.find(w => w.authId === workspaceAuthId);
-            if (!matchingWorkspace) {
-                vscode.window.showErrorMessage(
-                    `Altium 365: Execute Remotely — workspace ${workspaceAuthId} not found. ` +
-                    'Open the side panel and refresh, then retry.'
-                );
-                return;
-            }
-            workspaceId = matchingWorkspace.workspaceId;
-            workspaceName = matchingWorkspace.name;
-        } catch (e) {
-            vscode.window.showErrorMessage(
-                `Altium 365: Execute Remotely — failed to list workspaces: ${(e as Error).message}`
-            );
-            return;
-        }
-    } else {
-        // workspaceId already available — try to recover name from selected workspace
-        const selected = getSelectedWorkspace(context);
-        if (selected && selected.workspaceId === workspaceId) {
-            workspaceName = selected.name;
-            if (!workspaceAuthId) {
-                workspaceAuthId = selected.authId;
-            }
-        }
-    }
-    
-    if (!workspaceAuthId) {
+    // Resolve full workspace info from authId. The script context always has
+    // workspaceAuthId (from temp file path, cache, or tree node), but may not
+    // have workspaceId if the sidebar hasn't loaded yet (e.g., VS Code startup
+    // with remote script tab already open).
+    const workspace = await resolveWorkspaceFromAuthId(
+        context,
+        sc.workspaceAuthId,
+        envGlobalEndpoint
+    );
+    if (!workspace) {
         vscode.window.showErrorMessage(
-            'Altium 365: Execute Remotely — could not resolve workspace authId. ' +
-                'Open the side panel and refresh, then retry.'
+            `Altium 365: Execute Remotely — workspace not found (refresh the side panel).`
         );
         return;
     }
+    
     try {
         await executeRemoteScript({
             context,
             output,
-            workspaceId: sc.workspaceId,
-            workspaceAuthId,
+            workspaceId: workspace.workspaceId,
+            workspaceAuthId: workspace.authId,
             scriptId: sc.scriptId,
             scriptName: sc.scriptName,
-            workspaceName,
+            workspaceName: workspace.name,
             envGlobalEndpoint,
-            assignmentId,  // Pass assignmentId if executing from assignment node
+            assignmentId,
         });
     } catch (e) {
         const err = e as Error & { code?: string };
