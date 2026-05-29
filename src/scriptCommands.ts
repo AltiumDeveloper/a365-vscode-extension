@@ -6,7 +6,7 @@ import { A365Node } from './sidePanel';
 import { getSelectedWorkspace } from './workspace';
 import { buildScriptUri, parseScriptUri } from './remoteScriptFs';
 import { executeRemoteScript } from './remoteExecution';
-import { runScriptAtPath, debugScriptAtPath } from './extension';
+import { runScriptAtPath, debugScriptAtPath, updateActiveRemoteContext } from './extension';
 import {
     registerLocalScript,
     getLocalScript,
@@ -229,7 +229,10 @@ async function editScript(
     try {
         const doc = await vscode.workspace.openTextDocument(tmpPath);
         await vscode.languages.setTextDocumentLanguage(doc, 'python');
-        await vscode.window.showTextDocument(doc);
+        const editor = await vscode.window.showTextDocument(doc);
+        // Update context key so VS Code recognizes this as a remote script
+        // (enables "Execute Remotely", "Publish", test events status bar, etc.)
+        updateActiveRemoteContext(editor);
     } catch (e) {
         const err = e as Error;
         output.appendLine(`[Altium 365] Open Script failed: ${err.message}`);
@@ -346,6 +349,13 @@ async function runLocalFromScriptNode(
         ? { workspaceId: sc.workspaceId, workspaceAuthId: sc.workspaceAuthId }
         : undefined;
     await runScriptAtPath(context, tmpPath, target);
+    // If the script file is currently open in an editor, update context key
+    // so VS Code recognizes it as a remote script after the run completes
+    const activeEditor = vscode.window.activeTextEditor;
+    if (activeEditor?.document.uri.scheme === 'file' && 
+        activeEditor.document.uri.fsPath === tmpPath) {
+        updateActiveRemoteContext(activeEditor);
+    }
 }
 
 /**
@@ -372,7 +382,9 @@ async function debugLocalFromScriptNode(
     try {
         const doc = await vscode.workspace.openTextDocument(tmpPath);
         await vscode.languages.setTextDocumentLanguage(doc, 'python');
-        await vscode.window.showTextDocument(doc, { preserveFocus: false });
+        const editor = await vscode.window.showTextDocument(doc, { preserveFocus: false });
+        // Update context key so VS Code recognizes this as a remote script
+        updateActiveRemoteContext(editor);
     } catch (e) {
         output.appendLine(
             `[Altium 365] Debug Script (Local): failed to reveal editor: ${(e as Error).message}`
