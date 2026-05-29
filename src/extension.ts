@@ -592,6 +592,66 @@ async function resolvePythonPath(): Promise<string> {
     return process.platform === 'win32' ? 'python' : 'python3';
 }
 
+/**
+ * Resolve workspace context for a script file path.
+ * 
+ * If the script is tracked in localScriptCache (downloaded A365 script),
+ * resolve its workspace from the cache and listWorkspaces.
+ * 
+ * If not found in cache, use the currently active workspace.
+ * 
+ * Returns target object with workspaceId + workspaceAuthId, or undefined
+ * if no workspace context is available (prompts user to select one).
+ */
+async function resolveWorkspaceForScript(
+    context: vscode.ExtensionContext,
+    scriptPath: string
+): Promise<{ workspaceId: string; workspaceAuthId: string } | undefined> {
+    // Check if this script is tracked in localScriptCache (downloaded A365 script)
+    const identity = getLocalScript(scriptPath);
+    if (identity) {
+        // Script belongs to a specific workspace - use that workspace's token
+        // Try to get workspaceId from active workspace if it matches
+        const selected = getSelectedWorkspace(context);
+        if (selected && selected.authId === identity.workspaceAuthId) {
+            return {
+                workspaceId: selected.workspaceId,
+                workspaceAuthId: identity.workspaceAuthId
+            };
+        }
+        
+        // Active workspace doesn't match - lookup via listWorkspaces
+        const oauthCfg = readOAuthConfig();
+        const envEndpoint = vscode.workspace.getConfiguration('altium365').get<string>('graphqlEndpoint', '');
+        try {
+            const baseToken = await getBaseAccessToken(context, oauthCfg);
+            if (baseToken) {
+                const workspaces = await listWorkspaces(envEndpoint, baseToken);
+                const workspace = workspaces.find(w => w.authId === identity.workspaceAuthId);
+                if (workspace) {
+                    return {
+                        workspaceId: workspace.workspaceId,
+                        workspaceAuthId: workspace.authId
+                    };
+                }
+            }
+        } catch {
+            // Fall through to use active workspace below
+        }
+    }
+    
+    // Not in cache or lookup failed - use active workspace (will prompt if none selected)
+    const selected = getSelectedWorkspace(context);
+    if (selected) {
+        return {
+            workspaceId: selected.workspaceId,
+            workspaceAuthId: selected.authId
+        };
+    }
+    
+    return undefined;
+}
+
 async function runScript(context: vscode.ExtensionContext, uri?: vscode.Uri) {
     let target = uri;
     if (!target) {
@@ -607,7 +667,10 @@ async function runScript(context: vscode.ExtensionContext, uri?: vscode.Uri) {
         vscode.window.showErrorMessage('No Python script selected.');
         return;
     }
-    return runScriptAtPath(context, target.fsPath);
+    // Check if this is a downloaded A365 script (tracked in localScriptCache)
+    // If yes, use its workspace context; otherwise use active workspace
+    const workspaceTarget = await resolveWorkspaceForScript(context, target.fsPath);
+    return runScriptAtPath(context, target.fsPath, workspaceTarget);
 }
 
 // Reused by src/scriptCommands.ts to run a fetched A365 script body written to os.tmpdir().
@@ -663,7 +726,10 @@ async function debugScript(context: vscode.ExtensionContext, uri?: vscode.Uri) {
         vscode.window.showErrorMessage('No Python script selected.');
         return;
     }
-    return debugScriptAtPath(context, target.fsPath);
+    // Check if this is a downloaded A365 script (tracked in localScriptCache)
+    // If yes, use its workspace context; otherwise use active workspace
+    const workspaceTarget = await resolveWorkspaceForScript(context, target.fsPath);
+    return debugScriptAtPath(context, target.fsPath, workspaceTarget);
 }
 
 // Reused by src/scriptCommands.ts to debug a fetched A365 script body
@@ -807,38 +873,12 @@ async function prepareRun(
         }
         endpoint = getWorkspaceApiUrl(resolvedWs, envGlobalEndpoint);
     } else {
-        // D-03: palette / standalone .py — scripts always require workspace-scoped token.
-        // Prompt user to select a workspace if none is active.
-        endpoint = getWorkspaceApiUrl(getSelectedWorkspace(context), envGlobalEndpoint);
-        token = await getActiveAccessToken(context, oauthCfg);
-        if (!token) {
-            // Either not signed in OR no workspace selected
-            const baseToken = await getBaseAccessToken(context, oauthCfg);
-            if (!baseToken) {
-                // Not signed in - prompt to sign in
-                const choice = await vscode.window.showWarningMessage(
-                    'Not signed in to Altium 365.',
-                    'Sign in'
-                );
-                if (choice === 'Sign in') {
-                    await doSignIn(context);
-                    token = await getActiveAccessToken(context, oauthCfg);
-                }
-            } else {
-                // Signed in but no workspace selected - prompt to select workspace
-                const choice = await vscode.window.showWarningMessage(
-                    'Scripts require a workspace to be selected. Select a workspace now?',
-                    'Select Workspace'
-                );
-                if (choice === 'Select Workspace') {
-                    await doSelectWorkspace(context);
-                    token = await getActiveAccessToken(context, oauthCfg);
-                }
-            }
-            if (!token) {
-                return undefined;
-            }
-        }
+        // No target workspace specified - this should not happen after resolveWorkspaceForScript
+        // but keeping as fallback. Scripts ALWAYS require workspace-scoped tokens.
+        vscode.window.showErrorMessage(
+            'Altium 365: Cannot run script - no workspace context available. Please select a workspace first.'
+        );
+        return undefined;
     }
 
     const python = await resolvePythonPath();
