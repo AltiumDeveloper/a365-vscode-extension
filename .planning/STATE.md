@@ -163,6 +163,7 @@ Recent decisions affecting current work:
 
 - `2026-05-26-editor-intellisense-for-injected-pythonpath-libraries` — sync runtime PYTHONPATH (`SandboxProcess/`, `.deps/`, `pythonDir`) into `python.analysis.extraPaths` so editor IntelliSense resolves `import altium` / `import gql` / etc. for opened scripts (area: tooling)
 - `2026-05-26-rework-sidebar-around-extension-points` — shift remote customization UX from raw scripts to extension points plus assignments, starting with the sidebar tree model (area: general)
+- `2026-05-29-show-switch-environment-button-when-not-logged-in` — make the Switch Environment (globe) button visible in sidebar view/title before login, so users can select environment before authenticating (area: ui)
 
 ### Blockers/Concerns
 
