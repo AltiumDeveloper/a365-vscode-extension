@@ -41,7 +41,7 @@ async function updateSignedInContext(context: vscode.ExtensionContext): Promise<
     }
 }
 
-function updateActiveRemoteContext(editor: vscode.TextEditor | undefined): void {
+export function updateActiveRemoteContext(editor: vscode.TextEditor | undefined): void {
     const isRemote = !!(
         editor?.document.uri.scheme === 'file'
         && getLocalScript(editor.document.uri.fsPath)
