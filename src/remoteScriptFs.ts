@@ -1,18 +1,16 @@
 import * as vscode from 'vscode';
 import {
     ensureWorkspaceToken,
-    getBaseAccessToken,
     readOAuthConfig,
 } from './auth';
 import {
     GraphQLError,
     getScript,
-    getSelectedWorkspace,
     getWorkspaceApiUrl,
     getWorkspaceFilesUrl,
-    listWorkspaces,
     updateScript,
     WorkspaceInfo,
+    resolveWorkspaceFromAuthId,
 } from './workspace';
 import { downloadByToken, uploadAndGetToken } from './filesService';
 
@@ -309,30 +307,12 @@ export class AltiumRemoteScriptFs implements vscode.FileSystemProvider {
         uri: vscode.Uri,
         authId: string
     ): Promise<WorkspaceInfo> {
-        const selected = getSelectedWorkspace(this.ctx);
-        if (selected && selected.authId === authId) {
-            return selected;
-        }
-        const cfg = readOAuthConfig();
-        const baseToken = await getBaseAccessToken(this.ctx, cfg);
-        if (!baseToken) {
-            throw vscode.FileSystemError.NoPermissions(uri);
-        }
         const envGlobal = this.getEnvGlobalEndpoint();
-        let list: WorkspaceInfo[];
-        try {
-            list = await listWorkspaces(envGlobal, baseToken);
-        } catch (e) {
-            this.logFsError('resolveWorkspace listWorkspaces', uri, e);
-            throw vscode.FileSystemError.Unavailable(
-                'Open Script failed: ' + (e as Error).message
-            );
-        }
-        const ws = list.find((w) => w.authId === authId);
-        if (!ws) {
+        const workspace = await resolveWorkspaceFromAuthId(this.ctx, authId, envGlobal);
+        if (!workspace) {
             throw vscode.FileSystemError.FileNotFound(uri);
         }
-        return ws;
+        return workspace;
     }
 
     private isAuthCode(code: string | undefined): boolean {
