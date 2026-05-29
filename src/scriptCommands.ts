@@ -3,10 +3,11 @@ import * as fs from 'fs/promises';
 import * as os from 'os';
 import * as path from 'path';
 import { A365Node } from './sidePanel';
-import { getSelectedWorkspace } from './workspace';
+import { getSelectedWorkspace, listWorkspaces } from './workspace';
 import { buildScriptUri, parseScriptUri } from './remoteScriptFs';
 import { executeRemoteScript } from './remoteExecution';
 import { runScriptAtPath, debugScriptAtPath, updateActiveRemoteContext } from './extension';
+import { getBaseAccessToken, readOAuthConfig } from './auth';
 import {
     registerLocalScript,
     getLocalScript,
@@ -176,7 +177,8 @@ function resolveScriptContext(
     }
     // UAT-6: tmp file (Edit/Run/Debug Local) — tracked in the local
     // script cache. Resolve identity directly from the registry; recover
-    // workspaceId from the selected workspace if it matches.
+    // workspaceId from the selected workspace if it matches, otherwise
+    // return undefined for workspaceId (caller will look it up via listWorkspaces).
     if (active.scheme === 'file') {
         const identity = getLocalScript(active.fsPath);
         if (identity) {
@@ -184,7 +186,7 @@ function resolveScriptContext(
             const workspaceId =
                 selected && selected.authId === identity.workspaceAuthId
                     ? selected.workspaceId
-                    : '';
+                    : ''; // Caller will resolve via listWorkspaces if needed
             return {
                 workspaceId,
                 workspaceAuthId: identity.workspaceAuthId,
@@ -201,7 +203,7 @@ function resolveScriptContext(
         const workspaceId =
             selected && selected.authId === parsed.authId
                 ? selected.workspaceId
-                : '';
+                : ''; // Caller will resolve via listWorkspaces if needed
         return {
             workspaceId,
             workspaceAuthId: parsed.authId,
@@ -528,19 +530,53 @@ async function executeRemoteFromUi(
         ? (node as any).assignment?.assignmentId
         : undefined;
     
-    // Recover workspace name + authId from the selected workspace (if it
-    // matches) for diagnostic logging in the OutputChannel header. This is
-    // best-effort — the real impl in 03-04 re-resolves WorkspaceInfo via
-    // listWorkspaces if needed.
+    // Resolve workspace when workspaceId is empty (script opened before sidebar loaded).
+    // This happens when VS Code starts with a remote script tab already open — the script
+    // is in localScriptCache with workspaceAuthId but no workspaceId (because sidebar
+    // hasn't loaded workspaces yet). We must look up the workspace via listWorkspaces.
+    let workspaceId = sc.workspaceId;
     let workspaceName = '<workspace-name unknown>';
     let workspaceAuthId = sc.workspaceAuthId;
-    const selected = getSelectedWorkspace(context);
-    if (selected && selected.workspaceId === sc.workspaceId) {
-        workspaceName = selected.name;
-        if (!workspaceAuthId) {
-            workspaceAuthId = selected.authId;
+    
+    if (!workspaceId || workspaceId.trim().length === 0) {
+        // Need to lookup workspace via listWorkspaces
+        const cfg = readOAuthConfig();
+        const baseToken = await getBaseAccessToken(context, cfg);
+        if (!baseToken) {
+            vscode.window.showErrorMessage(
+                'Altium 365: Execute Remotely — sign in required. Run "Altium 365: Sign In" first.'
+            );
+            return;
+        }
+        try {
+            const workspaces = await listWorkspaces(envGlobalEndpoint, baseToken);
+            const matchingWorkspace = workspaces.find(w => w.authId === workspaceAuthId);
+            if (!matchingWorkspace) {
+                vscode.window.showErrorMessage(
+                    `Altium 365: Execute Remotely — workspace ${workspaceAuthId} not found. ` +
+                    'Open the side panel and refresh, then retry.'
+                );
+                return;
+            }
+            workspaceId = matchingWorkspace.workspaceId;
+            workspaceName = matchingWorkspace.name;
+        } catch (e) {
+            vscode.window.showErrorMessage(
+                `Altium 365: Execute Remotely — failed to list workspaces: ${(e as Error).message}`
+            );
+            return;
+        }
+    } else {
+        // workspaceId already available — try to recover name from selected workspace
+        const selected = getSelectedWorkspace(context);
+        if (selected && selected.workspaceId === workspaceId) {
+            workspaceName = selected.name;
+            if (!workspaceAuthId) {
+                workspaceAuthId = selected.authId;
+            }
         }
     }
+    
     if (!workspaceAuthId) {
         vscode.window.showErrorMessage(
             'Altium 365: Execute Remotely — could not resolve workspace authId. ' +
