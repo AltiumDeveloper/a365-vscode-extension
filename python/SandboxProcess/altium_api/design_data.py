@@ -2,7 +2,6 @@
 Design data classes for Altium API.
 """
 from __future__ import annotations
-
 from typing import Optional
 
 from .internal.data_models import NetDiffPair as InternalNetDiffPair
@@ -15,7 +14,6 @@ from .internal.data_models import NetItem as InternalNetItem
 from .internal.data_models import Net as InternalNet
 from .internal.data_models import Component as InternalComponent
 from .internal.data_models import ProjectData as InternalProjectData
-from .internal import erc_utils as internal_utils
 
 
 
@@ -207,10 +205,31 @@ class Component:
     def unique_id(self) -> str:
         """Get the unique identifier of the component.
 
+        Deprecated:
+            Use `design_component_id` instead.
+
         Returns:
             Unique ID string
         """
-        return self._internal_component.unique_id
+        return self._internal_component.design_component_id
+
+    @property
+    def design_component_id(self) -> str:
+        """Get the design component identifier.
+
+        Returns:
+            Design component ID string
+        """
+        return self._internal_component.design_component_id
+
+    @property
+    def library_component_id(self) -> Optional[str]:
+        """Get the library component identifier.
+
+        Returns:
+            Library component ID string, or None if not available
+        """
+        return self._internal_component.library_component_id
 
     @property
     def description(self) -> str:
@@ -230,29 +249,6 @@ class Component:
         """
         return self._internal_component.logical_designator
 
-    def get_parameter_value(self, name: str) -> str:
-        """Get a parameter value by name (case-insensitive).
-
-        Searches component and part parameters.
-
-        Args:
-            name: Parameter name to look up.
-
-        Returns:
-            Stripped parameter value string, or empty string if not found.
-        """
-        return (internal_utils.get_param_value(self._internal_component, [name]) or "").strip()
-
-    def is_connected_to(self, net: Net) -> bool:
-        """Check whether any pin of this component is connected to the given net.
-
-        Args:
-            net: The net to check against.
-
-        Returns:
-            True if at least one component pin appears on the net.
-        """
-        return self._internal_component.is_connected_to(net._internal_net)
 
     @property
     def name(self) -> str:
@@ -291,13 +287,26 @@ class Component:
         return [Pin(p) for p in self._internal_component.pins]
 
     @property
-    def type(self) -> str:
+    def component_type(self) -> str:
         """Get the component type.
 
         Returns:
-            Component type
+            Component type string.
         """
-        return self._internal_component.type
+        return self._internal_component.component_type
+
+    @property
+    def type(self) -> str:
+        """Get the component type.
+
+        Deprecated:
+            Use `component_type` instead.
+
+
+        Returns:
+            Component type string.
+        """
+        return self._internal_component.component_type
 
     @property
     def variant(self) -> Optional[str]:
@@ -331,12 +340,14 @@ class Net:
         return self._internal_net.unique_id
 
     @property
-    def diff_pair(self) -> NetDiffPair:
+    def diff_pair(self) -> Optional[NetDiffPair]:
         """Get the differential pair metadata, if present.
 
         Returns:
-            NetDiffPair
+            NetDiffPair, or None if absent.
         """
+        if self._internal_net.diff_pair is None:
+            return None
         return NetDiffPair(self._internal_net.diff_pair)
 
     @property

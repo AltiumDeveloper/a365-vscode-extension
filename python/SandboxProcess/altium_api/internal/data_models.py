@@ -36,7 +36,7 @@ class Parameter:
 
     Attributes:
         name: The parameter name (e.g. 'Comment', 'Value', 'Voltage').
-        value: The raw string value of the parameter.
+        value: The raw string value of the parameter
     """
 
     name: str
@@ -244,7 +244,7 @@ class Part:
     carries its own pins, parameters, designator, and optional vault reference.
 
     Attributes:
-        unique_id: Globally unique identifier for this part.
+        design_part_id: Globally unique identifier for this part.
         logical_designator: Logical designator (e.g. 'U1A').
         physical_designator: Physical designator as placed on the PCB.
         vault_guid: GUID of the vault item, if linked to a managed library.
@@ -260,7 +260,7 @@ class Part:
         document_id: ID of the schematic document that contains this part.
     """
 
-    unique_id: str
+    design_part_id: str
     logical_designator: str
     physical_designator: str
     vault_guid: Optional[str]
@@ -279,6 +279,18 @@ class Part:
     def type_name(self) -> str:
         return "Part"
 
+    @property
+    def unique_id(self) -> str:
+        """Get the unique identifier of the part.
+
+        Deprecated:
+            Use `design_part_id` instead.
+
+        Returns:
+            Unique ID string.
+        """
+        return self.design_part_id
+
     @staticmethod
     def from_dict(data: Dict[str, Any]) -> 'Part':
         """Deserialises a `Part` from a raw JSON dictionary.
@@ -290,7 +302,7 @@ class Part:
             A populated `Part` instance.
         """
         return Part(
-            unique_id=data.get('uniqueId', ''),
+            design_part_id=data.get('designPartId', ''),
             logical_designator=data.get('logicalDesignator', ''),
             physical_designator=data.get('physicalDesignator', ''),
             vault_guid=data.get('vaultGuid'),
@@ -316,7 +328,7 @@ class Component:
     pin-level detail lives on each child `Part`.
 
     Attributes:
-        unique_id: Globally unique identifier for this component.
+        design_component_id: Globally unique identifier for this component.
         physical_designator: Physical designator as placed on the PCB.
         logical_designator: Logical designator as shown on the schematic (e.g. 'U1').
         parts: Individual gate/section objects that make up this component.
@@ -328,7 +340,7 @@ class Component:
         variant_name: Optional display name of the variant.
     """
 
-    unique_id: str
+    design_component_id: str
     physical_designator: str
     logical_designator: str
     parts: List[Part]
@@ -341,24 +353,41 @@ class Component:
     variant_name: Optional[str] = None
     comment: str = ""
     description: str = ""
-    type: str = ""
+    component_type: str = ""
+    library_component_id: Optional[str] = None
     nets: List['Net'] = field(default_factory=list)
 
     @property
     def type_name(self) -> str:
         return "Component"
 
-    def is_connected_to(self, net: 'Net') -> bool:
-        """Check whether any pin of this component is connected to the given net.
+    @property
+    def unique_id(self) -> str:
+        """Get the unique identifier of the component.
 
-        Args:
-            net: The net to check against.
+        Deprecated:
+            Use `design_component_id` instead.
 
         Returns:
-            True if at least one component pin appears on the net.
+            Unique ID string.
         """
-        component_pin_ids = {pin.unique_id for pin in self.pins}
-        return any(net_pin.unique_id in component_pin_ids for net_pin in net.pins)
+        return self.design_component_id
+
+    @property
+    def type(self) -> str:
+        """Get the component type.
+
+        Deprecated:
+            Use `component_type` instead.
+
+        Returns:
+            Component type string.
+        """
+        return self.component_type
+
+    @type.setter
+    def type(self, value: str) -> None:
+        self.component_type = value
 
     @staticmethod
     def from_dict(data: Dict[str, Any]) -> 'Component':
@@ -372,10 +401,9 @@ class Component:
         """
         parts = [Part.from_dict(p) for p in data.get('parts', [])]
         tag_types = list(data.get('tagTypes') or [])
-        component_type = tag_types[0] if tag_types else ''
 
         return Component(
-            unique_id=data.get('uniqueId', ''),
+            design_component_id=data.get('designComponentId', ''),
             physical_designator=data.get('physicalDesignator', ''),
             logical_designator=data.get('logicalDesignator', ''),
             parts=parts,
@@ -388,7 +416,8 @@ class Component:
             variant_name=data.get('variantName'),
             comment=data.get('comment', ''),
             description=data.get('description', ''),
-            type=component_type,
+            component_type=data.get('componentType'),
+            library_component_id=data.get('libraryComponentId'),
             nets=[],
         )
 

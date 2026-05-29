@@ -385,6 +385,25 @@ def collect_component_pin_ids(c: Component) -> Set[str]:
     return pin_ids
 
 
+def is_connected_to_net(component: Component, net: Net) -> bool:
+    """Checks whether a component is connected to a given net.
+
+    Args:
+        component: The component to evaluate.
+        net: The target net.
+
+    Returns:
+        True if at least one component-connected net matches the target net,
+        otherwise False.
+    """
+    target_net_id = net.unique_id
+    if target_net_id:
+        return any(component_net.unique_id == target_net_id for component_net in component.nets)
+
+    target_net_name = (net.name or "").strip()
+    return any((component_net.name or "").strip() == target_net_name for component_net in component.nets)
+
+
 def guess_interface_type(net_name: str) -> str:
     """Infers the signal interface type from a net name.
 

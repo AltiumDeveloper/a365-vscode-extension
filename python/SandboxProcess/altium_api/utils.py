@@ -52,67 +52,32 @@ USB_NET_PATTERN = internal_erc.USB_NET_PATTERN
 
 
 
-def try_parse_voltage(value: str) -> float | None:
-    """Attempts to parse a numeric string with optional SI suffix into a float.
+def classify_component(component: Component) -> ComponentClassification | None:
+    """Classify a component into a known functional category.
 
     Args:
-        value: A string representing a numeric value with optional unit suffix.
+        component: The component to classify.
 
     Returns:
-        The parsed float value, or None if parsing fails or input is empty.
+        A `ComponentClassification` value, or `None` if no category could be determined.
     """
-    return internal_erc.try_parse_voltage(value)
+    result = internal_erc.classify_component(component._internal_component)
+    if result is None:
+        return None
+    return ComponentClassification(result)
 
 
-def try_get_net_voltage(net: Net) -> float:
-    """Attempts to determine the operating voltage of a net.
+def classify_interface(net_name: str) -> str:
+    """Infers the signal interface type from a net name.
 
     Args:
-        net: The net whose voltage is to be determined.
+        net_name: The name of the net.
 
     Returns:
-        The operating voltage as a float, or 0 if it cannot be determined.
+        A lowercase interface type string: 'usb', 'hdmi', 'ethernet', 'can',
+        or 'default' if no known interface is recognised.
     """
-    return internal_erc.try_get_net_voltage(net._internal_net)
-
-
-def get_param_value(component: Component, aliases: list[str]) -> str | None:
-    """Returns the raw string value of the first matching parameter on a component.
-
-    Args:
-        component: A component object with parameters.
-        aliases: A list of parameter name strings to search for (case-insensitive).
-
-    Returns:
-        The stripped string value of the first matching parameter, or None if not found.
-    """
-    return internal_erc.get_param_value(component._internal_component, aliases)
-
-
-def parse_param_float(component: Component, aliases: list[str]) -> float | None:
-    """Returns the float value of the first matching parameter on a component.
-
-    Args:
-        component: A component object with parameters.
-        aliases: A list of parameter name strings to search for (case-insensitive).
-
-    Returns:
-        The parsed float value, or None if the parameter is missing or unparseable.
-    """
-    return internal_erc.parse_param_float(component._internal_component, aliases)
-
-
-def is_board_to_board_or_mounting(component: Component) -> bool:
-    """Determines whether a component is a board-to-board connector or a mounting hole.
-
-    Args:
-        component: A component object.
-
-    Returns:
-        True if the component is identified as a board-to-board connector or
-        mounting hole, False otherwise.
-    """
-    return internal_erc.is_board_to_board_or_mounting(component._internal_component)
+    return internal_erc.guess_interface_type(net_name)
 
 
 def collect_component_pin_ids(component: Component) -> set[str]:
@@ -140,20 +105,6 @@ def find_diff_pair_partner_name(net_name: str) -> str | None:
     return internal_erc.find_diff_pair_partner_name(net_name)
 
 
-
-def classify_interface(net_name: str) -> str:
-    """Infers the signal interface type from a net name.
-
-    Args:
-        net_name: The name of the net.
-
-    Returns:
-        A lowercase interface type string: 'usb', 'hdmi', 'ethernet', 'can',
-        or 'default' if no known interface is recognised.
-    """
-    return internal_erc.guess_interface_type(net_name)
-
-
 def get_default_capacitance_limit(net: Net) -> float:
     """Returns the default TVS capacitance limit for the given net.
 
@@ -166,20 +117,59 @@ def get_default_capacitance_limit(net: Net) -> float:
     return internal_erc.get_default_capacitance_limit(net.name)
 
 
-def classify_component(component: Component) -> ComponentClassification | None:
-    """Classify a component into a known functional category.
+def get_param_value(component: Component, aliases: str | list[str]) -> str | None:
+    """Returns the raw string value of the first matching parameter on a component.
 
     Args:
-        component: The component to classify.
+        component: A component object with parameters.
+        aliases: A parameter alias string or list of alias strings to search for
+            (case-insensitive).
 
     Returns:
-        A :class:`ComponentClassification` enum member, or ``None`` if no category
-        could be determined.
+        The stripped string value of the first matching parameter, or None if not found.
     """
-    result = internal_erc.classify_component(component._internal_component)
-    if result is None:
-        return None
-    return ComponentClassification(result)
+    normalized_aliases = [aliases] if isinstance(aliases, str) else aliases
+    return internal_erc.get_param_value(component._internal_component, normalized_aliases)
+
+
+def is_connected_to_net(component: Component, net: Net) -> bool:
+    """Checks whether a component is connected to a given net.
+
+    Args:
+        component: The component to evaluate.
+        net: The target net.
+
+    Returns:
+        True if at least one component-connected net matches the target net,
+        otherwise False.
+    """
+    return internal_erc.is_connected_to_net(component._internal_component, net._internal_net)
+
+
+def is_board_to_board_or_mounting(component: Component) -> bool:
+    """Determines whether a component is a board-to-board connector or a mounting hole.
+
+    Args:
+        component: A component object.
+
+    Returns:
+        True if the component is identified as a board-to-board connector or
+        mounting hole, False otherwise.
+    """
+    return internal_erc.is_board_to_board_or_mounting(component._internal_component)
+
+
+def is_chassis_net(net: Net) -> bool:
+    """Determines whether a net is a chassis or shield ground net based on its name.
+
+    Args:
+        net: The net to evaluate.
+
+    Returns:
+        True if the net name matches a known chassis net name (e.g. CHASSIS,
+        SHIELD, GND_CHASSIS), False otherwise.
+    """
+    return net._internal_net.name.strip().upper() in CHASSIS_NET_NAMES
 
 
 def is_ground_net(net: Net) -> bool:
@@ -220,14 +210,38 @@ def is_usb_net(net: Net) -> bool:
     return internal_erc.is_usb_net(net._internal_net)
 
 
-def is_chassis_net(net: Net) -> bool:
-    """Determines whether a net is a chassis or shield ground net based on its name.
+def parse_param_float(component: Component, aliases: list[str]) -> float | None:
+    """Returns the float value of the first matching parameter on a component.
 
     Args:
-        net: The net to evaluate.
+        component: A component object with parameters.
+        aliases: A list of parameter name strings to search for (case-insensitive).
 
     Returns:
-        True if the net name matches a known chassis net name (e.g. CHASSIS,
-        SHIELD, GND_CHASSIS), False otherwise.
+        The parsed float value, or None if the parameter is missing or unparseable.
     """
-    return net._internal_net.name.strip().upper() in CHASSIS_NET_NAMES
+    return internal_erc.parse_param_float(component._internal_component, aliases)
+
+
+def try_get_net_voltage(net: Net) -> float:
+    """Attempts to determine the operating voltage of a net.
+
+    Args:
+        net: The net whose voltage is to be determined.
+
+    Returns:
+        The operating voltage as a float, or 0 if it cannot be determined.
+    """
+    return internal_erc.try_get_net_voltage(net._internal_net)
+
+
+def try_parse_voltage(value: str) -> float | None:
+    """Attempts to parse a numeric string with optional SI suffix into a float.
+
+    Args:
+        value: A string representing a numeric value with optional unit suffix.
+
+    Returns:
+        The parsed float value, or None if parsing fails or input is empty.
+    """
+    return internal_erc.try_parse_voltage(value)

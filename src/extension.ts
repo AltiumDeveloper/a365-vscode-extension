@@ -807,23 +807,33 @@ async function prepareRun(
         }
         endpoint = getWorkspaceApiUrl(resolvedWs, envGlobalEndpoint);
     } else {
-        // D-03: palette / standalone .py — preserve today's active-workspace
-        // behavior verbatim.
-        // Phase 02.3 D-19: when a workspace is selected, prefer its own
-        // apiServiceUrl over the env-global endpoint for any workspace-scoped
-        // operation (listing projects, executing scripts on that workspace).
-        // Falls back to env-global for the "no workspace selected" case so the
-        // existing Python-runner workflow keeps working.
+        // D-03: palette / standalone .py — scripts always require workspace-scoped token.
+        // Prompt user to select a workspace if none is active.
         endpoint = getWorkspaceApiUrl(getSelectedWorkspace(context), envGlobalEndpoint);
         token = await getActiveAccessToken(context, oauthCfg);
         if (!token) {
-            const choice = await vscode.window.showWarningMessage(
-                'Not signed in to Altium 365.',
-                'Sign in'
-            );
-            if (choice === 'Sign in') {
-                await doSignIn(context);
-                token = await getActiveAccessToken(context, oauthCfg);
+            // Either not signed in OR no workspace selected
+            const baseToken = await getBaseAccessToken(context, oauthCfg);
+            if (!baseToken) {
+                // Not signed in - prompt to sign in
+                const choice = await vscode.window.showWarningMessage(
+                    'Not signed in to Altium 365.',
+                    'Sign in'
+                );
+                if (choice === 'Sign in') {
+                    await doSignIn(context);
+                    token = await getActiveAccessToken(context, oauthCfg);
+                }
+            } else {
+                // Signed in but no workspace selected - prompt to select workspace
+                const choice = await vscode.window.showWarningMessage(
+                    'Scripts require a workspace to be selected. Select a workspace now?',
+                    'Select Workspace'
+                );
+                if (choice === 'Select Workspace') {
+                    await doSelectWorkspace(context);
+                    token = await getActiveAccessToken(context, oauthCfg);
+                }
             }
             if (!token) {
                 return undefined;
