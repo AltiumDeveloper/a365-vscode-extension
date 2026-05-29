@@ -42,18 +42,30 @@ async function updateSignedInContext(context: vscode.ExtensionContext): Promise<
 }
 
 export function updateActiveRemoteContext(editor: vscode.TextEditor | undefined): void {
+    if (!editor) {
+        const msg = '[Altium 365] updateActiveRemoteContext: no active editor';
+        outputChannel.appendLine(msg);
+        console.log(msg);
+        void vscode.commands.executeCommand('setContext', 'altium365.activeIsRemoteScript', false);
+        return;
+    }
+    
     const isRemote = !!(
-        editor?.document.uri.scheme === 'file'
+        editor.document.uri.scheme === 'file'
         && getLocalScript(editor.document.uri.fsPath)
     );
     
     // Debug logging to diagnose context key issues
-    if (editor?.document.uri.scheme === 'file') {
+    if (editor.document.uri.scheme === 'file') {
         const fsPath = editor.document.uri.fsPath;
         const identity = getLocalScript(fsPath);
         const msg = `[Altium 365] updateActiveRemoteContext: ${path.basename(fsPath)} → isRemote=${isRemote} (identity=${identity ? 'found' : 'not found'})`;
         outputChannel.appendLine(msg);
         console.log(msg + ` | fullPath=${fsPath}`);
+    } else {
+        const msg = `[Altium 365] updateActiveRemoteContext: non-file scheme=${editor.document.uri.scheme}`;
+        outputChannel.appendLine(msg);
+        console.log(msg);
     }
     
     void vscode.commands.executeCommand(
@@ -243,7 +255,10 @@ export function activate(context: vscode.ExtensionContext) {
     // after the debug session terminates, since the same editor remains active
     // (onDidChangeActiveTextEditor doesn't fire) but the context may be stale.
     context.subscriptions.push(
-        vscode.debug.onDidTerminateDebugSession(() => {
+        vscode.debug.onDidTerminateDebugSession((session) => {
+            const msg = `[Altium 365] onDidTerminateDebugSession: ${session.name}`;
+            outputChannel.appendLine(msg);
+            console.log(msg);
             updateActiveRemoteContext(vscode.window.activeTextEditor);
         })
     );
