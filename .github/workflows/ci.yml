@@ -27,13 +27,12 @@ jobs:
         if: github.ref == 'refs/heads/main'
         run: |
           BASE=$(node -p "require('./package.json').version")
-          SHA7=$(git rev-parse --short=7 HEAD)
-          VERSION="${BASE}-ci.${GITHUB_RUN_NUMBER}+${SHA7}"
+          VERSION="${BASE}.${GITHUB_RUN_NUMBER}"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           npm version "$VERSION" --no-git-tag-version --allow-same-version
-      - name: Package VSIX (main, pre-release)
+      - name: Package VSIX (main)
         if: github.ref == 'refs/heads/main'
-        run: npx vsce package --pre-release
+        run: npm run package
       - name: Package VSIX (non-main)
         if: github.ref != 'refs/heads/main'
         run: npm run package
@@ -48,7 +47,7 @@ jobs:
           tag_name: v${{ steps.ver.outputs.version }}
           name: v${{ steps.ver.outputs.version }}
           body: ${{ github.event.head_commit.message }}
-          prerelease: true
+          prerelease: false
           files: '*.vsix'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
