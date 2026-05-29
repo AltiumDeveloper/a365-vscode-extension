@@ -5,8 +5,8 @@ import * as os from 'os';
 import * as path from 'path';
 import { buildScriptUri, AltiumRemoteScriptFs } from './remoteScriptFs';
 import { withScriptProgress } from './progress';
-import { updateAssignment, getWorkspaceApiUrl, getSelectedWorkspace, listWorkspaces, WorkspaceInfo } from './workspace';
-import { ensureWorkspaceToken, readOAuthConfig, getBaseAccessToken } from './auth';
+import { updateAssignment, getWorkspaceApiUrl, WorkspaceInfo, resolveWorkspaceFromAuthId } from './workspace';
+import { ensureWorkspaceToken, readOAuthConfig } from './auth';
 
 /**
  * In-memory mapping from local tmp file path -> remote script identity.
@@ -206,21 +206,11 @@ export function registerLocalScriptSaveBridge(
                     // auto-update the assignment to the latest published version.
                     if (identity.assignmentId) {
                         try {
-                            // Resolve workspace from authId (same pattern as remoteScriptFs.resolveWorkspace)
-                            let workspace: WorkspaceInfo | undefined = getSelectedWorkspace(context);
-                            if (!workspace || workspace.authId !== identity.workspaceAuthId) {
-                                // Selected workspace doesn't match — fetch all workspaces and find by authId
-                                const cfg = readOAuthConfig();
-                                const baseToken = await getBaseAccessToken(context, cfg);
-                                if (!baseToken) {
-                                    throw new Error('No base access token available');
-                                }
-                                const envGlobal = vscode.workspace.getConfiguration('altium365').get<string>('graphqlEndpoint', '');
-                                const list = await listWorkspaces(envGlobal, baseToken);
-                                workspace = list.find((w) => w.authId === identity.workspaceAuthId);
-                                if (!workspace) {
-                                    throw new Error(`Workspace ${identity.workspaceAuthId} not found`);
-                                }
+                            // Resolve workspace from authId using the centralized helper
+                            const envGlobal = vscode.workspace.getConfiguration('altium365').get<string>('graphqlEndpoint', '');
+                            const workspace = await resolveWorkspaceFromAuthId(context, identity.workspaceAuthId, envGlobal);
+                            if (!workspace) {
+                                throw new Error(`Workspace ${identity.workspaceAuthId} not found`);
                             }
                             
                             const cfg = readOAuthConfig();
@@ -228,9 +218,7 @@ export function registerLocalScriptSaveBridge(
                                 workspaceId: workspace.workspaceId,
                                 authId: workspace.authId,
                             });
-                            const apiUrl = getWorkspaceApiUrl(workspace, 
-                                vscode.workspace.getConfiguration('altium365').get<string>('graphqlEndpoint', '')
-                            );
+                            const apiUrl = getWorkspaceApiUrl(workspace, envGlobal);
                             
                             // Fetch latest script version (writeFile just created it)
                             const { getScript } = await import('./workspace');

@@ -14,7 +14,7 @@ import {
     readOAuthConfig,
     signIn,
 } from './auth';
-import { pickWorkspace, getSelectedWorkspace, getWorkspaceApiUrl, listProjects, listWorkspaces, WorkspaceInfo } from './workspace';
+import { pickWorkspace, getSelectedWorkspace, getWorkspaceApiUrl, listProjects, listWorkspaces, WorkspaceInfo, resolveWorkspaceFromAuthId } from './workspace';
 import { A365Node, A365TreeDataProvider } from './sidePanel';
 import { createStatusBar } from './statusBar';
 import { registerScriptCommands } from './scriptCommands';
@@ -627,33 +627,14 @@ async function resolveWorkspaceForScript(
     // Check if this script is tracked in localScriptCache (downloaded A365 script)
     const identity = getLocalScript(scriptPath);
     if (identity) {
-        // Script belongs to a specific workspace - use that workspace's token
-        // Try to get workspaceId from active workspace if it matches
-        const selected = getSelectedWorkspace(context);
-        if (selected && selected.authId === identity.workspaceAuthId) {
-            return {
-                workspaceId: selected.workspaceId,
-                workspaceAuthId: identity.workspaceAuthId
-            };
-        }
-        
-        // Active workspace doesn't match - lookup via listWorkspaces
-        const oauthCfg = readOAuthConfig();
+        // Script belongs to a specific workspace - resolve it via the centralized helper
         const envEndpoint = vscode.workspace.getConfiguration('altium365').get<string>('graphqlEndpoint', '');
-        try {
-            const baseToken = await getBaseAccessToken(context, oauthCfg);
-            if (baseToken) {
-                const workspaces = await listWorkspaces(envEndpoint, baseToken);
-                const workspace = workspaces.find(w => w.authId === identity.workspaceAuthId);
-                if (workspace) {
-                    return {
-                        workspaceId: workspace.workspaceId,
-                        workspaceAuthId: workspace.authId
-                    };
-                }
-            }
-        } catch {
-            // Fall through to use active workspace below
+        const workspace = await resolveWorkspaceFromAuthId(context, identity.workspaceAuthId, envEndpoint);
+        if (workspace) {
+            return {
+                workspaceId: workspace.workspaceId,
+                workspaceAuthId: workspace.authId
+            };
         }
     }
     
