@@ -15,7 +15,10 @@
     "type": "git",
     "url": "https://github.com/altium/a365-vscode-extension"
   },
-  "activationEvents": [],
+  "activationEvents": [
+    "onStartupFinished",
+    "onLanguage:python"
+  ],
   "main": "./out/extension.js",
   "contributes": {
     "viewsContainers": {
