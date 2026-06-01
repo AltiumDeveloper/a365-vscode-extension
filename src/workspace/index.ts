@@ -7,7 +7,7 @@ import {
     OAuthConfig,
     readOAuthConfig,
     signIn,
-} from './auth';
+} from '../auth';
 
 export interface WorkspaceLocation {
     apiServiceUrl?: string;
