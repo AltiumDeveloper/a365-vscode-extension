@@ -10,7 +10,8 @@
     "verifier": true,
     "nyquist_validation": false,
     "auto_advance": true,
-    "_auto_chain_active": false
+    "_auto_chain_active": false,
+    "use_worktrees": true
   },
   "ship": {
     "pr_body_sections": [

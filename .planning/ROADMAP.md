@@ -443,3 +443,13 @@ Plans:
 - [x] 11-05-PLAN.md — localScriptCache tests (normalizeLocalScriptKey fallback, register/get/find registry ops)
 - [x] 11-06-PLAN.md — workspace.ts tests (getWorkspaceApiUrl, getWorkspaceFilesUrl, GraphQLError, graphqlRequest with fetch mock, checkAppInstalled)
 - [x] 11-07-PLAN.md — Entity/Platform API tests (buildScriptUri↔parseScriptUri round-trip, installApp permission error mapping)
+
+### Phase 12: Feature folder layout
+
+**Goal:** All source files are organised into feature folders (`auth/`, `workspace/`, `scripts/`, `ux/`, `runner/`, `shared/`). Pure mechanical move — zero logic changes. `npm run compile` and `npm test` stay green throughout.
+**Requirements**: none (project-level quality goal)
+**Depends on:** Phase 11
+**Plans:** 0/1 plans complete
+
+Plans:
+- [ ] 12-01-PLAN.md — Move source files into feature folders and fix all import paths
