@@ -27,7 +27,6 @@ import { resolveScriptParameters } from './testEvents/resolver';
 import { TestEventFs } from './testEvents/eventFs';
 import { registerTestEventCommands } from './testEvents/commands';
 import { registerTestEventStatusItem } from './testEvents/statusItem';
-import { registerUpdater } from './updater';
 import { registerPythonAnalysisSync } from './pythonAnalysisSync';
 
 let outputChannel: vscode.OutputChannel;
@@ -123,7 +122,6 @@ export function activate(context: vscode.ExtensionContext) {
     const testEventCommandDisposables = registerTestEventCommands(context, outputChannel);
     const testEventStatusDisposables = registerTestEventStatusItem(context);
     const localScriptSaveBridge = registerLocalScriptSaveBridge(context, outputChannel, remoteFs);
-    const updaterDisposables = registerUpdater(context, outputChannel);
     const pythonAnalysisSyncDisposables = registerPythonAnalysisSync(context, outputChannel);
 
     context.subscriptions.push(
@@ -185,7 +183,6 @@ export function activate(context: vscode.ExtensionContext) {
         ...testEventCommandDisposables,
         ...testEventStatusDisposables,
         localScriptSaveBridge,
-        ...updaterDisposables,
         ...pythonAnalysisSyncDisposables
     );
 
