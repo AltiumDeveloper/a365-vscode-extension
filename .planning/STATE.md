@@ -93,6 +93,7 @@ Phase 7 plan structure (single plan):
 - Phase 8 added: distinct-vsix-version-per-build
 - Phase 9 added: Editor IntelliSense for injected PYTHONPATH libraries
 - Phase 10 added: Rework sidebar around extension points
+- Phase 11 added: Unit tests and code organisation (7 plans covering auth, UI/UX, test events, file management, Python-specific, Altium runtime, entity/API)
 
 ### Decisions
 
