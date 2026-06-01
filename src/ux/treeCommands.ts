@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
-import { A365Node } from './sidePanel';
-import { applyWorkspaceSelection } from './extension';
+import { A365Node } from './panel';
+import { applyWorkspaceSelection } from '../extension';
 
 /**
  * Safely open an http(s) URL supplied by the GraphQL backend in the user's

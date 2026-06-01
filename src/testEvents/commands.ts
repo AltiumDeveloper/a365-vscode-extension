@@ -19,7 +19,7 @@ import {
 const BLOAT_WARN_THRESHOLD = 25;
 import { pickTestEvent } from './picker';
 import { buildEventUri } from './eventFs';
-import { pickProjectId } from '../projectPicker';
+import { pickProjectId } from '../ux/projectPicker';
 import { ensureWorkspaceToken, getBaseAccessToken, readOAuthConfig } from '../auth';
 import { getSelectedWorkspace, listWorkspaces, WorkspaceInfo } from '../workspace';
 
