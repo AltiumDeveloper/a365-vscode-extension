@@ -35,7 +35,7 @@ import { readStore, writeStore, TestEventStore } from './store';
 const SCHEME = 'altium365-event';
 const SCHEMA_BASENAME = 'schemas/test-event.schema.json';
 
-function parseEventUri(
+export function parseEventUri(
     uri: vscode.Uri,
 ): { identity: string; eventName: string } | undefined {
     if (uri.scheme !== SCHEME) {
