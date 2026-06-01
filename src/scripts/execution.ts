@@ -16,7 +16,7 @@ import {
     listWorkspaces,
     WorkspaceInfo,
 } from '../workspace';
-import { withScriptProgress } from '../progress';
+import { withScriptProgress } from '../runner/progress';
 import { resolveScriptParameters } from '../testEvents/resolver';
 import { dedupLogPage } from '../shared/logDedup';
 

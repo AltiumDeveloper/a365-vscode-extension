@@ -4,7 +4,7 @@ import * as fsSync from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { buildScriptUri, AltiumRemoteScriptFs } from './remoteFs';
-import { withScriptProgress } from '../progress';
+import { withScriptProgress } from '../runner/progress';
 import { updateAssignment, getWorkspaceApiUrl, WorkspaceInfo, resolveWorkspaceFromAuthId } from '../workspace';
 import { ensureWorkspaceToken, readOAuthConfig } from '../auth';
 

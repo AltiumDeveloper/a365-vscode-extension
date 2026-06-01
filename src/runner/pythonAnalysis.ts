@@ -126,7 +126,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs/promises';
 import * as os from 'os';
 import * as path from 'path';
-import { getManagedPythonAnalysisPaths } from './sandboxDeps';
+import { getManagedPythonAnalysisPaths } from './sandbox';
 
 const LOG_PREFIX = '[Altium 365] pythonAnalysisSync:';
 

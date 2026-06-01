@@ -20,14 +20,14 @@ import { createStatusBar } from './ux/statusBar';
 import { registerScriptCommands } from './scripts/commands';
 import { registerTreeCommands } from './ux/treeCommands';
 import { AltiumRemoteScriptFs } from './scripts/remoteFs';
-import { ensureSandboxDeps, getSandboxPythonPath } from './sandboxDeps';
+import { ensureSandboxDeps, getSandboxPythonPath } from './runner/sandbox';
 import { registerLocalScriptSaveBridge, getLocalScript, rehydrateLocalScriptCacheFromDisk } from './scripts/localCache';
 import { resolveScriptIdentity } from './testEvents/identity';
 import { resolveScriptParameters } from './testEvents/resolver';
 import { TestEventFs } from './testEvents/eventFs';
 import { registerTestEventCommands } from './testEvents/commands';
 import { registerTestEventStatusItem } from './testEvents/statusItem';
-import { registerPythonAnalysisSync } from './pythonAnalysisSync';
+import { registerPythonAnalysisSync } from './runner/pythonAnalysis';
 
 let outputChannel: vscode.OutputChannel;
 
