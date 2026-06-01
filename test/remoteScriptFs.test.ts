@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildScriptUri, parseScriptUri } from '../src/remoteScriptFs';
+import { buildScriptUri, parseScriptUri } from '../src/scripts/remoteFs';
 
 const VALID_AUTH_ID = 'my-team';
 const VALID_SCRIPT_ID = '550e8400-e29b-41d4-a716-446655440000';
