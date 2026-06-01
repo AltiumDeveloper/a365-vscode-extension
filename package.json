@@ -4,6 +4,7 @@
   "description": "Browse Altium 365 workspaces, run and debug Python scripts locally with live API access, and manage remote scripts — all without leaving VS Code.",
   "version": "0.1.0",
   "publisher": "altium",
+  "license": "MIT",
   "engines": {
     "vscode": "^1.85.0",
     "node": ">=20"
