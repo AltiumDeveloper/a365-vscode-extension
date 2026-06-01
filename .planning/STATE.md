@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: complete
-stopped_at: Completed 11-07-PLAN.md
-last_updated: "2026-06-01T00:00:00.000Z"
-last_activity: 2026-06-01 - Completed Phase 11: Unit tests and code organisation (7/7 plans, 142 tests passing)
+stopped_at: Completed 12-01-PLAN.md
+last_updated: "2026-06-02T00:00:00.000Z"
+last_activity: 2026-06-02 - Completed Phase 12: Feature folder layout (src/ reorganised into auth/, workspace/, scripts/, ux/, runner/, shared/)
 progress:
   total_phases: 16
-  completed_phases: 14
-  total_plans: 64
-  completed_plans: 65
-  percent: 87
+  completed_phases: 15
+  total_plans: 65
+  completed_plans: 66
+  percent: 93
 ---
 
 # Project State

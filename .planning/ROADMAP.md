@@ -449,7 +449,7 @@ Plans:
 **Goal:** All source files are organised into feature folders (`auth/`, `workspace/`, `scripts/`, `ux/`, `runner/`, `shared/`). Pure mechanical move — zero logic changes. `npm run compile` and `npm test` stay green throughout.
 **Requirements**: none (project-level quality goal)
 **Depends on:** Phase 11
-**Plans:** 0/1 plans complete
+**Plans:** 1/1 plans complete ✅
 
 Plans:
-- [ ] 12-01-PLAN.md — Move source files into feature folders and fix all import paths
+- [x] 12-01-PLAN.md — Move source files into feature folders and fix all import paths
