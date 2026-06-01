@@ -106,7 +106,7 @@ export async function resolveScriptParameters(
     });
 }
 
-function stringifyEvent(
+export function stringifyEvent(
     obj: Record<string, unknown>,
 ): Array<{ key: string; value: string }> | undefined {
     const out: Array<{ key: string; value: string }> = [];
