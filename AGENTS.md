@@ -85,3 +85,22 @@ See `.planning/codebase/CONVENTIONS.md` for full details. Key points:
 - FileSystemProvider pattern for virtual documents (`altium365:`, `altium365-event:` schemes)
 - Script identity resolution via `buildIdentity()`/`parseIdentity()` helpers in `testEvents/identity.ts`
 - Test event commands prefixed `altium365.testEvents.*`
+
+## Documentation Maintenance
+
+**README.md** is the user-facing documentation and MUST be kept in sync with the codebase. When making changes that affect user-visible behavior:
+
+1. **New commands:** Update the Commands Reference section in README.md — group by category (Auth, Script Execution, Test Events, etc.)
+2. **Changed OAuth scopes:** Update the OAuth Scopes section
+3. **New configuration settings:** Add to the Configuration section with descriptions
+4. **Deprecated settings:** Mark as deprecated in README.md and document replacement
+5. **Architecture changes:** Update AGENTS.md (this file) if new modules or patterns are introduced
+6. **New features:** Update the feature list at the top of README.md
+
+**When in doubt:** If a user would see or interact with the change (commands, UI, settings, behavior), document it in README.md. If only agents/developers need to know (architecture, patterns, constraints), document it in AGENTS.md.
+
+**Verification checklist after any change:**
+- [ ] Do all command palette entries in README.md match `package.json` contributions?
+- [ ] Are deprecated commands/settings marked clearly?
+- [ ] Does the Commands Reference section accurately describe what each command does?
+- [ ] Are OAuth scopes, token architecture, and storage locations documented correctly?

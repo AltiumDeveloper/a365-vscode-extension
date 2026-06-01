@@ -126,25 +126,50 @@ If you store more than 25 events for one script, the extension surfaces a one-ti
 
 ## Commands Reference
 
+All commands are prefixed with **Altium Developer:** in the Command Palette.
+
+### Authentication & Environment
 | Command | Description |
 | --- | --- |
-| Altium Developer: Sign In | Opens the browser for OAuth2 login and stores tokens securely |
-| Altium Developer: Sign Out | Clears all stored tokens (global and workspace tokens) |
-| Altium Developer: Select Workspace | Lists accessible workspaces and stores a workspace-scoped token |
-| Altium Developer: Select Environment | Switches the active A365 environment (Dev / Uat / Prod or custom) |
-| Altium Developer: Run Python Script | Runs the active `.py` file against the A365 API |
-| Altium Developer: Debug Python Script | Runs the active `.py` file under the VS Code debugger |
-| Altium Developer: Pick Test Event | Unified picker — lists events, offers Create / Edit; picking sets default |
-| Altium Developer: Create Test Event | New event from Empty or Project-related preset |
-| Altium Developer: Edit Test Event | Open an event's JSON in a tab — save publishes changes |
-| Altium Developer: Delete Test Event | Remove an event (with confirmation) |
-| Altium Developer: Set Default Test Event | Mark an event as the default for Run / Debug / Execute |
-| Altium Developer: Edit Script | Opens a remote script in the editor (via `altium365:` virtual document) |
-| Altium Developer: Publish Script | Publishes local changes to a remote script back to A365 |
-| Altium Developer: Execute Script Remotely | Triggers remote execution on the A365 server |
-| Altium Developer: Configure Python IntelliSense | Syncs runtime PYTHONPATH into editor IntelliSense settings |
-| Altium Developer: Install Script Dependencies | Installs Python dependencies listed in a script's requirements |
-| Altium Developer: Check for Updates | Manually checks GitHub Releases for new extension versions (deprecated) |
+| Sign In | Opens the browser for OAuth2 PKCE login and stores tokens securely |
+| Sign Out | Clears all stored tokens (global and workspace tokens) |
+| Select Workspace | Lists accessible workspaces and exchanges for a workspace-scoped token |
+| Select Environment | Switches the active A365 environment (pre-configured or custom) |
+
+### Script Execution (Local)
+| Command | Description |
+| --- | --- |
+| Run Python Script | Runs the active `.py` file locally with A365 API access |
+| Debug Python Script | Runs the active `.py` file under the VS Code debugger |
+
+### Script Operations (Remote)
+| Command | Description |
+| --- | --- |
+| Edit Script | Opens a remote script in the editor (via `altium365:` scheme) |
+| Publish Script | Publishes local changes to a remote script back to A365 |
+| Execute Script Remotely | Triggers server-side execution on A365 (logs stream to Output channel) |
+
+### Test Events
+| Command | Description |
+| --- | --- |
+| Pick Test Event | Unified picker — lists events, offers Create/Edit; picking sets default |
+| Create Test Event | New event from Empty or Project-related preset |
+| Edit Test Event | Open an event's JSON in a tab (via `altium365-event:` scheme) |
+| Delete Test Event | Remove an event (with confirmation) |
+| Set Default Test Event | Mark an event as the default for Run/Debug/Execute |
+
+### Tooling & Setup
+| Command | Description |
+| --- | --- |
+| Configure Python IntelliSense | Syncs runtime PYTHONPATH into editor IntelliSense settings |
+| Install Script Dependencies | Installs Python dependencies from requirements comment blocks |
+
+### Tree Actions (Context Menu)
+| Command | Description |
+| --- | --- |
+| Refresh | Refreshes the Altium 365 tree view |
+| Copy ID | Copies workspace/project/script/extension point ID to clipboard |
+| Open in Browser | Opens workspace/project/assignment in A365 web UI |
 
 ## Configuration
 
