@@ -103,11 +103,11 @@ Test events let you keep multiple named parameterizations per script — e.g. `s
 
 | Command | What it does |
 | --- | --- |
-| Altium 365: Pick Test Event | Unified picker — lists events, offers Create / Edit current; picking an event sets it as the default |
-| Altium 365: Create Test Event | New event from `Empty` or `Project-related` preset |
-| Altium 365: Edit Test Event | Open the event's JSON in a tab — `Cmd+S` / `Ctrl+S` saves |
-| Altium 365: Delete Test Event | Remove an event (modal confirm) |
-| Altium 365: Set Default Test Event | Mark an event as the default for unattended Run / Debug / Execute |
+| Altium Developer: Pick Test Event | Unified picker — lists events, offers Create / Edit current; picking an event sets it as the default |
+| Altium Developer: Create Test Event | New event from `Empty` or `Project-related` preset |
+| Altium Developer: Edit Test Event | Open the event's JSON in a tab — `Cmd+S` / `Ctrl+S` saves |
+| Altium Developer: Delete Test Event | Remove an event (modal confirm) |
+| Altium Developer: Set Default Test Event | Mark an event as the default for unattended Run / Debug / Execute |
 
 ### UI affordances
 
