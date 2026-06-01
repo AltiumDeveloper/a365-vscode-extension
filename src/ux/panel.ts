@@ -4,7 +4,7 @@ import {
     ensureWorkspaceToken,
     getBaseAccessToken,
     readOAuthConfig,
-} from './auth';
+} from '../auth';
 import {
     AssignmentInfo,
     ExtensionPointInfo,
@@ -19,7 +19,7 @@ import {
     listProjects,
     listScripts,
     listWorkspaces,
-} from './workspace';
+} from '../workspace';
 
 export const CTX_WORKSPACE_ACTIVE = 'workspaceNode-active';
 export const CTX_WORKSPACE_INACTIVE = 'workspaceNode-inactive';

@@ -15,10 +15,10 @@ import {
     signIn,
 } from './auth';
 import { pickWorkspace, getSelectedWorkspace, getWorkspaceApiUrl, listProjects, listWorkspaces, WorkspaceInfo, resolveWorkspaceFromAuthId } from './workspace';
-import { A365Node, A365TreeDataProvider } from './sidePanel';
-import { createStatusBar } from './statusBar';
+import { A365Node, A365TreeDataProvider } from './ux/panel';
+import { createStatusBar } from './ux/statusBar';
 import { registerScriptCommands } from './scripts/commands';
-import { registerTreeCommands } from './treeCommands';
+import { registerTreeCommands } from './ux/treeCommands';
 import { AltiumRemoteScriptFs } from './scripts/remoteFs';
 import { ensureSandboxDeps, getSandboxPythonPath } from './sandboxDeps';
 import { registerLocalScriptSaveBridge, getLocalScript, rehydrateLocalScriptCacheFromDisk } from './scripts/localCache';

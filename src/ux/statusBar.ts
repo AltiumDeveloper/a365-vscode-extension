@@ -4,7 +4,7 @@ import {
     getActiveUserLabel,
     getStoredTokens,
     onAuthStateChanged,
-} from './auth';
+} from '../auth';
 
 export interface StatusBarHandle {
     item: vscode.StatusBarItem;

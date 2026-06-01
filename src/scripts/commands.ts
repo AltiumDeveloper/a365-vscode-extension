@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs/promises';
 import * as os from 'os';
 import * as path from 'path';
-import { A365Node } from '../sidePanel';
+import { A365Node } from '../ux/panel';
 import { getSelectedWorkspace, resolveWorkspaceFromAuthId } from '../workspace';
 import { buildScriptUri, parseScriptUri } from './remoteFs';
 import { executeRemoteScript } from './execution';
