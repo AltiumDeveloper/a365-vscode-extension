@@ -9,9 +9,19 @@
     "vscode": "^1.85.0",
     "node": ">=20"
   },
-  "categories": ["Other"],
+  "categories": [
+    "Other"
+  ],
   "icon": "resources/icon.png",
-  "keywords": ["altium", "altium365", "a365", "scripting", "pcb", "eda", "electronics"],
+  "keywords": [
+    "altium",
+    "altium365",
+    "a365",
+    "scripting",
+    "pcb",
+    "eda",
+    "electronics"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/altium/a365-vscode-extension"
@@ -272,14 +282,30 @@
           "additionalProperties": {
             "type": "object",
             "properties": {
-              "graphqlEndpoint": { "type": "string" },
-              "authEndpoint": { "type": "string" },
-              "tokenEndpoint": { "type": "string" },
-              "actionWaitEndpoint": { "type": "string" },
-              "redirectUri": { "type": "string" },
-              "scopes": { "type": "string" },
-              "audience": { "type": "string" },
-              "appId": { "type": "string" }
+              "graphqlEndpoint": {
+                "type": "string"
+              },
+              "authEndpoint": {
+                "type": "string"
+              },
+              "tokenEndpoint": {
+                "type": "string"
+              },
+              "actionWaitEndpoint": {
+                "type": "string"
+              },
+              "redirectUri": {
+                "type": "string"
+              },
+              "scopes": {
+                "type": "string"
+              },
+              "audience": {
+                "type": "string"
+              },
+              "appId": {
+                "type": "string"
+              }
             }
           }
         }
@@ -506,8 +532,9 @@
   "devDependencies": {
     "@types/node": "^20.0.0",
     "@types/vscode": "^1.85.0",
-    "typescript": "^5.4.0",
+    "@vitest/coverage-v8": "^2.1.9",
     "@vscode/vsce": "^3.9.1",
+    "typescript": "^5.4.0",
     "vitest": "^2.0.0"
   }
 }
