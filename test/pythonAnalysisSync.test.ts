@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { reconcilePythonAnalysisPaths } from '../src/pythonAnalysisSync';
+import { reconcilePythonAnalysisPaths } from '../src/runner/pythonAnalysis';
 
 describe('reconcilePythonAnalysisPaths', () => {
     it('previous managed paths are removed while unrelated user paths stay intact per D-11', () => {

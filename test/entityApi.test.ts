@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { buildScriptUri, parseScriptUri } from '../src/remoteScriptFs';
+import { buildScriptUri, parseScriptUri } from '../src/scripts/remoteFs';
 import { installApp, GraphQLError } from '../src/workspace';
 
 // ── Prevent fetch stub bleed across tests (Pitfall 5) ──────────────────────

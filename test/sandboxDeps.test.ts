@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getManagedPythonAnalysisPaths } from '../src/sandboxDeps';
+import { getManagedPythonAnalysisPaths } from '../src/runner/sandbox';
 import * as path from 'path';
 
 // Mock VS Code extension context for testing

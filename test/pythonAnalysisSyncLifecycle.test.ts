@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { reconcilePythonAnalysisPaths } from '../src/pythonAnalysisSync';
+import { reconcilePythonAnalysisPaths } from '../src/runner/pythonAnalysis';
 
 /**
  * Lifecycle tests for Phase 09 Python analysis IntelliSense sync.

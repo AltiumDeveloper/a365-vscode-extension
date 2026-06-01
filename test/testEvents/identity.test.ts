@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { resolveScriptIdentity } from '../../src/testEvents/identity';
-import { registerLocalScript } from '../../src/localScriptCache';
+import { registerLocalScript } from '../../src/scripts/localCache';
 import type * as vscode from 'vscode';
 
 // Minimal Uri mock — plain objects matching the vscode.Uri structural shape
