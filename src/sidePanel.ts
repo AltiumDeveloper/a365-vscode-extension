@@ -527,18 +527,18 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
                 count: projectNodes.length,
             },
             {
-                kind: 'scriptsCategory',
-                workspaceId,
-                workspaceAuthId: element.info.authId,
-                workspaceUrl: element.workspaceUrl,
-                count: scriptNodes.length,
-            },
-            {
                 kind: 'extensionPointsCategory',
                 workspaceId,
                 workspaceAuthId: element.info.authId,
                 workspaceUrl: element.workspaceUrl,
                 count: nonEmptyEPCount,
+            },
+            {
+                kind: 'scriptsCategory',
+                workspaceId,
+                workspaceAuthId: element.info.authId,
+                workspaceUrl: element.workspaceUrl,
+                count: scriptNodes.length,
             },
         ];
     }
