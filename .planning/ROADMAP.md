@@ -433,10 +433,13 @@ Plans:
 **Plans:** 0/7 plans complete
 
 Plans:
-- [ ] 11-01-PLAN.md — Auth module tests (auth.ts: token lifecycle, refresh, sign-out, onAuthStateChanged)
-- [ ] 11-02-PLAN.md — UI/UX module tests (treeProvider, treeCommands, picker helpers)
-- [ ] 11-03-PLAN.md — Test events module tests (identity, store, resolver, picker, importSibling)
-- [ ] 11-04-PLAN.md — File management module tests (remoteScriptFs, eventFs URI helpers)
-- [ ] 11-05-PLAN.md — Python-specific tests (runner subprocess wiring, param file lifecycle)
-- [ ] 11-06-PLAN.md — Altium runtime/dependency tests (workspace token exchange, GraphQL helper, extension-point queries)
-- [ ] 11-07-PLAN.md — Entity/Platform API tests (script identity round-trip, app installation check)
+**Wave 1**
+- [ ] 11-01-PLAN.md — Shared vscode mock + auth module tests (vscode mock factory functions, export auth helpers, test token lifecycle/claims/store)
+
+**Wave 2** *(all depend on 11-01)*
+- [ ] 11-02-PLAN.md — UI/UX picker tests (extract buildPickerItems + export previewBody from picker.ts, test item-building and truncation)
+- [ ] 11-03-PLAN.md — Test events module tests (export stringifyEvent, test store CRUD + identity resolution + resolver helper)
+- [ ] 11-04-PLAN.md — File management URI tests (export parseEventUri, test buildScriptUri/parseScriptUri + buildEventUri/parseEventUri round-trips)
+- [ ] 11-05-PLAN.md — localScriptCache tests (normalizeLocalScriptKey fallback, register/get/find registry ops)
+- [ ] 11-06-PLAN.md — workspace.ts tests (getWorkspaceApiUrl, getWorkspaceFilesUrl, GraphQLError, graphqlRequest with fetch mock, checkAppInstalled)
+- [ ] 11-07-PLAN.md — Entity/Platform API tests (buildScriptUri↔parseScriptUri round-trip, installApp permission error mapping)
