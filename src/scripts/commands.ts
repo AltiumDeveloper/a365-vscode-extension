@@ -12,7 +12,7 @@ import {
     getLocalScript,
     findLocalScriptByRemoteId,
 } from './localCache';
-import { withScriptProgress } from '../progress';
+import { withScriptProgress } from '../runner/progress';
 
 /**
  * Extract script metadata from either a script node or a script assignment node.
