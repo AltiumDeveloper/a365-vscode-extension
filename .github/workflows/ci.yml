@@ -5,6 +5,8 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  release:
+    types: [published]
 
 jobs:
   build:
@@ -19,9 +21,48 @@ jobs:
       - run: npm ci
       - run: npm run compile
       - run: npm test
+
+      # Pre-release builds: stamp patch = GITHUB_RUN_NUMBER for a unique, monotonically
+      # increasing version on every push to main (e.g. 0.1.42).
+      - name: Stamp pre-release version
+        if: github.ref == 'refs/heads/main'
+        run: |
+          BASE=$(node -p "require('./package.json').version.split('.').slice(0,2).join('.')")
+          npm version "${BASE}.${GITHUB_RUN_NUMBER}" --no-git-tag-version --allow-same-version
+
+      # Stable releases: version is derived from the tag created with the GitHub Release.
+      # Tag format: v<major>.<minor>.<patch>  (e.g. v1.0.0 → 1.0.0)
+      - name: Stamp stable version from release tag
+        if: github.event_name == 'release'
+        run: |
+          TAG="${{ github.event.release.tag_name }}"
+          VERSION="${TAG#v}"
+          npm version "$VERSION" --no-git-tag-version --allow-same-version
+
+      # Package on PRs (build smoke test — no publish)
       - name: Package VSIX
         run: npm run package
+
       - uses: actions/upload-artifact@v4
         with:
           name: altium365-vsix
           path: '*.vsix'
+
+      # Publish pre-release to VS Code Marketplace on every push to main.
+      # Only users who opt-in for pre-release extensions receive these builds.
+      # Requires the VSCE_PAT secret — create a Personal Access Token at
+      # https://dev.azure.com/ with "Marketplace (Manage)" scope and add it as
+      # a repository secret named VSCE_PAT.
+      - name: Publish pre-release to Marketplace
+        if: github.ref == 'refs/heads/main'
+        run: npx @vscode/vsce publish --pre-release --pat "$VSCE_PAT"
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+
+      # Publish stable release to VS Code Marketplace when a GitHub Release is
+      # published. The version is taken from the release tag (e.g. v1.0.0).
+      - name: Publish stable release to Marketplace
+        if: github.event_name == 'release'
+        run: npx @vscode/vsce publish --pat "$VSCE_PAT"
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
