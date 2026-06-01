@@ -6,7 +6,8 @@ import { A365Node } from '../ux/panel';
 import { getSelectedWorkspace, resolveWorkspaceFromAuthId } from '../workspace';
 import { buildScriptUri, parseScriptUri } from './remoteFs';
 import { executeRemoteScript } from './execution';
-import { runScriptAtPath, debugScriptAtPath, updateActiveRemoteContext } from '../extension';
+import { runScriptAtPath, debugScriptAtPath } from '../runner';
+import { updateActiveRemoteContext } from '../extension';
 import {
     registerLocalScript,
     getLocalScript,
@@ -349,7 +350,7 @@ async function runLocalFromScriptNode(
     const target = sc && sc.workspaceId
         ? { workspaceId: sc.workspaceId, workspaceAuthId: sc.workspaceAuthId }
         : undefined;
-    await runScriptAtPath(context, tmpPath, target);
+    await runScriptAtPath(context, output, tmpPath, target);
     // If the script file is currently open in an editor, update context key
     // so VS Code recognizes it as a remote script after the run completes
     const activeEditor = vscode.window.activeTextEditor;
@@ -395,7 +396,7 @@ async function debugLocalFromScriptNode(
     const target = sc && sc.workspaceId
         ? { workspaceId: sc.workspaceId, workspaceAuthId: sc.workspaceAuthId }
         : undefined;
-    await debugScriptAtPath(context, tmpPath, target);
+    await debugScriptAtPath(context, output, tmpPath, target);
 }
 
 /**
