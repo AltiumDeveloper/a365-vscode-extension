@@ -5,7 +5,7 @@ milestone_name: milestone
 status: verifying
 stopped_at: Completed 10-03-PLAN.md
 last_updated: "2026-05-28T09:05:53.754Z"
-last_activity: 2026-06-01 - Completed quick task 260601-a1x: Remove GitHub Releases auto-updater
+last_activity: 2026-06-01 - Completed quick task 260601-b2c: Add vsce publish CI automation (pre-release on main push, stable on GitHub Release)
 progress:
   total_phases: 16
   completed_phases: 13
@@ -179,6 +179,7 @@ Recent decisions affecting current work:
 | 260528-dwb | Integrate app installation check into workspace operations - prompt user and install when app not detected | 2026-05-28 | 204feb6 | [260528-dwb-integrate-app-installation-check-into-wo](./quick/260528-dwb-integrate-app-installation-check-into-wo/) |
 | 260529-jdx | Fix VSCode marketplace version string - remove prerelease suffix from CI builds | 2026-05-29 | ebb0850 | [260529-jdx-fix-vscode-marketplace-version-string-re](./quick/260529-jdx-fix-vscode-marketplace-version-string-re/) |
 | 260529-jjy | Fix npm version command to use patch number instead of 4-part semver | 2026-05-29 | e18113c | [260529-jjy-fix-npm-version-command-to-use-patch-num](./quick/260529-jjy-fix-npm-version-command-to-use-patch-num/) |
+| 260601-b2c | Add vsce publish CI automation - pre-release on main push (patch=run number), stable on GitHub Release (version from tag) | 2026-06-01 | 6c5c055 | [260601-b2c-add-vsce-publish-ci-automation](./quick/260601-b2c-add-vsce-publish-ci-automation/) |
 | 260601-a1x | Remove GitHub Releases auto-updater - delete src/updater.ts, src/semverCompare.ts, test/compareVersions.test.ts, clean up package.json commands/config, extension.ts, CI workflow, and README | 2026-06-01 | 7628107 | [260601-a1x-remove-github-releases-auto-updater](./quick/260601-a1x-remove-github-releases-auto-updater/) |
 | 260601-dv8 | Refresh README.md and AGENTS.md to reflect current extension state - update extension name, commands, configuration, remove internal Dev/UAT/Prod environment details, document main concepts (global vs workspace tokens, script execution context, test events, OAuth scopes) | 2026-06-01 | 99ac002 | [260601-dv8-refresh-readme-md-and-agents-md-to-refle](./quick/260601-dv8-refresh-readme-md-and-agents-md-to-refle/) |
 
