@@ -1,4 +1,4 @@
-# Altium 365 Developer Tools
+# Altium Developer
 
 Browse Altium 365 workspaces, run and debug Python scripts locally with live API access, and manage remote scripts — all without leaving VS Code.
 
@@ -16,9 +16,9 @@ Browse Altium 365 workspaces, run and debug Python scripts locally with live API
 
 ## Getting Started
 
-1. **Sign in** — Run **Altium 365: Sign In** from the Command Palette. Your browser opens and completes the OAuth2 login. Tokens are stored in VS Code's secure secret storage.
-2. **Select a workspace** — Run **Altium 365: Select Workspace**. Pick a workspace from the list. A workspace-scoped token is obtained and stored automatically.
-3. **Run a script** — Open any `.py` file that defines `onExecute(context, input_parameters)`. Click the run button (▷) in the editor title bar, or right-click the file in the Explorer and choose **Altium 365: Run Python Script**.
+1. **Sign in** — Run **Altium Developer: Sign In** from the Command Palette. Your browser opens and completes the OAuth2 login. Tokens are stored in VS Code's secure secret storage.
+2. **Select a workspace** — Run **Altium Developer: Select Workspace**. Pick a workspace from the list. A workspace-scoped token is obtained and stored automatically.
+3. **Run a script** — Open any `.py` file that defines `onExecute(context, input_parameters)`. Click the run button (▷) in the editor title bar, or right-click the file in the Explorer and choose **Altium Developer: Run Python Script**.
 
 ## Running and Debugging Scripts
 
@@ -36,19 +36,37 @@ import a365
 data = a365.query("query { __typename }")
 ```
 
-To debug a script, run **Altium 365: Debug Python Script** from the Command Palette or the editor title bar. The script launches under the VS Code debugger, so breakpoints, step-through, and variable inspection all work.
+To debug a script, run **Altium Developer: Debug Python Script** from the Command Palette or the editor title bar. The script launches under the VS Code debugger, so breakpoints, step-through, and variable inspection all work.
+
+## Authentication & Scopes
+
+The extension uses OAuth2 PKCE with the following scopes:
+
+- **`openid profile`** — basic user identity and profile information
+- **`offline_access`** — enables refresh tokens for silent sign-in on VS Code restart
+- **`workspace:scripts.manage`** — required for editing and publishing scripts
+- **`workspace:scripts.execute`** — required for remote script execution
+
+When you sign in, the browser completes an OAuth flow and the extension stores the resulting access token and refresh token securely in VS Code's secret storage. On subsequent activations, the extension silently refreshes the token using the stored refresh token — no browser interaction required unless the refresh token expires or is revoked.
+
+## Global vs Workspace Tokens
+
+The extension manages two types of tokens:
+
+- **Global token** — obtained via the browser OAuth flow when you sign in. This token represents your identity and is scoped to the entire Altium 365 platform. It's stored securely in VS Code secrets.
+- **Workspace token** — obtained automatically via token exchange when you first interact with a specific workspace (e.g., selecting it or running a script within it). Workspace tokens are workspace-scoped and cached per workspace ID.
+
+When running a script, the `context.auth_token` passed to your `onExecute` function is:
+- The **global token** if no workspace has been selected
+- A **workspace-scoped token** for the selected workspace if one has been chosen
+
+Signing out clears **all** tokens — both the global token and all cached workspace tokens.
 
 ## Switching Environments
 
-Run **Altium 365: Select Environment (Dev / Uat / Prod)** from the Command Palette to switch the active A365 environment. Three environments are pre-configured:
+Run **Altium Developer: Select Environment** from the Command Palette to switch the active A365 environment. Three environments are pre-configured (Dev, Uat, Prod). Switching environments clears the active workspace and workspace token. Run **Altium Developer: Select Workspace** again after switching to pick a workspace in the new environment.
 
-- **Dev** — `usw2.dev-365.altium.com`
-- **Uat** — `eur.uat-365.altium.com`
-- **Prod** — `eur.365.altium.com`
-
-Switching environments clears the active workspace and workspace token. Run **Altium 365: Select Workspace** again after switching to pick a workspace in the new environment.
-
-You can define additional environments under the `altium365.environments` setting; each entry may override `graphqlEndpoint`, `authEndpoint`, `tokenEndpoint`, `scopes`, and `audience`.
+You can define additional environments under the `altium365.environments` setting; each entry may override `graphqlEndpoint`, `authEndpoint`, `tokenEndpoint`, `scopes`, `audience`, and `appId`.
 
 ## Remote scripts
 
@@ -110,16 +128,34 @@ If you store more than 25 events for one script, the extension surfaces a one-ti
 
 | Command | Description |
 | --- | --- |
-| Altium 365: Sign In | Opens the browser for OAuth2 login and stores tokens securely |
-| Altium 365: Sign Out | Clears all stored tokens |
-| Altium 365: Select Workspace | Lists accessible workspaces and stores a workspace-scoped token |
-| Altium 365: Select Environment (Dev / Uat / Prod) | Switches the active A365 environment |
-| Altium 365: Run Python Script | Runs the active `.py` file against the A365 API |
-| Altium 365: Debug Python Script | Runs the active `.py` file under the VS Code debugger |
+| Altium Developer: Sign In | Opens the browser for OAuth2 login and stores tokens securely |
+| Altium Developer: Sign Out | Clears all stored tokens (global and workspace tokens) |
+| Altium Developer: Select Workspace | Lists accessible workspaces and stores a workspace-scoped token |
+| Altium Developer: Select Environment | Switches the active A365 environment (Dev / Uat / Prod or custom) |
+| Altium Developer: Run Python Script | Runs the active `.py` file against the A365 API |
+| Altium Developer: Debug Python Script | Runs the active `.py` file under the VS Code debugger |
+| Altium Developer: Pick Test Event | Unified picker — lists events, offers Create / Edit; picking sets default |
+| Altium Developer: Create Test Event | New event from Empty or Project-related preset |
+| Altium Developer: Edit Test Event | Open an event's JSON in a tab — save publishes changes |
+| Altium Developer: Delete Test Event | Remove an event (with confirmation) |
+| Altium Developer: Set Default Test Event | Mark an event as the default for Run / Debug / Execute |
+| Altium Developer: Edit Script | Opens a remote script in the editor (via `altium365:` virtual document) |
+| Altium Developer: Publish Script | Publishes local changes to a remote script back to A365 |
+| Altium Developer: Execute Script Remotely | Triggers remote execution on the A365 server |
+| Altium Developer: Configure Python IntelliSense | Syncs runtime PYTHONPATH into editor IntelliSense settings |
+| Altium Developer: Install Script Dependencies | Installs Python dependencies listed in a script's requirements |
+| Altium Developer: Check for Updates | Manually checks GitHub Releases for new extension versions (deprecated) |
 
 ## Configuration
 
 Key settings (see VS Code Settings for the full list):
 
 - `altium365.pythonPath` — path to the Python interpreter (default: auto-detect via the Python extension or `python` on `PATH`)
-- `altium365.environments` — object of named environments; each entry can override `graphqlEndpoint`, `authEndpoint`, `tokenEndpoint`, `scopes`, and `audience`
+- `altium365.environments` — object of named environments; each entry can override `graphqlEndpoint`, `authEndpoint`, `tokenEndpoint`, `scopes`, `audience`, and `appId`
+- `altium365.extraEnv` — extra environment variables passed to the Python process
+- `altium365.injectHelper` — inject the bundled `a365` helper module on PYTHONPATH (default: `true`)
+- `altium365.checkForUpdates` — **deprecated** — GitHub Releases auto-update is disabled; the VS Code Marketplace will handle updates natively
+
+**Removed settings** (deprecated as of v0.1.0):
+- `altium365.inputParametersPath` — replaced by test events (Phase 6)
+- `altium365.promptForProjectId` — no longer used
