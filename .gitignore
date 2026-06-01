@@ -4,3 +4,4 @@ node_modules/
 __pycache__/
 python/SandboxProcess/.deps/
 .DS_Store
+coverage/
