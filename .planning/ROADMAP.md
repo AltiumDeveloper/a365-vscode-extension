@@ -430,16 +430,16 @@ Plans:
 **Goal:** The codebase has a well-structured unit test suite that validates the main contracts of each module, is readable, and supports long-term evolution without chasing 100% coverage.
 **Requirements**: none explicitly mapped (project-level quality goal)
 **Depends on:** Phase 10
-**Plans:** 0/7 plans complete
+**Plans:** 7/7 plans complete ✅
 
 Plans:
 **Wave 1**
-- [ ] 11-01-PLAN.md — Shared vscode mock + auth module tests (vscode mock factory functions, export auth helpers, test token lifecycle/claims/store)
+- [x] 11-01-PLAN.md — Shared vscode mock + auth module tests (vscode mock factory functions, export auth helpers, test token lifecycle/claims/store)
 
 **Wave 2** *(all depend on 11-01)*
-- [ ] 11-02-PLAN.md — UI/UX picker tests (extract buildPickerItems + export previewBody from picker.ts, test item-building and truncation)
-- [ ] 11-03-PLAN.md — Test events module tests (export stringifyEvent, test store CRUD + identity resolution + resolver helper)
-- [ ] 11-04-PLAN.md — File management URI tests (export parseEventUri, test buildScriptUri/parseScriptUri + buildEventUri/parseEventUri round-trips)
-- [ ] 11-05-PLAN.md — localScriptCache tests (normalizeLocalScriptKey fallback, register/get/find registry ops)
-- [ ] 11-06-PLAN.md — workspace.ts tests (getWorkspaceApiUrl, getWorkspaceFilesUrl, GraphQLError, graphqlRequest with fetch mock, checkAppInstalled)
-- [ ] 11-07-PLAN.md — Entity/Platform API tests (buildScriptUri↔parseScriptUri round-trip, installApp permission error mapping)
+- [x] 11-02-PLAN.md — UI/UX picker tests (extract buildPickerItems + export previewBody from picker.ts, test item-building and truncation)
+- [x] 11-03-PLAN.md — Test events module tests (export stringifyEvent, test store CRUD + identity resolution + resolver helper)
+- [x] 11-04-PLAN.md — File management URI tests (export parseEventUri, test buildScriptUri/parseScriptUri + buildEventUri/parseEventUri round-trips)
+- [x] 11-05-PLAN.md — localScriptCache tests (normalizeLocalScriptKey fallback, register/get/find registry ops)
+- [x] 11-06-PLAN.md — workspace.ts tests (getWorkspaceApiUrl, getWorkspaceFilesUrl, GraphQLError, graphqlRequest with fetch mock, checkAppInstalled)
+- [x] 11-07-PLAN.md — Entity/Platform API tests (buildScriptUri↔parseScriptUri round-trip, installApp permission error mapping)
