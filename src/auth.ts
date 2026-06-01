@@ -122,7 +122,7 @@ export function fireAuthStateChanged(state: AuthState): void {
 }
 
 /** Decode JWT id_token payload claims without verifying signature. Returns undefined on any parse error. */
-function decodeIdTokenClaims(idToken: string | undefined): Record<string, unknown> | undefined {
+export function decodeIdTokenClaims(idToken: string | undefined): Record<string, unknown> | undefined {
     if (!idToken) {
         return undefined;
     }
@@ -143,7 +143,7 @@ function decodeIdTokenClaims(idToken: string | undefined): Record<string, unknow
     }
 }
 
-function userLabelFromClaims(claims: Record<string, unknown> | undefined): string {
+export function userLabelFromClaims(claims: Record<string, unknown> | undefined): string {
     if (!claims) {
         return '(signed in)';
     }
@@ -210,7 +210,7 @@ async function postForm(url: string, form: Record<string, string>): Promise<any>
     }
 }
 
-function withExpiry(tok: TokenSet): TokenSet {
+export function withExpiry(tok: TokenSet): TokenSet {
     if (tok.expires_in && !tok.expires_at) {
         tok.expires_at = Math.floor(Date.now() / 1000) + Number(tok.expires_in) - 30;
     }
@@ -555,7 +555,7 @@ export async function getActiveUserLabel(
  * `workspace.ts`, not the most-recently-exchanged token. Callers should use
  * `getSelectedWorkspace(context)?.workspaceId` from `./workspace`.
  */
-function isExpired(tok: TokenSet): boolean {
+export function isExpired(tok: TokenSet): boolean {
     if (!tok.expires_at) {
         return false;
     }
