@@ -179,7 +179,6 @@ Key settings (see VS Code Settings for the full list):
 - `altium365.environments` — object of named environments; each entry can override `graphqlEndpoint`, `authEndpoint`, `tokenEndpoint`, `scopes`, `audience`, and `appId`
 - `altium365.extraEnv` — extra environment variables passed to the Python process
 - `altium365.injectHelper` — inject the bundled `a365` helper module on PYTHONPATH (default: `true`)
-- `altium365.checkForUpdates` — **deprecated** — GitHub Releases auto-update is disabled; the VS Code Marketplace will handle updates natively
 
 **Removed settings** (deprecated as of v0.1.0):
 - `altium365.inputParametersPath` — replaced by test events (Phase 6)

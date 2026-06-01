@@ -168,11 +168,6 @@
         "command": "altium365.installScriptDependencies",
         "title": "Install Script Dependencies",
         "category": "Altium Developer"
-      },
-      {
-        "command": "altium365.checkForUpdates",
-        "title": "Check for Updates",
-        "category": "Altium Developer"
       }
     ],
     "configuration": {
@@ -286,11 +281,6 @@
               "appId": { "type": "string" }
             }
           }
-        },
-        "altium365.checkForUpdates": {
-          "type": "boolean",
-          "default": false,
-          "description": "DEPRECATED — GitHub Releases auto-update is disabled while the extension is being prepared for the VS Code Marketplace (which handles updates natively). The 'Altium Developer: Check for Updates' command still runs the check manually if enabled."
         }
       }
     },
