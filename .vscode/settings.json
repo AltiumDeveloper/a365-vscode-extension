@@ -1,0 +1,10 @@
+{
+    "python.analysis.extraPaths": [
+        "/Users/dmitrykolomiets/.vscode/extensions/altium.developer-0.1.10/python/SandboxProcess",
+        "/Users/dmitrykolomiets/.vscode/extensions/altium.developer-0.1.10/python/SandboxProcess/.deps",
+        "/Users/dmitrykolomiets/.vscode/extensions/altium.developer-0.1.10/python",
+        "/Users/dmitrykolomiets/.vscode/extensions/altium.developer-0.1.11/python/SandboxProcess",
+        "/Users/dmitrykolomiets/.vscode/extensions/altium.developer-0.1.11/python/SandboxProcess/.deps",
+        "/Users/dmitrykolomiets/.vscode/extensions/altium.developer-0.1.11/python"
+    ]
+}

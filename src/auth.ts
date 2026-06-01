@@ -3,7 +3,7 @@ import * as crypto from 'crypto';
 import * as https from 'https';
 import * as http from 'http';
 import { URL, URLSearchParams } from 'url';
-import { AsyncMutex } from './asyncMutex';
+import { AsyncMutex } from './shared/asyncMutex';
 
 /**
  * Minimal POST helper using Node's http/https module. We CANNOT use

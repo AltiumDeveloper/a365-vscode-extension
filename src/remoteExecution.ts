@@ -18,7 +18,7 @@ import {
 } from './workspace';
 import { withScriptProgress } from './progress';
 import { resolveScriptParameters } from './testEvents/resolver';
-import { dedupLogPage } from './logDedup';
+import { dedupLogPage } from './shared/logDedup';
 
 /**
  * Remote-script execution module.
