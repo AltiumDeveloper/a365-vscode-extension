@@ -50,13 +50,10 @@ type PickerItem = vscode.QuickPickItem & {
     eventName?: string;
 };
 
-export async function pickTestEvent(
-    identity: string,
+export function buildPickerItems(
     store: TestEventStore | undefined,
-    options: PickerOptions = {},
-): Promise<PickerResult | undefined> {
-    void identity; // reserved for future per-identity titling
-
+    options: { eventsOnly?: boolean },
+): PickerItem[] {
     const items: PickerItem[] = [];
     const eventNames = store ? Object.keys(store.events).sort() : [];
     const defaultName = store?.defaultEventName || '';
@@ -105,6 +102,18 @@ export async function pickTestEvent(
         }
     }
 
+    return items;
+}
+
+export async function pickTestEvent(
+    identity: string,
+    store: TestEventStore | undefined,
+    options: PickerOptions = {},
+): Promise<PickerResult | undefined> {
+    void identity; // reserved for future per-identity titling
+
+    const items = buildPickerItems(store, options);
+
     const qp = vscode.window.createQuickPick<PickerItem>();
     qp.items = items;
     qp.placeholder = options.headerLabel || 'Select a test event or action…';
@@ -146,7 +155,7 @@ export async function pickTestEvent(
     }
 }
 
-function previewBody(body: Record<string, unknown>): string {
+export function previewBody(body: Record<string, unknown>): string {
     try {
         const json = JSON.stringify(body);
         if (json.length <= 80) {
