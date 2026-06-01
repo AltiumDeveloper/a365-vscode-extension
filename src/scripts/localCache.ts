@@ -3,10 +3,10 @@ import * as fs from 'fs/promises';
 import * as fsSync from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import { buildScriptUri, AltiumRemoteScriptFs } from './remoteScriptFs';
-import { withScriptProgress } from './progress';
-import { updateAssignment, getWorkspaceApiUrl, WorkspaceInfo, resolveWorkspaceFromAuthId } from './workspace';
-import { ensureWorkspaceToken, readOAuthConfig } from './auth';
+import { buildScriptUri, AltiumRemoteScriptFs } from './remoteFs';
+import { withScriptProgress } from '../progress';
+import { updateAssignment, getWorkspaceApiUrl, WorkspaceInfo, resolveWorkspaceFromAuthId } from '../workspace';
+import { ensureWorkspaceToken, readOAuthConfig } from '../auth';
 
 /**
  * In-memory mapping from local tmp file path -> remote script identity.
@@ -221,7 +221,7 @@ export function registerLocalScriptSaveBridge(
                             const apiUrl = getWorkspaceApiUrl(workspace, envGlobal);
                             
                             // Fetch latest script version (writeFile just created it)
-                            const { getScript } = await import('./workspace');
+                            const { getScript } = await import('../workspace');
                             const scriptDetail = await getScript(apiUrl, wsToken, identity.scriptId);
                             
                             // Update assignment to latest version

@@ -2,17 +2,17 @@ import * as vscode from 'vscode';
 import * as fs from 'fs/promises';
 import * as os from 'os';
 import * as path from 'path';
-import { A365Node } from './sidePanel';
-import { getSelectedWorkspace, resolveWorkspaceFromAuthId } from './workspace';
-import { buildScriptUri, parseScriptUri } from './remoteScriptFs';
-import { executeRemoteScript } from './remoteExecution';
-import { runScriptAtPath, debugScriptAtPath, updateActiveRemoteContext } from './extension';
+import { A365Node } from '../sidePanel';
+import { getSelectedWorkspace, resolveWorkspaceFromAuthId } from '../workspace';
+import { buildScriptUri, parseScriptUri } from './remoteFs';
+import { executeRemoteScript } from './execution';
+import { runScriptAtPath, debugScriptAtPath, updateActiveRemoteContext } from '../extension';
 import {
     registerLocalScript,
     getLocalScript,
     findLocalScriptByRemoteId,
-} from './localScriptCache';
-import { withScriptProgress } from './progress';
+} from './localCache';
+import { withScriptProgress } from '../progress';
 
 /**
  * Extract script metadata from either a script node or a script assignment node.

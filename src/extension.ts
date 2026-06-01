@@ -17,11 +17,11 @@ import {
 import { pickWorkspace, getSelectedWorkspace, getWorkspaceApiUrl, listProjects, listWorkspaces, WorkspaceInfo, resolveWorkspaceFromAuthId } from './workspace';
 import { A365Node, A365TreeDataProvider } from './sidePanel';
 import { createStatusBar } from './statusBar';
-import { registerScriptCommands } from './scriptCommands';
+import { registerScriptCommands } from './scripts/commands';
 import { registerTreeCommands } from './treeCommands';
-import { AltiumRemoteScriptFs } from './remoteScriptFs';
+import { AltiumRemoteScriptFs } from './scripts/remoteFs';
 import { ensureSandboxDeps, getSandboxPythonPath } from './sandboxDeps';
-import { registerLocalScriptSaveBridge, getLocalScript, rehydrateLocalScriptCacheFromDisk } from './localScriptCache';
+import { registerLocalScriptSaveBridge, getLocalScript, rehydrateLocalScriptCacheFromDisk } from './scripts/localCache';
 import { resolveScriptIdentity } from './testEvents/identity';
 import { resolveScriptParameters } from './testEvents/resolver';
 import { TestEventFs } from './testEvents/eventFs';
