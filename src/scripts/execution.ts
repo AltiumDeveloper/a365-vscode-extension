@@ -3,7 +3,7 @@ import {
     ensureWorkspaceToken,
     getBaseAccessToken,
     readOAuthConfig,
-} from './auth';
+} from '../auth';
 import {
     executeScript,
     executeAssignment,
@@ -15,10 +15,10 @@ import {
     GraphQLError,
     listWorkspaces,
     WorkspaceInfo,
-} from './workspace';
-import { withScriptProgress } from './progress';
-import { resolveScriptParameters } from './testEvents/resolver';
-import { dedupLogPage } from './shared/logDedup';
+} from '../workspace';
+import { withScriptProgress } from '../progress';
+import { resolveScriptParameters } from '../testEvents/resolver';
+import { dedupLogPage } from '../shared/logDedup';
 
 /**
  * Remote-script execution module.

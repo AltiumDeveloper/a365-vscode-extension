@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import {
     ensureWorkspaceToken,
     readOAuthConfig,
-} from './auth';
+} from '../auth';
 import {
     GraphQLError,
     getScript,
@@ -11,7 +11,7 @@ import {
     updateScript,
     WorkspaceInfo,
     resolveWorkspaceFromAuthId,
-} from './workspace';
+} from '../workspace';
 import { downloadByToken, uploadAndGetToken } from './filesService';
 
 /**

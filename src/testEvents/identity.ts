@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { getLocalScript, normalizeLocalScriptKey } from '../localScriptCache';
+import { getLocalScript, normalizeLocalScriptKey } from '../scripts/localCache';
 
 /**
  * Script identity resolver (Phase 999.3, D-04..D-06).
