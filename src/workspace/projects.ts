@@ -6,7 +6,7 @@ export interface ProjectInfo {
     url?: string;
 }
 
-const LIST_PROJECTS_PAGE_SIZE = 100;
+const LIST_PROJECTS_PAGE_SIZE = 10;
 
 const LIST_PROJECTS_QUERY = `
     query ListProjects($first: Int!, $after: String) {
