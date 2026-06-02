@@ -165,7 +165,6 @@ export async function doSignIn(
 export async function doSignOut(context: vscode.ExtensionContext): Promise<void> {
     await clearAllTokens(context);
     await clearSelectedWorkspace(context);
-    await updateSignedInContext(context);
     vscode.window.showInformationMessage('Altium 365: signed out.');
 }
 
