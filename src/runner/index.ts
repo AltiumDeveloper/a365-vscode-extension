@@ -12,6 +12,8 @@ import {
     getSelectedWorkspace,
     getWorkspaceApiUrl,
     listWorkspaces,
+    pickWorkspace,
+    setSelectedWorkspace,
     type WorkspaceInfo,
 } from '../workspace';
 import { ensureSandboxDeps, getSandboxPythonPath } from './sandbox';
@@ -143,12 +145,25 @@ async function prepareRun(
         }
         endpoint = getWorkspaceApiUrl(resolvedWs, envGlobalEndpoint);
     } else {
-        // No target workspace specified - this should not happen after resolveWorkspaceForScript
-        // but keeping as fallback. Scripts ALWAYS require workspace-scoped tokens.
-        vscode.window.showErrorMessage(
-            'Altium 365: Cannot run script - no workspace context available. Please select a workspace first.'
-        );
-        return undefined;
+        // No target workspace — prompt the user to pick one, then continue.
+        const picked = await pickWorkspace(context, oauthCfg, envGlobalEndpoint);
+        if (!picked) {
+            return undefined; // user cancelled or not signed in
+        }
+        await setSelectedWorkspace(context, picked);
+        resolvedWs = picked;
+        try {
+            token = await ensureWorkspaceToken(context, oauthCfg, {
+                workspaceId: picked.workspaceId,
+                authId: picked.authId,
+            });
+        } catch (e) {
+            vscode.window.showErrorMessage(
+                'Altium 365: token exchange failed: ' + (e as Error).message
+            );
+            return undefined;
+        }
+        endpoint = getWorkspaceApiUrl(picked, envGlobalEndpoint);
     }
 
     const python = await resolvePythonPath();
