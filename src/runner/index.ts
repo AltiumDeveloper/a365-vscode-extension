@@ -168,9 +168,9 @@ async function prepareRun(
                 return undefined; // user cancelled or not signed in
             }
             await setSelectedWorkspace(context, picked);
-        // Refresh the sidebar so the active-workspace indicator updates
-        // immediately without requiring a manual refresh click.
-        void vscode.commands.executeCommand('altium365.tree.refresh');
+            // Refresh the sidebar so the active-workspace indicator updates
+            // immediately without requiring a manual refresh click.
+            await vscode.commands.executeCommand('altium365.tree.refresh');
         }
         resolvedWs = picked;
         try {
