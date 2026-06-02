@@ -1,7 +1,7 @@
 // Barrel re-export — all workspace module symbols in one place so existing
 // consumers (`import { ... } from '../workspace'`) require no changes.
 
-export { GraphQLError, graphqlRequest } from './graphql';
+export { GraphQLError, collectAllPages, graphqlRequest, type ConnectionPage } from './graphql';
 export {
     type WorkspaceLocation,
     type WorkspaceInfo,

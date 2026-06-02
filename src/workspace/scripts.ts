@@ -1,4 +1,4 @@
-import { graphqlRequest } from './graphql';
+import { collectAllPages, graphqlRequest } from './graphql';
 
 export interface ScriptInfo {
     scriptId: string;
@@ -6,15 +6,21 @@ export interface ScriptInfo {
     description?: string;
 }
 
-// TODO: paginate if hasNextPage (RESEARCH.md Assumption A3 — 100-item page is sufficient for v1)
+const LIST_SCRIPTS_PAGE_SIZE = 100;
+
+// Relay cursor pagination per
+// https://www.altium.com/documentation/altium-developer-center/altium-365/api/pagination.
+// The previous single-page query truncated workspaces with more than 100
+// scripts (RESEARCH.md Assumption A3, now obsolete).
 const LIST_SCRIPTS_QUERY = `
-    query ListScripts {
-        gloScrScripts(first: 100) {
+    query ListScripts($first: Int!, $after: String) {
+        gloScrScripts(first: $first, after: $after) {
             nodes {
                 scriptId
                 name
                 description
             }
+            pageInfo { hasNextPage endCursor }
         }
     }
 `;
@@ -23,9 +29,20 @@ export async function listScripts(
     endpoint: string,
     workspaceToken: string
 ): Promise<ScriptInfo[]> {
-    const data = await graphqlRequest(endpoint, workspaceToken, LIST_SCRIPTS_QUERY);
-    const nodes = data?.gloScrScripts?.nodes;
-    return Array.isArray(nodes) ? (nodes as ScriptInfo[]) : [];
+    return collectAllPages<ScriptInfo>(async (after) => {
+        const data = await graphqlRequest(endpoint, workspaceToken, LIST_SCRIPTS_QUERY, {
+            first: LIST_SCRIPTS_PAGE_SIZE,
+            after,
+        });
+        const conn = data?.gloScrScripts;
+        const nodes = Array.isArray(conn?.nodes) ? (conn.nodes as ScriptInfo[]) : [];
+        const pageInfo = conn?.pageInfo ?? {};
+        return {
+            nodes,
+            endCursor: typeof pageInfo.endCursor === 'string' ? pageInfo.endCursor : null,
+            hasNextPage: pageInfo.hasNextPage === true,
+        };
+    });
 }
 
 // =============================================================================
