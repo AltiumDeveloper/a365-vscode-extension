@@ -28,14 +28,14 @@ import { type TestEventStore } from './store';
  *   $(trash) Delete Test Event…     ← same pattern; dispatches testEvents.delete
  */
 
-export type PickerResult =
+type PickerResult =
     | { kind: 'event'; name: string; body: Record<string, unknown> }
     | { kind: 'create' }
     | { kind: 'edit-any' }
     | { kind: 'delete-any' }
     | { kind: 'empty' };
 
-export interface PickerOptions {
+interface PickerOptions {
     /** Title shown above the picker; defaults to a generic prompt. */
     headerLabel?: string;
     /** When true, action rows (Create / Edit any / Delete any / Run empty)

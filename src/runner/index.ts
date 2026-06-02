@@ -13,10 +13,8 @@ import {
     getWorkspaceApiUrl,
     listWorkspaces,
     type WorkspaceInfo,
-    resolveWorkspaceFromAuthId,
 } from '../workspace';
 import { ensureSandboxDeps, getSandboxPythonPath } from './sandbox';
-import { getLocalScript } from '../scripts/localCache';
 import { resolveScriptIdentity } from '../testEvents/identity';
 import { resolveScriptParameters } from '../testEvents/resolver';
 
@@ -64,68 +62,6 @@ export async function resolvePythonPath(): Promise<string> {
         // fall through
     }
     return process.platform === 'win32' ? 'python' : 'python3';
-}
-
-/**
- * Resolve workspace context for a script file path.
- *
- * If the script is tracked in localScriptCache (downloaded A365 script),
- * resolve its workspace from the cache and listWorkspaces.
- *
- * If not found in cache, use the currently active workspace, or prompt
- * the user to select one if none is active.
- *
- * Returns target object with workspaceId + workspaceAuthId, or undefined
- * if user cancels the workspace selection.
- */
-async function _resolveWorkspaceForScript(
-    context: vscode.ExtensionContext,
-    scriptPath: string
-): Promise<{ workspaceId: string; workspaceAuthId: string } | undefined> {
-    // Check if this script is tracked in localScriptCache (downloaded A365 script)
-    const identity = getLocalScript(scriptPath);
-    if (identity) {
-        // Script belongs to a specific workspace - resolve it via the centralized helper
-        const envEndpoint = vscode.workspace.getConfiguration('altium365').get<string>('graphqlEndpoint', '');
-        const workspace = await resolveWorkspaceFromAuthId(context, identity.workspaceAuthId, envEndpoint);
-        if (workspace) {
-            return {
-                workspaceId: workspace.workspaceId,
-                workspaceAuthId: workspace.authId
-            };
-        }
-    }
-
-    // Not in cache or lookup failed - use active workspace, or prompt if none selected
-    const selected = getSelectedWorkspace(context);
-    if (selected) {
-        return {
-            workspaceId: selected.workspaceId,
-            workspaceAuthId: selected.authId
-        };
-    }
-
-    // No active workspace - prompt user to select one
-    const choice = await vscode.window.showWarningMessage(
-        'Scripts require a workspace to be selected. Select a workspace now?',
-        'Select Workspace',
-        'Cancel'
-    );
-
-    if (choice === 'Select Workspace') {
-        await vscode.commands.executeCommand('altium365.selectWorkspace');
-        // Check if user actually selected a workspace
-        const newSelected = getSelectedWorkspace(context);
-        if (newSelected) {
-            return {
-                workspaceId: newSelected.workspaceId,
-                workspaceAuthId: newSelected.authId
-            };
-        }
-    }
-
-    // User cancelled or workspace selection failed
-    return undefined;
 }
 
 async function prepareRun(

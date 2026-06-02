@@ -12,7 +12,6 @@ export {
     resolveWorkspaceFromAuthId,
 } from './workspaces';
 export {
-    SELECTED_WORKSPACE_KEY,
     getSelectedWorkspace,
     setSelectedWorkspace,
     clearSelectedWorkspace,

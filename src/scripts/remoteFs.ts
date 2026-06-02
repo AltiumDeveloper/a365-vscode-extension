@@ -68,7 +68,7 @@ import { downloadByToken, uploadAndGetToken } from './filesService';
 const UUID_REGEX = /^[0-9a-fA-F-]{36}$/;
 const GRID_PATH_REGEX = /^\/grid:workspace:([^:/]+):scripts:script\/([0-9a-fA-F-]{36})(?:\/(.*))?$/;
 
-export interface ParsedRemoteUri {
+interface ParsedRemoteUri {
     /** Workspace `authId` (friendly slug, e.g. `my-team`). NOT the GRID-form workspaceId. */
     authId: string;
     scriptId: string;
@@ -339,12 +339,4 @@ export class AltiumRemoteScriptFs implements vscode.FileSystemProvider {
         }
     }
 
-    /**
-     * Internal — used by Plan 03-03 to fire change events after writeFile
-     * succeeds. Exposed protected so the future subclass / impl can fire
-     * events without exposing the emitter publicly.
-     */
-    protected fireChange(events: vscode.FileChangeEvent[]): void {
-        this._onDidChangeFile.fire(events);
-    }
 }

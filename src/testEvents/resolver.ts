@@ -36,7 +36,7 @@ import { maybePromptForSiblingImport } from './importSibling';
 
 const resolveMutex = new AsyncMutex();
 
-export interface ResolveOptions {
+interface ResolveOptions {
     promptOnFirstRun?: boolean;
 }
 

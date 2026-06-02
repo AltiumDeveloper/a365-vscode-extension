@@ -11,7 +11,7 @@ import * as vscode from 'vscode';
  */
 
 export const TEST_EVENT_KEY_PREFIX = 'altium365.scriptParams.';
-export const BLOAT_WARN_KEY_PREFIX = 'altium365.scriptParams.bloatWarned.';
+const BLOAT_WARN_KEY_PREFIX = 'altium365.scriptParams.bloatWarned.';
 
 /**
  * Fires after any successful mutation (writeStore / deleteEvent /
