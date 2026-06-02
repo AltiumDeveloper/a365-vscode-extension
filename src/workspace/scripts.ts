@@ -1,4 +1,4 @@
-import { collectAllPages, graphqlRequest } from './graphql';
+import { graphqlRequest } from './graphql';
 
 export interface ScriptInfo {
     scriptId: string;
@@ -6,21 +6,28 @@ export interface ScriptInfo {
     description?: string;
 }
 
-const LIST_SCRIPTS_PAGE_SIZE = 100;
+// ⚠️ PAGINATION TEMPORARILY DISABLED — the paginated form of this query
+// (using $first/$after with pageInfo per
+// https://www.altium.com/documentation/altium-developer-center/altium-365/api/pagination)
+// is currently prohibitively expensive on the server side. As a temporary
+// measure we fetch a single page of up to 100 items and accept truncation
+// for workspaces that exceed the cap.
+//
+// TODO: re-enable Relay cursor pagination via `collectAllPages` in
+// ./graphql.ts — see listProjects / listExtensionPoints for the target
+// shape — once the server cost issue is resolved. When re-enabling, also
+// drop LIST_SCRIPTS_FIRST_PAGE_CAP down to the standard page size of 10
+// to match the other listings.
+const LIST_SCRIPTS_FIRST_PAGE_CAP = 100;
 
-// Relay cursor pagination per
-// https://www.altium.com/documentation/altium-developer-center/altium-365/api/pagination.
-// The previous single-page query truncated workspaces with more than 100
-// scripts (RESEARCH.md Assumption A3, now obsolete).
 const LIST_SCRIPTS_QUERY = `
-    query ListScripts($first: Int!, $after: String) {
-        gloScrScripts(first: $first, after: $after) {
+    query ListScripts($first: Int!) {
+        gloScrScripts(first: $first) {
             nodes {
                 scriptId
                 name
                 description
             }
-            pageInfo { hasNextPage endCursor }
         }
     }
 `;
@@ -29,20 +36,11 @@ export async function listScripts(
     endpoint: string,
     workspaceToken: string
 ): Promise<ScriptInfo[]> {
-    return collectAllPages<ScriptInfo>(async (after) => {
-        const data = await graphqlRequest(endpoint, workspaceToken, LIST_SCRIPTS_QUERY, {
-            first: LIST_SCRIPTS_PAGE_SIZE,
-            after,
-        });
-        const conn = data?.gloScrScripts;
-        const nodes = Array.isArray(conn?.nodes) ? (conn.nodes as ScriptInfo[]) : [];
-        const pageInfo = conn?.pageInfo ?? {};
-        return {
-            nodes,
-            endCursor: typeof pageInfo.endCursor === 'string' ? pageInfo.endCursor : null,
-            hasNextPage: pageInfo.hasNextPage === true,
-        };
+    const data = await graphqlRequest(endpoint, workspaceToken, LIST_SCRIPTS_QUERY, {
+        first: LIST_SCRIPTS_FIRST_PAGE_CAP,
     });
+    const nodes = data?.gloScrScripts?.nodes;
+    return Array.isArray(nodes) ? (nodes as ScriptInfo[]) : [];
 }
 
 // =============================================================================
