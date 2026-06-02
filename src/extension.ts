@@ -166,8 +166,8 @@ export function activate(context: vscode.ExtensionContext) {
             }
         }),
         onAuthStateChanged(async () => {
-            await updateSignedInContext(context);
             treeProvider.refresh();
+            await updateSignedInContext(context);
         }),
         // D-07 (revised after UAT): Refresh tree view title when the active
         // environment changes. TreeView.title is not re-read by provider
