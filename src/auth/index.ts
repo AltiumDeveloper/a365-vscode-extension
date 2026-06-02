@@ -23,7 +23,7 @@ function postJson(
         let url: URL;
         try {
             url = new URL(endpoint);
-        } catch (e) {
+        } catch {
             reject(new Error(`Invalid endpoint: ${endpoint}`));
             return;
         }
@@ -98,7 +98,6 @@ export interface TokenSet {
 const SECRET_TOKENS = 'altium365.tokens';
 const SECRET_WS_TOKEN_PREFIX = 'altium365.workspaceTokens.';
 const GLOBAL_WS_TOKEN_INDEX_KEY = 'altium365.workspaceTokenIds';
-const GLOBAL_SELECTED_WORKSPACE_KEY = 'altium365.selectedWorkspace';
 
 export interface AuthState {
     user?: string;
@@ -253,7 +252,7 @@ async function pollActionWait(
     const timeoutHandle = setTimeout(() => internalController.abort(), timeoutMs);
 
     try {
-        // eslint-disable-next-line no-constant-condition
+         
         while (true) {
             if (Date.now() >= deadline) {
                 throw new Error(`ActionWait poll exceeded ${timeoutMs}ms wall-clock timeout.`);
@@ -600,36 +599,6 @@ export async function getBaseAccessToken(
         }
     }
     return base?.access_token;
-}
-
-/**
- * Returns the best available access token for use by scripts and workspace-scoped
- * callers. Routes by the user's explicit workspace selection (D-02): when a
- * workspace is selected, delegates to ensureWorkspaceToken; otherwise returns the
- * base token via getBaseAccessToken. On exchange failure, falls back to base so
- * the caller has SOMETHING to attempt (existing re-sign-in path in extension.ts
- * handles 401s).
- *
- * NOTE: reads the selected workspace inline from globalState to avoid a
- * circular import with workspace.ts (which already imports from ./auth).
- */
-export async function getActiveAccessToken(
-    context: vscode.ExtensionContext,
-    cfg: OAuthConfig
-): Promise<string | undefined> {
-    const selected = context.globalState.get<{ workspaceId: string; authId: string }>(
-        GLOBAL_SELECTED_WORKSPACE_KEY
-    );
-    if (selected?.workspaceId && selected?.authId) {
-        // Always use workspace-scoped token when a workspace is selected
-        // Do NOT fall back to base token on failure - scripts require workspace scope
-        return await ensureWorkspaceToken(context, cfg, {
-            workspaceId: selected.workspaceId,
-            authId: selected.authId,
-        });
-    }
-    // No workspace selected - return undefined to trigger workspace selection prompt
-    return undefined;
 }
 
 export function readOAuthConfig(): OAuthConfig {

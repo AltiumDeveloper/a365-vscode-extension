@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, afterEach, vi } from 'vitest';
 import {
     decodeIdTokenClaims,
     userLabelFromClaims,
@@ -9,8 +9,8 @@ import {
     onAuthStateChanged,
     refreshTokens,
     type TokenSet,
-} from '../src/auth';
-import { makeExtensionContext } from './__mocks__/vscode';
+} from '../../src/auth';
+import { makeExtensionContext } from '../__mocks__/vscode';
 
 // Helper: build a minimal 3-part JWT with the given payload object
 function makeJwt(payload: object): string {

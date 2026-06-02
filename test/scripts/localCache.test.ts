@@ -4,7 +4,7 @@ import {
     registerLocalScript,
     getLocalScript,
     findLocalScriptByRemoteId,
-} from '../src/scripts/localCache';
+} from '../../src/scripts/localCache';
 
 // Use unique non-existent paths per test to avoid module-level Map interference
 

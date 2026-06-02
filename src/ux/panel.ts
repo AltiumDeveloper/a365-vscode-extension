@@ -1,20 +1,18 @@
 import * as vscode from 'vscode';
 import {
-    OAuthConfig,
+    type OAuthConfig,
     ensureWorkspaceToken,
     getBaseAccessToken,
     readOAuthConfig,
 } from '../auth';
 import {
-    AssignmentInfo,
-    ExtensionPointInfo,
-    ProjectInfo,
-    ScriptInfo,
-    WorkspaceInfo,
-    checkAppInstalled,
+    type AssignmentInfo,
+    type ExtensionPointInfo,
+    type ProjectInfo,
+    type ScriptInfo,
+    type WorkspaceInfo,
     getSelectedWorkspace,
     getWorkspaceApiUrl,
-    installApp,
     listExtensionPoints,
     listProjects,
     listScripts,
@@ -35,10 +33,6 @@ export const CTX_ASSIGNMENT_WORKFLOW = 'assignmentNode-workflow';
 export const CTX_ASSIGNMENT_DEFAULT = 'assignmentNode-default';
 
 const OUTPUT_PREFIX = '[Altium 365] tree:';
-
-// Feature flag: Enable workspace app installation checks
-// Set to false to disable automatic app installation prompts (260528-dwb)
-const ENABLE_APP_INSTALLATION_CHECK = false;
 
 export type A365Node =
     | { kind: 'workspace'; info: WorkspaceInfo; workspaceUrl: string; url?: string }
@@ -105,7 +99,6 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
     private scriptsCache = new Map<string, A365Node[]>();
     private extensionPointsCache = new Map<string, ExtensionPointInfo[]>();
     private assignmentsCache = new Map<string, Map<string, AssignmentInfo[]>>();
-    private installedAppCache = new Map<string, boolean>();
 
     constructor(
         private ctx: vscode.ExtensionContext,
@@ -120,8 +113,6 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
             this.scriptsCache.clear();
             this.extensionPointsCache.clear();
             this.assignmentsCache.clear();
-            this.installedAppCache.clear();
-            void this.ctx.globalState.update('altium365.installedApps', {});
             this._onDidChange.fire(undefined);
             return;
         }
@@ -425,64 +416,6 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
         // own apiServiceUrl, not the env-global graphqlEndpoint, since a
         // workspace can live on a different cluster than the env gateway.
         const endpoint = getWorkspaceApiUrl(element.info, this.getEndpoint());
-
-        // App installation gate (260528-dwb): Check if extension app is installed
-        // before attempting workspace-scoped queries. Prompt user to install if needed.
-        // DISABLED via ENABLE_APP_INSTALLATION_CHECK flag (2026-05-28)
-        if (ENABLE_APP_INSTALLATION_CHECK) {
-            const cfg = vscode.workspace.getConfiguration('altium365');
-            const activeEnvName = cfg.get<string>('activeEnvironment') || '';
-            const envs = cfg.get<Record<string, any>>('environments') || {};
-            const appId = envs[activeEnvName]?.appId;
-
-            if (appId) {
-                const cacheKey = `${workspaceId}:${appId}`;
-                const stateKey = 'altium365.installedApps';
-                
-                // Check globalState first (persists across sessions)
-                const persistedApps = this.ctx.globalState.get<Record<string, boolean>>(stateKey) || {};
-                if (persistedApps[cacheKey] === true) {
-                    // Skip check - persisted from previous session
-                    this.installedAppCache.set(cacheKey, true);
-                } else {
-                    // Check in-memory cache
-                    const cached = this.installedAppCache.get(cacheKey);
-                    
-                    if (cached !== true) {
-                        const installed = await checkAppInstalled(endpoint, wsToken, appId);
-                        if (installed) {
-                            this.installedAppCache.set(cacheKey, true);
-                            persistedApps[cacheKey] = true;
-                            await this.ctx.globalState.update(stateKey, persistedApps);
-                        } else {
-                            const choice = await vscode.window.showInformationMessage(
-                                'The Altium Developer extension needs to be installed in this workspace. Install now? (Requires workspace admin permissions)',
-                                'Install Now',
-                                'Cancel'
-                            );
-                            if (choice === 'Install Now') {
-                                try {
-                                    await installApp(endpoint, wsToken, appId);
-                                    this.installedAppCache.set(cacheKey, true);
-                                    persistedApps[cacheKey] = true;
-                                    await this.ctx.globalState.update(stateKey, persistedApps);
-                                    vscode.window.showInformationMessage('Extension app installed successfully');
-                                } catch (err) {
-                                    const msg = (err as Error).message;
-                                    if (msg.includes('workspace administrator')) {
-                                        throw new Error(msg);
-                                    } else {
-                                        throw new Error('Failed to install extension app: ' + msg);
-                                    }
-                                }
-                            } else {
-                                throw new Error('Extension app installation cancelled - workspace requires the app to be installed');
-                            }
-                        }
-                    }
-                }
-            }
-        }
 
         const [projects, scripts, extensionPointsData] = await Promise.all([
             listProjects(endpoint, wsToken),

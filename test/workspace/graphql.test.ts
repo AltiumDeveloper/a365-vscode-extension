@@ -4,9 +4,8 @@ import {
     getWorkspaceFilesUrl,
     GraphQLError,
     graphqlRequest,
-    checkAppInstalled,
     type WorkspaceInfo,
-} from '../src/workspace';
+} from '../../src/workspace';
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -131,30 +130,6 @@ describe('graphqlRequest', () => {
         } catch (e) {
             expect((e as GraphQLError).message).toBe('first error');
         }
-    });
-});
-
-// ── checkAppInstalled ─────────────────────────────────────────────
-
-describe('checkAppInstalled', () => {
-    it('returns true when appId is in the installed apps list', async () => {
-        mockFetch({ ok: true, text: async () => JSON.stringify({ data: { gloAppInstalledApps: [{ id: 'app-1' }, { id: 'app-2' }] } }) });
-        expect(await checkAppInstalled('https://api', 'tok', 'app-1')).toBe(true);
-    });
-
-    it('returns false when appId is not in the installed apps list', async () => {
-        mockFetch({ ok: true, text: async () => JSON.stringify({ data: { gloAppInstalledApps: [{ id: 'app-2' }] } }) });
-        expect(await checkAppInstalled('https://api', 'tok', 'app-1')).toBe(false);
-    });
-
-    it('returns false for an empty apps list', async () => {
-        mockFetch({ ok: true, text: async () => JSON.stringify({ data: { gloAppInstalledApps: [] } }) });
-        expect(await checkAppInstalled('https://api', 'tok', 'app-1')).toBe(false);
-    });
-
-    it('returns false when gloAppInstalledApps is not an array', async () => {
-        mockFetch({ ok: true, text: async () => JSON.stringify({ data: { gloAppInstalledApps: 'not-an-array' } }) });
-        expect(await checkAppInstalled('https://api', 'tok', 'app-1')).toBe(false);
     });
 });
 

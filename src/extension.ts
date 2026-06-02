@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { onAuthStateChanged } from './auth';
-import { A365Node, A365TreeDataProvider } from './ux/panel';
+import { type A365Node, A365TreeDataProvider } from './ux/panel';
 import { createStatusBar } from './ux/statusBar';
 import { registerScriptCommands } from './scripts/commands';
 import { registerTreeCommands } from './ux/treeCommands';

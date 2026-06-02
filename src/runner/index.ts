@@ -12,7 +12,7 @@ import {
     getSelectedWorkspace,
     getWorkspaceApiUrl,
     listWorkspaces,
-    WorkspaceInfo,
+    type WorkspaceInfo,
     resolveWorkspaceFromAuthId,
 } from '../workspace';
 import { ensureSandboxDeps, getSandboxPythonPath } from './sandbox';
@@ -78,7 +78,7 @@ export async function resolvePythonPath(): Promise<string> {
  * Returns target object with workspaceId + workspaceAuthId, or undefined
  * if user cancels the workspace selection.
  */
-async function resolveWorkspaceForScript(
+async function _resolveWorkspaceForScript(
     context: vscode.ExtensionContext,
     scriptPath: string
 ): Promise<{ workspaceId: string; workspaceAuthId: string } | undefined> {

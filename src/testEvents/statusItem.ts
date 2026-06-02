@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { ScriptIdentity, resolveScriptIdentity } from './identity';
+import { type ScriptIdentity, resolveScriptIdentity } from './identity';
 import { readStore, onDidChangeTestEventStore } from './store';
 
 /**

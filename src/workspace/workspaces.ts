@@ -1,10 +1,11 @@
 import * as vscode from 'vscode';
 import {
     getBaseAccessToken,
-    OAuthConfig,
+    type OAuthConfig,
     readOAuthConfig,
 } from '../auth';
 import { graphqlRequest } from './graphql';
+import { getSelectedWorkspace } from './state';
 
 export interface WorkspaceLocation {
     apiServiceUrl?: string;
@@ -147,27 +148,6 @@ export async function pickWorkspace(
     return pick?.ws;
 }
 
-export function getSelectedWorkspace(
-    context: vscode.ExtensionContext
-): WorkspaceInfo | undefined {
-    return context.globalState.get<WorkspaceInfo>('altium365.selectedWorkspace');
-}
-
-/**
- * Resolve full WorkspaceInfo from a workspaceAuthId.
- *
- * Pattern used across the extension whenever we have a workspaceAuthId
- * (from temp file path, local script cache, or virtual URI) and need the
- * full WorkspaceInfo (including workspaceId) to make GraphQL calls.
- *
- * Fast path: if the currently selected workspace matches authId, return it immediately.
- * Slow path: fetch all workspaces via listWorkspaces and find by authId.
- *
- * Returns undefined if:
- * - No base token available (user not signed in)
- * - listWorkspaces fails
- * - No workspace found matching authId
- */
 export async function resolveWorkspaceFromAuthId(
     context: vscode.ExtensionContext,
     authId: string,

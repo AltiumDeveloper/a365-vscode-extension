@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { TestEventStore } from './store';
+import { type TestEventStore } from './store';
 
 /**
  * Test-event QuickPick (Phase 999.3 Plan 04, RESEARCH §Q3 / D-12).

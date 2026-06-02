@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
-import { ScriptIdentity, resolveScriptIdentity } from './identity';
+import { type ScriptIdentity, resolveScriptIdentity } from './identity';
 import {
-    TestEventStore,
+    type TestEventStore,
     readStore,
     writeStore,
     deleteEvent,
@@ -21,7 +21,7 @@ import { pickTestEvent } from './picker';
 import { buildEventUri } from './eventFs';
 import { pickProjectId } from '../ux/projectPicker';
 import { ensureWorkspaceToken, getBaseAccessToken, readOAuthConfig } from '../auth';
-import { getSelectedWorkspace, listWorkspaces, WorkspaceInfo } from '../workspace';
+import { getSelectedWorkspace, listWorkspaces, type WorkspaceInfo } from '../workspace';
 
 /**
  * Test-event commands (Phase 999.3 Plan 04, D-10..D-14).

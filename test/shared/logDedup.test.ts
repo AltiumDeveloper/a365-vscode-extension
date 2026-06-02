@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { dedupLogPage } from '../src/shared/logDedup';
+import { dedupLogPage } from '../../src/shared/logDedup';
 
 describe('dedupLogPage', () => {
     it('empty first page → no output, count stays 0', () => {

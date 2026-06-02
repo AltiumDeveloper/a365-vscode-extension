@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs/promises';
 import * as os from 'os';
 import * as path from 'path';
-import { A365Node } from '../ux/panel';
+import { type A365Node } from '../ux/panel';
 import { getSelectedWorkspace, resolveWorkspaceFromAuthId } from '../workspace';
 import { buildScriptUri, parseScriptUri } from './remoteFs';
 import { executeRemoteScript } from './execution';
@@ -257,7 +257,7 @@ async function publishScript(
     // UAT-6: find the tracked tmp file for this remote script and save
     // it. The save listener in localScriptCache.ts pushes the buffer
     // through FSP.writeFile (same publish path as before).
-    let entry = findLocalScriptByRemoteId(sc.scriptId);
+    const entry = findLocalScriptByRemoteId(sc.scriptId);
     if (!entry) {
         // Fall back to legacy altium365: URI lookup for back-compat.
         const legacyUri = buildScriptUri(sc.workspaceAuthId, sc.scriptId, sc.scriptName);

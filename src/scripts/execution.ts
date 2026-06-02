@@ -7,14 +7,14 @@ import {
 import {
     executeScript,
     executeAssignment,
-    ExecutionResult,
+    type ExecutionResult,
     getExecutionLogs,
     getExecutionResult,
     getSelectedWorkspace,
     getWorkspaceApiUrl,
     GraphQLError,
     listWorkspaces,
-    WorkspaceInfo,
+    type WorkspaceInfo,
 } from '../workspace';
 import { withScriptProgress } from '../runner/progress';
 import { resolveScriptParameters } from '../testEvents/resolver';
@@ -194,7 +194,7 @@ export async function executeRemoteScript(args: ExecuteRemoteArgs): Promise<void
         // its own message.
         return;
     }
-    const { ws, wsToken, apiUrl, parameters } = setup;
+    const { ws: _ws, wsToken, apiUrl, parameters } = setup;
 
     // ----- Block C: OutputChannel header (D-09) -----
     args.output.show(true);

@@ -44,7 +44,7 @@
 const DOWNLOAD_PATH_PREFIX = '/File/Download'; // `?id=<token>` query string
 const UPLOAD_PATH = '/File/Upload';             // multipart POST
 const UPLOAD_FORM_FIELD = 'file';               // multipart field name
-const UPLOAD_VERB: 'POST' = 'POST';
+const UPLOAD_VERB = 'POST' as const;
 
 // fileToken charset: UUID-v4 (hex + dashes only). Tighter than the original
 // draft (which permitted dots/slashes/underscores) because the smoke-probe

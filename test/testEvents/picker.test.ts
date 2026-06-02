@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { buildPickerItems, previewBody } from '../src/testEvents/picker';
-import type { TestEventStore } from '../src/testEvents/store';
+import { buildPickerItems, previewBody } from '../../src/testEvents/picker';
+import type { TestEventStore } from '../../src/testEvents/store';
 
 // ── previewBody ───────────────────────────────────────────────────
 
