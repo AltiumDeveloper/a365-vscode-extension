@@ -9,9 +9,14 @@ export {
     getWorkspaceFilesUrl,
     listWorkspaces,
     pickWorkspace,
-    getSelectedWorkspace,
     resolveWorkspaceFromAuthId,
 } from './workspaces';
+export {
+    SELECTED_WORKSPACE_KEY,
+    getSelectedWorkspace,
+    setSelectedWorkspace,
+    clearSelectedWorkspace,
+} from './state';
 export { type ProjectInfo, listProjects } from './projects';
 export {
     type ScriptInfo,
@@ -36,8 +41,3 @@ export {
     getExecutionResult,
     getExecutionLogs,
 } from './execution';
-export {
-    type InstalledAppInfo,
-    checkAppInstalled,
-    installApp,
-} from './apps';

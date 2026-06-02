@@ -39,7 +39,7 @@ export const Uri = {
 // ── FileSystemError ───────────────────────────────────────────────
 export class FileSystemError extends Error {
     public code: string = '';
-    static FileNotFound(uri?: any): FileSystemError {
+    static FileNotFound(_uri?: any): FileSystemError {
         const e = new FileSystemError('FileNotFound');
         e.code = 'FileNotFound';
         return e;
@@ -49,12 +49,12 @@ export class FileSystemError extends Error {
         e.code = 'Unavailable';
         return e;
     }
-    static FileNotADirectory(uri?: any): FileSystemError {
+    static FileNotADirectory(_uri?: any): FileSystemError {
         const e = new FileSystemError('FileNotADirectory');
         e.code = 'FileNotADirectory';
         return e;
     }
-    static NoPermissions(uri?: any): FileSystemError {
+    static NoPermissions(_uri?: any): FileSystemError {
         const e = new FileSystemError('NoPermissions');
         e.code = 'NoPermissions';
         return e;

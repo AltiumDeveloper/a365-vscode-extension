@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { getSelectedWorkspace, listProjects, WorkspaceInfo } from '../workspace';
+import { getSelectedWorkspace, listProjects, type WorkspaceInfo } from '../workspace';
 
 /**
  * Prompts the user to pick a projectId. Returns:

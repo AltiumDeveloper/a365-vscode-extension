@@ -9,7 +9,7 @@ import {
     getWorkspaceApiUrl,
     getWorkspaceFilesUrl,
     updateScript,
-    WorkspaceInfo,
+    type WorkspaceInfo,
     resolveWorkspaceFromAuthId,
 } from '../workspace';
 import { downloadByToken, uploadAndGetToken } from './filesService';

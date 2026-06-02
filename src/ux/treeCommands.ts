@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { A365Node } from './panel';
+import { type A365Node } from './panel';
 import { applyWorkspaceSelection } from './commands';
 
 /**

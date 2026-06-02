@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import {
-    AuthState,
+    type AuthState,
     getActiveUserLabel,
     getStoredTokens,
     onAuthStateChanged,

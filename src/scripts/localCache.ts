@@ -1,11 +1,10 @@
 import * as vscode from 'vscode';
-import * as fs from 'fs/promises';
 import * as fsSync from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import { buildScriptUri, AltiumRemoteScriptFs } from './remoteFs';
+import { buildScriptUri, type AltiumRemoteScriptFs } from './remoteFs';
 import { withScriptProgress } from '../runner/progress';
-import { updateAssignment, getWorkspaceApiUrl, WorkspaceInfo, resolveWorkspaceFromAuthId } from '../workspace';
+import { updateAssignment, getWorkspaceApiUrl, resolveWorkspaceFromAuthId } from '../workspace';
 import { ensureWorkspaceToken, readOAuthConfig } from '../auth';
 
 /**

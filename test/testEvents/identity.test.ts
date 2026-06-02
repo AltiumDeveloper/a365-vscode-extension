@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { resolveScriptIdentity } from '../../src/testEvents/identity';
 import { registerLocalScript } from '../../src/scripts/localCache';
 import type * as vscode from 'vscode';

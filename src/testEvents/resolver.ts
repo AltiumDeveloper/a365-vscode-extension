@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { AsyncMutex } from '../shared/asyncMutex';
-import { ScriptIdentity } from './identity';
+import { type ScriptIdentity } from './identity';
 import { readStore } from './store';
 import { maybePromptForSiblingImport } from './importSibling';
 

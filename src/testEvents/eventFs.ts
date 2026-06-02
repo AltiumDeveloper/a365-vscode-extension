@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { readStore, writeStore, TestEventStore } from './store';
+import { readStore, writeStore, type TestEventStore } from './store';
 
 /**
  * Test-event FileSystemProvider on the `altium365-event://` scheme

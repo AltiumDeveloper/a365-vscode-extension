@@ -4,17 +4,16 @@ import {
     ensureWorkspaceToken,
     fireAuthStateChanged,
     getStoredTokens,
-    onAuthStateChanged,
     readOAuthConfig,
     signIn,
 } from '../auth';
 import {
-    getSelectedWorkspace,
-    listWorkspaces,
+    setSelectedWorkspace,
+    clearSelectedWorkspace,
     pickWorkspace,
-    WorkspaceInfo,
+    type WorkspaceInfo,
 } from '../workspace';
-import { runScriptAtPath, debugScriptAtPath, resolvePythonPath } from '../runner';
+import { runScriptAtPath, debugScriptAtPath } from '../runner';
 
 // ── Auth context helpers ───────────────────────────────────────────────────
 
@@ -165,7 +164,7 @@ export async function doSignIn(
 
 export async function doSignOut(context: vscode.ExtensionContext): Promise<void> {
     await clearAllTokens(context);
-    await context.globalState.update('altium365.selectedWorkspace', undefined);
+    await clearSelectedWorkspace(context);
     await updateSignedInContext(context);
     vscode.window.showInformationMessage('Altium 365: signed out.');
 }
@@ -213,7 +212,7 @@ export async function applyWorkspaceSelection(
             workspaceId: workspace.workspaceId,
             authId: workspace.authId,
         });
-        await context.globalState.update('altium365.selectedWorkspace', workspace);
+        await setSelectedWorkspace(context, workspace);
         vscode.window.showInformationMessage('Altium 365: workspace token acquired.');
         // WR-02 fix: refresh the side panel so the active-workspace cue
         // (Plan 04-02 icon swap + Plan 04-04 contextValue split) follows the
@@ -328,7 +327,7 @@ export async function doSelectEnvironment(
     );
     if (next === 'Sign out & sign in' || next === 'Sign out only') {
         await clearAllTokens(context);
-        await context.globalState.update('altium365.selectedWorkspace', undefined);
+        await clearSelectedWorkspace(context);
         await updateSignedInContext(context);
     }
 

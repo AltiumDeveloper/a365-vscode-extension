@@ -453,3 +453,13 @@ Plans:
 
 Plans:
 - [x] 12-01-PLAN.md — Move source files into feature folders and fix all import paths
+
+### Phase 13: extension.ts decomposition
+
+**Goal:** `src/extension.ts` is reduced to wiring only (~230 lines). Runner logic and command handlers are extracted into `src/runner/index.ts` and `src/ux/commands.ts`. All circular imports are eliminated.
+**Requirements**: none (project-level quality goal)
+**Depends on:** Phase 12
+**Plans:** 0/1 plans complete
+
+Plans:
+- [ ] 13-01-PLAN.md — Extract runner logic and command handlers from extension.ts
