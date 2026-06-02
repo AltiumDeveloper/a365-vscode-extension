@@ -108,6 +108,25 @@ export function activate(context: vscode.ExtensionContext) {
     const scriptCommandDisposables = registerScriptCommands(context, outputChannel);
     const treeCommandDisposables = registerTreeCommands(context, outputChannel);
     const testEventCommandDisposables = registerTestEventCommands(context, outputChannel);
+
+    // D-15 / UAT-3: rehydrate the localScriptCache from the on-disk GRID layout
+    // BEFORE registering the status bar item so its initial refresh() call sees
+    // the correct remote identity for any restored tmp-file tab. Also required
+    // before the active-remote context key seed below. Sync I/O is intentional —
+    // async rehydration loses the race against both callers.
+    try {
+        const n = rehydrateLocalScriptCacheFromDisk();
+        if (n > 0) {
+            outputChannel.appendLine(
+                `[Altium 365] Rehydrated ${n} local script(s) from tmpdir cache.`
+            );
+        }
+    } catch (e) {
+        outputChannel.appendLine(
+            `[Altium 365] Cache rehydration failed: ${(e as Error).message}`
+        );
+    }
+
     const testEventStatusDisposables = registerTestEventStatusItem(context);
     const localScriptSaveBridge = registerLocalScriptSaveBridge(context, outputChannel, remoteFs);
     const pythonAnalysisSyncDisposables = registerPythonAnalysisSync(context, outputChannel);
@@ -190,26 +209,6 @@ export function activate(context: vscode.ExtensionContext) {
     outputChannel.appendLine(
         `[Altium 365] testEvents.activate: subsystem active — ${identityCount} identities tracked.`
     );
-
-    // D-15 (UAT-2 follow-up): rehydrate the localScriptCache from the
-    // on-disk GRID layout BEFORE seeding the active-remote context key,
-    // so remote-tmp `.py` tabs restored by VS Code from a previous
-    // session are recognized as remote on first frame (Execute Remotely
-    // / Publish submenu rows visible without re-downloading). Sync I/O
-    // is intentional — UAT-3 showed async rehydration loses the race
-    // against the seed call below.
-    try {
-        const n = rehydrateLocalScriptCacheFromDisk();
-        if (n > 0) {
-            outputChannel.appendLine(
-                `[Altium 365] Rehydrated ${n} local script(s) from tmpdir cache.`
-            );
-        }
-    } catch (e) {
-        outputChannel.appendLine(
-            `[Altium 365] Cache rehydration failed: ${(e as Error).message}`
-        );
-    }
 
     // D-15: seed BEFORE listener registration (RESEARCH §2.2) so submenu
     // items show correct visibility from the first frame — not after the
