@@ -145,12 +145,21 @@ async function prepareRun(
         }
         endpoint = getWorkspaceApiUrl(resolvedWs, envGlobalEndpoint);
     } else {
-        // No target workspace — prompt the user to pick one, then continue.
-        const picked = await pickWorkspace(context, oauthCfg, envGlobalEndpoint);
+        // No target workspace — prefer the currently active workspace selection
+        // (set via the sidebar / status bar / 'Switch Workspace' command). This
+        // is the path taken when run/debug is invoked from the editor title
+        // icon or the command palette: if the user already has an active
+        // workspace, reuse it silently instead of prompting again on every
+        // run. Only fall back to pickWorkspace when no workspace is selected
+        // (e.g. first-ever run after sign-in on a fresh install).
+        let picked = getSelectedWorkspace(context);
         if (!picked) {
-            return undefined; // user cancelled or not signed in
+            picked = await pickWorkspace(context, oauthCfg, envGlobalEndpoint);
+            if (!picked) {
+                return undefined; // user cancelled or not signed in
+            }
+            await setSelectedWorkspace(context, picked);
         }
-        await setSelectedWorkspace(context, picked);
         resolvedWs = picked;
         try {
             token = await ensureWorkspaceToken(context, oauthCfg, {
