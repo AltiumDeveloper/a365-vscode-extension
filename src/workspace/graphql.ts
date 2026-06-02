@@ -75,3 +75,56 @@ export async function graphqlRequest(
     }
     return payload.data;
 }
+
+/**
+ * Page descriptor returned by a `fetchPage` callback. Mirrors the
+ * Relay-cursor connection shape used by the Altium 365 GraphQL API
+ * (see https://www.altium.com/documentation/altium-developer-center/altium-365/api/pagination).
+ */
+export interface ConnectionPage<T> {
+    nodes: T[];
+    endCursor: string | null;
+    hasNextPage: boolean;
+}
+
+/**
+ * Collect all pages of a Relay cursor-paginated connection.
+ *
+ * Callers supply a `fetchPage(after)` callback that issues the underlying
+ * GraphQL query with the appropriate `$first` / `$after` variables and
+ * extracts the `nodes` + `pageInfo` from the response. This helper loops
+ * forward until `hasNextPage` is false or `endCursor` is missing.
+ *
+ * `maxPages` is a hard safety cap so a malformed server response that
+ * keeps reporting `hasNextPage: true` without advancing the cursor
+ * cannot spin forever. Default 100 pages × typical page size 100 =
+ * 10,000 items — well above any realistic workspace inventory for v1.
+ */
+export async function collectAllPages<T>(
+    fetchPage: (after: string | null) => Promise<ConnectionPage<T>>,
+    opts: { maxPages?: number } = {}
+): Promise<T[]> {
+    const maxPages = opts.maxPages ?? 100;
+    const out: T[] = [];
+    let after: string | null = null;
+    let seenCursors = 0;
+    for (let i = 0; i < maxPages; i++) {
+        const page = await fetchPage(after);
+        if (Array.isArray(page.nodes)) {
+            out.push(...page.nodes);
+        }
+        if (!page.hasNextPage) {
+            return out;
+        }
+        if (!page.endCursor || page.endCursor === after) {
+            // Defensive: server says "more" but didn't advance the cursor.
+            // Treat as terminal to avoid an infinite loop.
+            return out;
+        }
+        after = page.endCursor;
+        seenCursors++;
+    }
+    // Hit the safety cap. Return what we have; callers may log a warning.
+    void seenCursors;
+    return out;
+}
