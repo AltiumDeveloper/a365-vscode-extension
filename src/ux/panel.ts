@@ -19,18 +19,18 @@ import {
     listWorkspaces,
 } from '../workspace';
 
-export const CTX_WORKSPACE_ACTIVE = 'workspaceNode-active';
-export const CTX_WORKSPACE_INACTIVE = 'workspaceNode-inactive';
-export const CTX_PROJECT = 'projectNode';
-export const CTX_SCRIPT = 'scriptNode';
-export const CTX_PROJECTS_CATEGORY = 'projectsCategoryNode';
-export const CTX_SCRIPTS_CATEGORY = 'scriptsCategoryNode';
-export const CTX_EXTENSION_POINTS_CATEGORY = 'extensionPointsCategoryNode';
-export const CTX_ENTITY_TYPE_GROUP = 'entityTypeGroupNode';
-export const CTX_EXTENSION_POINT = 'extensionPointNode';
-export const CTX_ASSIGNMENT_SCRIPT = 'assignmentNode-script';
-export const CTX_ASSIGNMENT_WORKFLOW = 'assignmentNode-workflow';
-export const CTX_ASSIGNMENT_DEFAULT = 'assignmentNode-default';
+const CTX_WORKSPACE_ACTIVE = 'workspaceNode-active';
+const CTX_WORKSPACE_INACTIVE = 'workspaceNode-inactive';
+const CTX_PROJECT = 'projectNode';
+const CTX_SCRIPT = 'scriptNode';
+const CTX_PROJECTS_CATEGORY = 'projectsCategoryNode';
+const CTX_SCRIPTS_CATEGORY = 'scriptsCategoryNode';
+const CTX_EXTENSION_POINTS_CATEGORY = 'extensionPointsCategoryNode';
+const CTX_ENTITY_TYPE_GROUP = 'entityTypeGroupNode';
+const CTX_EXTENSION_POINT = 'extensionPointNode';
+const CTX_ASSIGNMENT_SCRIPT = 'assignmentNode-script';
+const CTX_ASSIGNMENT_WORKFLOW = 'assignmentNode-workflow';
+const CTX_ASSIGNMENT_DEFAULT = 'assignmentNode-default';
 
 const OUTPUT_PREFIX = '[Altium 365] tree:';
 

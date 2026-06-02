@@ -20,10 +20,10 @@
  * CONSENT_KEY: user's one-time decision (undefined = not asked, 'granted', 'declined')
  * MANAGED_PATHS_KEY: last known extension-owned path set (string[])
  */
-export const CONSENT_KEY = 'altium365.pythonAnalysisSync.consent';
-export const MANAGED_PATHS_KEY = 'altium365.pythonAnalysisSync.managedPaths';
+const CONSENT_KEY = 'altium365.pythonAnalysisSync.consent';
+const MANAGED_PATHS_KEY = 'altium365.pythonAnalysisSync.managedPaths';
 
-export interface ReconcileInput {
+interface ReconcileInput {
     /**
      * Current workspace setting value for python.analysis.extraPaths.
      * May contain both user-owned and extension-managed entries.
@@ -116,7 +116,7 @@ function normalizePath(p: string): string {
  * Snapshot the current managed paths for future reconciliation.
  * Called after successfully updating python.analysis.extraPaths.
  */
-export function getManagedPythonAnalysisPathsSnapshot(
+function getManagedPythonAnalysisPathsSnapshot(
     desiredManagedPaths: string[]
 ): string[] {
     return desiredManagedPaths.slice(); // defensive copy

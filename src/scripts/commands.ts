@@ -76,12 +76,6 @@ export function registerScriptCommands(
     context: vscode.ExtensionContext,
     output: vscode.OutputChannel
 ): vscode.Disposable[] {
-    const placeholder = (label: string) => () =>
-        vscode.window.showInformationMessage(
-            `Altium 365: ${label} — coming in Phase 3.`
-        );
-    void placeholder; // retained for future deferred commands
-
     const getEnvGlobalEndpoint = () =>
         vscode.workspace.getConfiguration('altium365').get<string>('graphqlEndpoint', '');
 

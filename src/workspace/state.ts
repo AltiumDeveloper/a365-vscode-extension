@@ -4,7 +4,7 @@ import type { WorkspaceInfo } from './workspaces';
 // ── Constants ────────────────────────────────────────────────────────────────
 
 /** Single source of truth for the selected-workspace globalState key. */
-export const SELECTED_WORKSPACE_KEY = 'altium365.selectedWorkspace';
+const SELECTED_WORKSPACE_KEY = 'altium365.selectedWorkspace';
 
 // ── Typed accessors ──────────────────────────────────────────────────────────
 
