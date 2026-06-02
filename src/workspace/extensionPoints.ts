@@ -5,10 +5,20 @@ import { collectAllPages, graphqlRequest } from './graphql';
 // =============================================================================
 //
 // GraphQL schema verified against live A365 Dev environment (Task 1 checkpoint,
-// 2026-05-28). Field names and nesting structure confirmed. Extension points
-// query includes nested assignments via GraphQL connection pattern
-// (assignments.nodes). Assignment type discrimination uses the `type` enum
-// field (GloCusAssignmentType), not __typename.
+// 2026-05-28). Field names and nesting structure confirmed.
+//
+// Pagination shape (corrected 2026-06-02):
+//   - `gloCusExtensionPoints` returns a DIRECT ARRAY — NOT a Relay connection.
+//     There is no pageInfo / nodes wrapper at this level and no $first/$after
+//     arguments; the whole list is returned in one round-trip.
+//   - The nested `assignments` field on each extension point IS a Relay
+//     connection (nodes + pageInfo) per
+//     https://www.altium.com/documentation/altium-developer-center/altium-365/api/pagination.
+//     We fetch the first page inline with each extension point, then follow
+//     up in parallel for any extension point whose first page has more.
+//
+// Assignment type discrimination uses the `type` enum field
+// (GloCusAssignmentType), not __typename.
 
 export interface ExtensionPointInfo {
     extensionPointId: string;
@@ -16,7 +26,7 @@ export interface ExtensionPointInfo {
     description?: string;
     entityType: string;  // e.g., "WORKSPACE", "PROJECT"
     type: string;        // e.g., "ON_RELEASE_CREATE"
-    assignmentCount: number;  // Derived from assignments.nodes.length
+    assignmentCount: number;  // Final count after all assignment pages fetched
 }
 
 export interface AssignmentInfo {
@@ -35,48 +45,43 @@ export interface AssignmentInfo {
     lastModifiedBy: string;
 }
 
-// Standard page size for Relay-cursor paginated listings — see
-// https://www.altium.com/documentation/altium-developer-center/altium-365/api/pagination.
-// Matches the project listing page size; assignments per extension point
-// typically number in the single digits, so 10 is comfortable.
-const EXTENSION_POINTS_PAGE_SIZE = 10;
+// Standard Relay page size for the assignments connection. Assignments per
+// extension point typically number in the single digits, so 10 fits the
+// common case in a single round-trip while keeping per-page server cost low.
 const ASSIGNMENTS_PAGE_SIZE = 10;
 
-// `gloCusExtensionPoints` returns a Relay connection (nodes + pageInfo);
-// the inline assignments selection is itself paginated and is followed up
-// per-extension-point below when `hasNextPage` is true on the first batch.
+// Top-level query — `gloCusExtensionPoints` is a direct array (no pagination).
+// The nested `assignments` field IS a connection — we request the first page
+// inline and follow up below for any extension point that has more.
 const LIST_EXTENSION_POINTS_QUERY = `
-    query ListExtensionPoints($first: Int!, $after: String, $assignmentsFirst: Int!) {
-        gloCusExtensionPoints(first: $first, after: $after) {
-            nodes {
-                extensionPointId
-                name
-                description
-                entityType
-                type
-                assignments(first: $assignmentsFirst) {
-                    nodes {
-                        assignmentId
-                        name
-                        description
-                        type
-                        active
-                        ... on GloCusScriptAssignment {
-                            scriptId
-                            scriptVersionId
-                            scriptFileToken
-                        }
+    query ListExtensionPoints($assignmentsFirst: Int!) {
+        gloCusExtensionPoints {
+            extensionPointId
+            name
+            description
+            entityType
+            type
+            assignments(first: $assignmentsFirst) {
+                nodes {
+                    assignmentId
+                    name
+                    description
+                    type
+                    active
+                    ... on GloCusScriptAssignment {
+                        scriptId
+                        scriptVersionId
+                        scriptFileToken
                     }
-                    pageInfo { hasNextPage endCursor }
                 }
+                pageInfo { hasNextPage endCursor }
             }
-            pageInfo { hasNextPage endCursor }
         }
     }
 `;
 
 // Follow-up query for extension points whose first assignments page reports
-// `hasNextPage: true`. Scoped to a single extension point to keep query cost
+// `hasNextPage: true`. Scoped to a single extension point so query cost is
 // proportional to the actual tail length.
 const LIST_ASSIGNMENTS_QUERY = `
     query ListAssignmentsForExtensionPoint($extensionPointId: String!, $first: Int!, $after: String) {
@@ -140,8 +145,14 @@ async function listAssignmentTail(
     extensionPointId: string,
     firstPageEndCursor: string,
 ): Promise<AssignmentInfo[]> {
+    // collectAllPages drives the loop forward; on the first invocation
+    // `after` is null and we seed it with the cursor handed in from the
+    // already-fetched inline first page. Subsequent invocations use the
+    // server-returned endCursor as normal.
+    let seeded = false;
     return collectAllPages<AssignmentInfo>(async (after) => {
-        const cursor = after ?? firstPageEndCursor;
+        const cursor = !seeded ? firstPageEndCursor : after;
+        seeded = true;
         const data = await graphqlRequest(endpoint, workspaceToken, LIST_ASSIGNMENTS_QUERY, {
             extensionPointId,
             first: ASSIGNMENTS_PAGE_SIZE,
@@ -162,71 +173,63 @@ export async function listExtensionPoints(
     endpoint: string,
     workspaceToken: string
 ): Promise<{ extensionPoints: ExtensionPointInfo[]; assignments: Map<string, AssignmentInfo[]> }> {
-    // Per-call state — closures below capture these so concurrent
-    // `listExtensionPoints` calls cannot collide on shared mutable maps.
+    const data = await graphqlRequest(endpoint, workspaceToken, LIST_EXTENSION_POINTS_QUERY, {
+        assignmentsFirst: ASSIGNMENTS_PAGE_SIZE,
+    });
+    // `gloCusExtensionPoints` is a direct array — verified against live API
+    // 2026-05-28 (re-confirmed 2026-06-02). No connection wrapper.
+    const rawNodes = data?.gloCusExtensionPoints;
+    if (!Array.isArray(rawNodes)) {
+        return { extensionPoints: [], assignments: new Map() };
+    }
+
+    type RawNode = {
+        extensionPointId: string;
+        name: string;
+        description?: string;
+        entityType: string;
+        type: string;
+        assignments?: {
+            nodes?: RawAssignment[];
+            pageInfo?: { hasNextPage?: boolean; endCursor?: string };
+        };
+    };
+
+    const extensionPoints: ExtensionPointInfo[] = [];
     const firstPageByEp = new Map<string, AssignmentInfo[]>();
     const tailFetches: Array<Promise<{ extensionPointId: string; tail: AssignmentInfo[] }>> = [];
 
-    const extensionPoints = await collectAllPages<ExtensionPointInfo>(async (after) => {
-        const data = await graphqlRequest(endpoint, workspaceToken, LIST_EXTENSION_POINTS_QUERY, {
-            first: EXTENSION_POINTS_PAGE_SIZE,
-            after,
-            assignmentsFirst: ASSIGNMENTS_PAGE_SIZE,
-        });
-        const conn = data?.gloCusExtensionPoints;
-        const rawNodes: Array<{
-            extensionPointId: string;
-            name: string;
-            description?: string;
-            entityType: string;
-            type: string;
-            assignments?: {
-                nodes?: RawAssignment[];
-                pageInfo?: { hasNextPage?: boolean; endCursor?: string };
-            };
-        }> = Array.isArray(conn?.nodes) ? conn.nodes : [];
+    for (const node of rawNodes as RawNode[]) {
+        const firstPage = Array.isArray(node.assignments?.nodes)
+            ? node.assignments!.nodes.map(mapAssignment)
+            : [];
+        firstPageByEp.set(node.extensionPointId, firstPage);
 
-        const eps: ExtensionPointInfo[] = [];
-        for (const node of rawNodes) {
-            const firstPage = Array.isArray(node.assignments?.nodes)
-                ? node.assignments!.nodes.map(mapAssignment)
-                : [];
-            // Inline first page is already on the wire — record it.
-            firstPageByEp.set(node.extensionPointId, firstPage);
-
-            // If the inline page has more, schedule a tail fetch in parallel.
-            const aPageInfo = node.assignments?.pageInfo ?? {};
-            if (aPageInfo.hasNextPage === true && typeof aPageInfo.endCursor === 'string') {
-                tailFetches.push(
-                    listAssignmentTail(
-                        endpoint,
-                        workspaceToken,
-                        node.extensionPointId,
-                        aPageInfo.endCursor,
-                    ).then((tail) => ({ extensionPointId: node.extensionPointId, tail })),
-                );
-            }
-
-            eps.push({
-                extensionPointId: node.extensionPointId,
-                name: node.name,
-                description: node.description,
-                entityType: node.entityType,
-                type: node.type,
-                // Provisional — recomputed below after tail fetches resolve.
-                assignmentCount: firstPage.length,
-            });
+        // If the inline page has more, schedule a tail fetch in parallel.
+        const aPageInfo = node.assignments?.pageInfo ?? {};
+        if (aPageInfo.hasNextPage === true && typeof aPageInfo.endCursor === 'string') {
+            tailFetches.push(
+                listAssignmentTail(
+                    endpoint,
+                    workspaceToken,
+                    node.extensionPointId,
+                    aPageInfo.endCursor,
+                ).then((tail) => ({ extensionPointId: node.extensionPointId, tail })),
+            );
         }
 
-        const pageInfo = conn?.pageInfo ?? {};
-        return {
-            nodes: eps,
-            endCursor: typeof pageInfo.endCursor === 'string' ? pageInfo.endCursor : null,
-            hasNextPage: pageInfo.hasNextPage === true,
-        };
-    });
+        extensionPoints.push({
+            extensionPointId: node.extensionPointId,
+            name: node.name,
+            description: node.description,
+            entityType: node.entityType,
+            type: node.type,
+            // Provisional — recomputed below after tail fetches resolve.
+            assignmentCount: firstPage.length,
+        });
+    }
 
-    // Assemble the final assignments map: first-page + tail-page entries.
+    // Run all per-extension-point tail fetches in parallel, then assemble.
     const tailResults = await Promise.all(tailFetches);
     const tailByEp = new Map<string, AssignmentInfo[]>();
     for (const { extensionPointId, tail } of tailResults) {
@@ -242,7 +245,6 @@ export async function listExtensionPoints(
         if (all.length > 0) {
             assignments.set(ep.extensionPointId, all);
         }
-        // Fix up the provisional count now that tail pages have arrived.
         ep.assignmentCount = all.length;
     }
 

@@ -9,20 +9,21 @@ export interface ScriptInfo {
 // ⚠️ PAGINATION TEMPORARILY DISABLED — the paginated form of this query
 // (using $first/$after with pageInfo per
 // https://www.altium.com/documentation/altium-developer-center/altium-365/api/pagination)
-// is currently prohibitively expensive on the server side. As a temporary
-// measure we fetch a single page of up to 100 items and accept truncation
-// for workspaces that exceed the cap.
+// is currently prohibitively expensive on the server side. Passing `first`
+// as a query variable also does not work for this field right now, so the
+// page size is hardcoded as a literal `first: 100` in the query string
+// below. We fetch a single page and accept truncation for workspaces that
+// exceed the cap.
 //
 // TODO: re-enable Relay cursor pagination via `collectAllPages` in
-// ./graphql.ts — see listProjects / listExtensionPoints for the target
-// shape — once the server cost issue is resolved. When re-enabling, also
-// drop LIST_SCRIPTS_FIRST_PAGE_CAP down to the standard page size of 10
-// to match the other listings.
-const LIST_SCRIPTS_FIRST_PAGE_CAP = 100;
-
+// ./graphql.ts — see listProjects / listExtensionPoints (nested
+// assignments) for the target shape — once the server cost issue is
+// resolved AND `first` can be passed as a variable. When re-enabling,
+// also drop the page size down to the standard 10 to match the other
+// listings.
 const LIST_SCRIPTS_QUERY = `
-    query ListScripts($first: Int!) {
-        gloScrScripts(first: $first) {
+    query ListScripts {
+        gloScrScripts(first: 100) {
             nodes {
                 scriptId
                 name
@@ -36,9 +37,7 @@ export async function listScripts(
     endpoint: string,
     workspaceToken: string
 ): Promise<ScriptInfo[]> {
-    const data = await graphqlRequest(endpoint, workspaceToken, LIST_SCRIPTS_QUERY, {
-        first: LIST_SCRIPTS_FIRST_PAGE_CAP,
-    });
+    const data = await graphqlRequest(endpoint, workspaceToken, LIST_SCRIPTS_QUERY);
     const nodes = data?.gloScrScripts?.nodes;
     return Array.isArray(nodes) ? (nodes as ScriptInfo[]) : [];
 }
