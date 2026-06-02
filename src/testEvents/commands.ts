@@ -21,7 +21,12 @@ import { pickTestEvent } from './picker';
 import { buildEventUri } from './eventFs';
 import { pickProjectId } from '../ux/projectPicker';
 import { ensureWorkspaceToken, getBaseAccessToken, readOAuthConfig } from '../auth';
-import { getSelectedWorkspace, listWorkspaces, type WorkspaceInfo } from '../workspace';
+import {
+    getSelectedWorkspace,
+    getWorkspaceApiUrl,
+    listWorkspaces,
+    type WorkspaceInfo,
+} from '../workspace';
 
 /**
  * Test-event commands (Phase 999.3 Plan 04, D-10..D-14).
@@ -542,7 +547,14 @@ async function mintAndPickProject(
         });
         return entered === undefined ? undefined : entered.trim();
     }
-    return pickProjectId(context, endpoint, token, '', ws, output);
+    // Phase 02.3 D-19: workspace-scoped queries (listProjects) MUST target
+    // the workspace's own apiServiceUrl, not the env-global graphqlEndpoint.
+    // A workspace can live on a different regional cluster, and using the
+    // env-global endpoint silently returns data from the wrong cluster or
+    // errors. The token minted above is scoped to `ws` — the endpoint MUST
+    // match it.
+    const wsEndpoint = getWorkspaceApiUrl(ws, endpoint);
+    return pickProjectId(context, wsEndpoint, token, '', ws, output);
 }
 
 async function offerSelectOrManual(
