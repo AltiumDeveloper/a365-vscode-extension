@@ -14,6 +14,7 @@ import {
     type WorkspaceInfo,
 } from '../workspace';
 import { runScriptAtPath, debugScriptAtPath } from '../runner';
+import { getLocalScript } from '../scripts/localCache';
 
 // ── Auth context helpers ───────────────────────────────────────────────────
 
@@ -369,6 +370,18 @@ export async function onStatusBarClick(outputChannel: vscode.OutputChannel): Pro
 }
 
 // ── Run / debug command handlers ───────────────────────────────────────────
+//
+// For remote scripts the workspace context is embedded in the URI or the local
+// script cache — we never want to prompt the user when the context is known.
+//
+// Routing logic:
+//   1. `altium365:` URI (script opened directly via FSP) → delegate to
+//      `altium365.script.runLocal` / `debugLocal`, which download to tmp and
+//      carry the workspace target from the URI.
+//   2. `file:` URI tracked in localScriptCache (tmp file from Edit/Run/Debug)
+//      → extract workspaceAuthId from cache and pass as `target`; no prompt.
+//   3. `file:` URI not in cache → pure local script; use active workspace
+//      (prepareRun will prompt only if none is selected).
 
 export async function runScript(
     context: vscode.ExtensionContext,
@@ -389,12 +402,18 @@ export async function runScript(
         vscode.window.showErrorMessage('No Python script selected.');
         return;
     }
-    // Resolve workspace context — prompts user if no workspace is active.
-    // resolveWorkspaceForScript is internal to runner/index.ts and dispatches
-    // 'altium365.selectWorkspace' via executeCommand to avoid a circular dep.
-    // We replicate its contract here by calling runScriptAtPath with the URI
-    // and letting runner/index.ts handle workspace resolution via prepareRun.
-    await runScriptAtPath(context, outputChannel, target.fsPath, undefined);
+    // Remote script opened directly via altium365: FSP — delegate so the
+    // workspace target is resolved from the URI (no workspace prompt).
+    if (target.scheme === 'altium365') {
+        await vscode.commands.executeCommand('altium365.script.runLocal');
+        return;
+    }
+    // Tmp file from Edit/Run/Debug — workspace identity is in localScriptCache.
+    const cached = target.scheme === 'file' ? getLocalScript(target.fsPath) : undefined;
+    const runTarget = cached
+        ? { workspaceId: '', workspaceAuthId: cached.workspaceAuthId }
+        : undefined;
+    await runScriptAtPath(context, outputChannel, target.fsPath, runTarget);
 }
 
 export async function debugScript(
@@ -416,5 +435,16 @@ export async function debugScript(
         vscode.window.showErrorMessage('No Python script selected.');
         return;
     }
-    await debugScriptAtPath(context, outputChannel, target.fsPath, undefined);
+    // Remote script opened directly via altium365: FSP — delegate so the
+    // workspace target is resolved from the URI (no workspace prompt).
+    if (target.scheme === 'altium365') {
+        await vscode.commands.executeCommand('altium365.script.debugLocal');
+        return;
+    }
+    // Tmp file from Edit/Run/Debug — workspace identity is in localScriptCache.
+    const cached = target.scheme === 'file' ? getLocalScript(target.fsPath) : undefined;
+    const runTarget = cached
+        ? { workspaceId: '', workspaceAuthId: cached.workspaceAuthId }
+        : undefined;
+    await debugScriptAtPath(context, outputChannel, target.fsPath, runTarget);
 }

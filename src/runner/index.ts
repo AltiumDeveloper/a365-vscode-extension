@@ -107,8 +107,17 @@ async function prepareRun(
         // then mint a workspace-scoped token via ensureWorkspaceToken and use
         // the workspace's own apiServiceUrl. Does NOT touch the active
         // workspace selection (no implicit switch — D-01).
+        //
+        // Some callers (e.g. editor-title run for cached tmp files) know the
+        // workspaceAuthId but not the workspaceId (GRID). We match on either
+        // field — authId preferred when workspaceId is blank.
+        const matchesTarget = (w: WorkspaceInfo) =>
+            target.workspaceId
+                ? w.workspaceId === target.workspaceId
+                : w.authId === target.workspaceAuthId;
+
         resolvedWs = getSelectedWorkspace(context);
-        if (!resolvedWs || resolvedWs.workspaceId !== target.workspaceId) {
+        if (!resolvedWs || !matchesTarget(resolvedWs)) {
             try {
                 const baseToken = await getBaseAccessToken(context, oauthCfg);
                 if (!baseToken) {
@@ -118,7 +127,7 @@ async function prepareRun(
                     return undefined;
                 }
                 const list = await listWorkspaces(envGlobalEndpoint, baseToken);
-                resolvedWs = list.find((w) => w.workspaceId === target.workspaceId);
+                resolvedWs = list.find(matchesTarget);
             } catch (e) {
                 vscode.window.showErrorMessage(
                     'Altium 365: workspace lookup failed: ' + (e as Error).message
@@ -134,8 +143,8 @@ async function prepareRun(
         }
         try {
             token = await ensureWorkspaceToken(context, oauthCfg, {
-                workspaceId: target.workspaceId,
-                authId: target.workspaceAuthId || resolvedWs.authId,
+                workspaceId: resolvedWs.workspaceId,
+                authId: resolvedWs.authId,
             });
         } catch (e) {
             vscode.window.showErrorMessage(
