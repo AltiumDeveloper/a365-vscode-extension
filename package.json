@@ -2,7 +2,7 @@
   "name": "developer",
   "displayName": "Altium Developer",
   "description": "Browse Altium 365 workspaces, run and debug Python scripts locally with live API access, and manage remote scripts — all without leaving VS Code.",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "publisher": "altium",
   "license": "MIT",
   "engines": {
@@ -191,7 +191,7 @@
         },
         "altium365.clientId": {
           "type": "string",
-          "default": "20C490ED-58EF-11EF-9194-02A5C34CA889",
+          "default": "4BA91DBF-BF57-4B0C-8D67-5E76CEC51A9D",
           "description": "OAuth2 client_id of the desktop application."
         },
         "altium365.authEndpoint": {
