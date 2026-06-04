@@ -5,12 +5,12 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
-  release:
-    types: [published]
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # required for gh release create
     steps:
       - uses: actions/checkout@v4
         with:
@@ -22,24 +22,40 @@ jobs:
       - run: npm run compile
       - run: npm test
 
-      # Pre-release builds: stamp patch = GITHUB_RUN_NUMBER for a unique, monotonically
-      # increasing version on every push to main (e.g. 0.1.42).
-      - name: Stamp pre-release version
+      # Detect release type on pushes to main.
+      #
+      # Convention: package.json carries the "base" version with patch = 0
+      # (e.g. 0.2.0, 1.4.0). When that exact tag does not yet exist on the
+      # remote, this push introduces a new stable version. When the tag already
+      # exists, it is a regular push on the same minor → pre-release.
+      #
+      # Outputs:
+      #   type    = "stable" | "prerelease"
+      #   version = base version string (e.g. "0.2.0")  — both types
+      #   base    = major.minor (e.g. "0.2")             — both types
+      - name: Determine release type
         if: github.ref == 'refs/heads/main'
+        id: release_type
         run: |
+          VERSION=$(node -p "require('./package.json').version")
           BASE=$(node -p "require('./package.json').version.split('.').slice(0,2).join('.')")
-          npm version "${BASE}.${GITHUB_RUN_NUMBER}" --no-git-tag-version --allow-same-version
+          TAG="v${VERSION}"
+          if git ls-remote --tags origin "${TAG}" | grep -q .; then
+            echo "type=prerelease" >> "$GITHUB_OUTPUT"
+          else
+            echo "type=stable"     >> "$GITHUB_OUTPUT"
+          fi
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "base=${BASE}"       >> "$GITHUB_OUTPUT"
 
-      # Stable releases: version is derived from the tag created with the GitHub Release.
-      # Tag format: v<major>.<minor>.<patch>  (e.g. v1.0.0 → 1.0.0)
-      - name: Stamp stable version from release tag
-        if: github.event_name == 'release'
+      # Pre-release: stamp patch = GITHUB_RUN_NUMBER for a monotonically
+      # increasing, unique version on every push (e.g. 0.2.150).
+      - name: Stamp pre-release version
+        if: github.ref == 'refs/heads/main' && steps.release_type.outputs.type == 'prerelease'
         run: |
-          TAG="${{ github.event.release.tag_name }}"
-          VERSION="${TAG#v}"
-          npm version "$VERSION" --no-git-tag-version --allow-same-version
+          npm version "${{ steps.release_type.outputs.base }}.${GITHUB_RUN_NUMBER}" \
+            --no-git-tag-version --allow-same-version
 
-      # Package on PRs (build smoke test — no publish)
       - name: Package VSIX
         run: npm run package
 
@@ -48,21 +64,33 @@ jobs:
           name: altium365-vsix
           path: '*.vsix'
 
-      # Publish pre-release to VS Code Marketplace on every push to main.
-      # Only users who opt-in for pre-release extensions receive these builds.
-      # Requires the VSCE_PAT secret — create a Personal Access Token at
-      # https://dev.azure.com/ with "Marketplace (Manage)" scope and add it as
-      # a repository secret named VSCE_PAT.
+      # Pre-release publish — only users who opt-in for pre-release extensions
+      # receive these builds.
       - name: Publish pre-release to Marketplace
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main' && steps.release_type.outputs.type == 'prerelease'
         run: npx @vscode/vsce publish --pre-release --pat "$VSCE_PAT"
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
 
-      # Publish stable release to VS Code Marketplace when a GitHub Release is
-      # published. The version is taken from the release tag (e.g. v1.0.0).
+      # Stable release — write commit message to a file to avoid multi-line
+      # interpolation issues, then create a GitHub Release (tag + notes + VSIX
+      # attachment) and publish the stable extension.
+      - name: Write release notes from commit message
+        if: github.ref == 'refs/heads/main' && steps.release_type.outputs.type == 'stable'
+        run: git log -1 --format='%B' > /tmp/release-notes.md
+
+      - name: Create GitHub Release
+        if: github.ref == 'refs/heads/main' && steps.release_type.outputs.type == 'stable'
+        run: |
+          gh release create "v${{ steps.release_type.outputs.version }}" \
+            --title "v${{ steps.release_type.outputs.version }}" \
+            --notes-file /tmp/release-notes.md \
+            *.vsix
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Publish stable release to Marketplace
-        if: github.event_name == 'release'
+        if: github.ref == 'refs/heads/main' && steps.release_type.outputs.type == 'stable'
         run: npx @vscode/vsce publish --pat "$VSCE_PAT"
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
