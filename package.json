@@ -219,11 +219,6 @@
           "default": "openid profile offline_access workspace:scripts.manage workspace:scripts.execute",
           "description": "Space-delimited OAuth2 scopes. Must include 'offline_access' so the IdP issues a refresh_token (required for silent token renewal on activation)."
         },
-        "altium365.audience": {
-          "type": "string",
-          "default": "",
-          "description": "Optional 'audience' parameter (Auth0-style providers)."
-        },
         "altium365.pythonPath": {
           "type": "string",
           "default": "",
@@ -253,9 +248,7 @@
               "tokenEndpoint": "https://auth.dev1.altium.com/connect/token",
               "actionWaitEndpoint": "https://actionwait.dev1.altium.com/await",
               "redirectUri": "https://auth.dev1.altium.com/api/AuthComplete",
-              "scopes": "openid profile offline_access workspace:scripts.manage workspace:scripts.execute",
-              "audience": "",
-              "appId": "grid:global::platform:app/696d58cb-3803-4c8a-9711-c9bad5e8ba81"
+              "scopes": "openid profile offline_access workspace:scripts.manage workspace:scripts.execute"
             },
             "Uat": {
               "graphqlEndpoint": "https://eur.uat-365.altium.com/napi/gateway/graphql",
@@ -263,9 +256,7 @@
               "tokenEndpoint": "https://auth.uat1.altium.com/connect/token",
               "actionWaitEndpoint": "https://actionwait.uat.altium.com/await",
               "redirectUri": "https://auth.uat1.altium.com/api/AuthComplete",
-              "scopes": "openid profile offline_access workspace:scripts.manage workspace:scripts.execute",
-              "audience": "",
-              "appId": "grid:global::platform:app/4b70ae94-c06d-44a1-967f-76b26cd2c81a"
+              "scopes": "openid profile offline_access workspace:scripts.manage workspace:scripts.execute"
             },
             "Prod": {
               "graphqlEndpoint": "https://eur.365.altium.com/napi/gateway/graphql",
@@ -273,12 +264,10 @@
               "tokenEndpoint": "https://auth.altium.com/connect/token",
               "actionWaitEndpoint": "https://actionwait.altium.com/await",
               "redirectUri": "https://auth.altium.com/api/AuthComplete",
-              "scopes": "openid profile offline_access workspace:scripts.manage workspace:scripts.execute",
-              "audience": "",
-              "appId": "grid:global::platform:app/71277081-7c79-4309-af3c-f3fd36b68c69"
+              "scopes": "openid profile offline_access workspace:scripts.manage workspace:scripts.execute"
             }
           },
-          "description": "Named environments. Each entry can override graphqlEndpoint, authEndpoint, tokenEndpoint, actionWaitEndpoint, redirectUri, scopes, audience. Use 'Altium Developer: Select Environment' to switch.",
+          "description": "Named environments. Each entry can override graphqlEndpoint, authEndpoint, tokenEndpoint, actionWaitEndpoint, redirectUri, scopes. Use 'Altium Developer: Select Environment' to switch.",
           "additionalProperties": {
             "type": "object",
             "properties": {
@@ -298,12 +287,6 @@
                 "type": "string"
               },
               "scopes": {
-                "type": "string"
-              },
-              "audience": {
-                "type": "string"
-              },
-              "appId": {
                 "type": "string"
               }
             }
