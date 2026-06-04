@@ -186,7 +186,7 @@
       "properties": {
         "altium365.graphqlEndpoint": {
           "type": "string",
-          "default": "https://usw2.dev-365.altium.com/napi/gateway/graphql",
+          "default": "https://eur.365.altium.com/napi/gateway/graphql",
           "description": "Altium 365 GraphQL endpoint URL. Used to list workspaces and as ALTIUM365_GRAPHQL_ENDPOINT for scripts."
         },
         "altium365.clientId": {
@@ -196,22 +196,22 @@
         },
         "altium365.authEndpoint": {
           "type": "string",
-          "default": "https://auth.dev1.altium.com/connect/authorize",
+          "default": "https://auth.altium.com/connect/authorize",
           "description": "OAuth2 authorization endpoint."
         },
         "altium365.tokenEndpoint": {
           "type": "string",
-          "default": "https://auth.dev1.altium.com/connect/token",
+          "default": "https://auth.altium.com/connect/token",
           "description": "OAuth2 token endpoint."
         },
         "altium365.actionWaitEndpoint": {
           "type": "string",
-          "default": "https://actionwait.dev1.altium.com/await",
+          "default": "https://actionwait.altium.com/await",
           "description": "Altium ActionWait long-poll endpoint used to receive the OAuth authorization code from the browser callback. Populated automatically by 'Altium Developer: Select Environment'."
         },
         "altium365.redirectUri": {
           "type": "string",
-          "default": "https://auth.dev1.altium.com/api/AuthComplete",
+          "default": "https://auth.altium.com/api/AuthComplete",
           "description": "Fixed OAuth redirect URI registered with the Altium auth client (Altium-hosted authCompleted page). Must match the URI sent in both /connect/authorize and /connect/token. Populated automatically by 'Altium Developer: Select Environment'."
         },
         "altium365.scopes": {
@@ -241,7 +241,7 @@
         },
         "altium365.activeEnvironment": {
           "type": "string",
-          "default": "",
+          "default": "Prod",
           "description": "Name of the active environment from `altium365.environments`. Managed by the 'Altium Developer: Select Environment' command."
         },
         "altium365.environments": {
@@ -427,7 +427,7 @@
         },
         {
           "command": "altium365.selectEnvironment",
-          "when": "view == altium365.tree && altium365.signedIn",
+          "when": "view == altium365.tree",
           "group": "navigation",
           "icon": "$(globe)"
         }
