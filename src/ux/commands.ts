@@ -234,8 +234,6 @@ interface EnvironmentSpec {
     actionWaitEndpoint?: string;
     redirectUri?: string;
     scopes?: string;
-    audience?: string;
-    appId?: string;
 }
 
 export async function doSelectEnvironment(
@@ -300,9 +298,6 @@ export async function doSelectEnvironment(
     }
     if (spec.scopes !== undefined) {
         await cfg.update('scopes', spec.scopes, target);
-    }
-    if (spec.audience !== undefined) {
-        await cfg.update('audience', spec.audience, target);
     }
     await cfg.update('activeEnvironment', pick.name, target);
 

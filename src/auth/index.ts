@@ -80,7 +80,6 @@ export interface OAuthConfig {
     authEndpoint: string;
     tokenEndpoint: string;
     scopes: string;
-    audience?: string;
     actionWaitEndpoint: string;
     redirectUri: string;
 }
@@ -345,9 +344,6 @@ export async function signIn(
         code_challenge_method: 'S256',
         state: connectionToken,
     });
-    if (cfg.audience) {
-        params.set('audience', cfg.audience);
-    }
 
     const authUrl = `${cfg.authEndpoint}?${params.toString()}`;
 
@@ -608,7 +604,6 @@ export function readOAuthConfig(): OAuthConfig {
         authEndpoint: cfg.get<string>('authEndpoint') || '',
         tokenEndpoint: cfg.get<string>('tokenEndpoint') || '',
         scopes: cfg.get<string>('scopes') || 'openid profile',
-        audience: cfg.get<string>('audience') || undefined,
         actionWaitEndpoint: cfg.get<string>('actionWaitEndpoint') || '',
         redirectUri: cfg.get<string>('redirectUri') || '',
     };
