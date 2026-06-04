@@ -12,6 +12,7 @@ import { registerTestEventCommands } from './testEvents/commands';
 import { registerTestEventStatusItem } from './testEvents/statusItem';
 import { registerPythonAnalysisSync } from './runner/pythonAnalysis';
 import { resolvePythonPath } from './runner';
+import { resolveConfig } from './config';
 import {
     doSignIn,
     doSignOut,
@@ -49,7 +50,7 @@ export function activate(context: vscode.ExtensionContext) {
     const treeProvider = new A365TreeDataProvider(
         context,
         outputChannel,
-        () => vscode.workspace.getConfiguration('altium365').get<string>('graphqlEndpoint', '')
+        () => resolveConfig().graphqlEndpoint
     );
     const treeView = vscode.window.createTreeView('altium365.tree', {
         treeDataProvider: treeProvider,
@@ -87,7 +88,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     const remoteFs = new AltiumRemoteScriptFs(
         context,
-        () => vscode.workspace.getConfiguration('altium365').get<string>('graphqlEndpoint', ''),
+        () => resolveConfig().graphqlEndpoint,
         outputChannel
     );
     const fsRegistration = vscode.workspace.registerFileSystemProvider(
