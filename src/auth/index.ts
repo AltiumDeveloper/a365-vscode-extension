@@ -3,6 +3,7 @@ import * as crypto from 'crypto';
 import * as https from 'https';
 import * as http from 'http';
 import { URL, URLSearchParams } from 'url';
+import { resolveConfig } from '../config';
 import { AsyncMutex } from '../shared/asyncMutex';
 
 /**
@@ -598,13 +599,13 @@ export async function getBaseAccessToken(
 }
 
 export function readOAuthConfig(): OAuthConfig {
-    const cfg = vscode.workspace.getConfiguration('altium365');
+    const resolved = resolveConfig();
     return {
-        clientId: cfg.get<string>('clientId') || '',
-        authEndpoint: cfg.get<string>('authEndpoint') || '',
-        tokenEndpoint: cfg.get<string>('tokenEndpoint') || '',
-        scopes: cfg.get<string>('scopes') || 'openid profile',
-        actionWaitEndpoint: cfg.get<string>('actionWaitEndpoint') || '',
-        redirectUri: cfg.get<string>('redirectUri') || '',
+        clientId: resolved.clientId,
+        authEndpoint: resolved.authEndpoint,
+        tokenEndpoint: resolved.tokenEndpoint,
+        scopes: resolved.scopes,
+        actionWaitEndpoint: resolved.actionWaitEndpoint,
+        redirectUri: resolved.redirectUri,
     };
 }

@@ -13,6 +13,7 @@ import {
     getLocalScript,
     findLocalScriptByRemoteId,
 } from './localCache';
+import { resolveConfig } from '../config';
 import { withScriptProgress } from '../runner/progress';
 
 /**
@@ -76,8 +77,7 @@ export function registerScriptCommands(
     context: vscode.ExtensionContext,
     output: vscode.OutputChannel
 ): vscode.Disposable[] {
-    const getEnvGlobalEndpoint = () =>
-        vscode.workspace.getConfiguration('altium365').get<string>('graphqlEndpoint', '');
+    const getEnvGlobalEndpoint = () => resolveConfig().graphqlEndpoint;
 
     return [
         vscode.commands.registerCommand(

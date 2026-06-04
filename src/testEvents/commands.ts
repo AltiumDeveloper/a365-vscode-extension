@@ -21,6 +21,7 @@ import { pickTestEvent } from './picker';
 import { buildEventUri } from './eventFs';
 import { pickProjectId } from '../ux/projectPicker';
 import { ensureWorkspaceToken, getBaseAccessToken, readOAuthConfig } from '../auth';
+import { resolveConfig } from '../config';
 import {
     getSelectedWorkspace,
     getWorkspaceApiUrl,
@@ -461,9 +462,7 @@ async function pickProjectIdSafe(
     output: vscode.OutputChannel,
     identity: ScriptIdentity,
 ): Promise<string | undefined> {
-    const endpoint = vscode.workspace
-        .getConfiguration('altium365')
-        .get<string>('graphqlEndpoint', '');
+    const endpoint = resolveConfig().graphqlEndpoint;
     const cfg = readOAuthConfig();
 
     // Branch 1 — remote script: prefer the script's owning workspace

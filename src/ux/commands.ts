@@ -7,6 +7,7 @@ import {
     readOAuthConfig,
     signIn,
 } from '../auth';
+import { resolveConfig } from '../config';
 import {
     setSelectedWorkspace,
     clearSelectedWorkspace,
@@ -42,7 +43,7 @@ export async function doSignIn(
     }
     if (!cfg.actionWaitEndpoint || !cfg.redirectUri) {
         vscode.window.showErrorMessage(
-            "Altium 365: actionWaitEndpoint and redirectUri are not configured. Run 'Altium 365: Select Environment' to populate them from the env defaults."
+            "Altium 365: actionWaitEndpoint or redirectUri are not configured. Select an environment via 'Altium Developer: Select Environment'."
         );
         return;
     }
@@ -173,9 +174,7 @@ export async function doSignOut(context: vscode.ExtensionContext): Promise<void>
 
 export async function doSelectWorkspace(context: vscode.ExtensionContext): Promise<void> {
     const cfg = readOAuthConfig();
-    const endpoint = vscode.workspace
-        .getConfiguration('altium365')
-        .get<string>('graphqlEndpoint', '');
+    const endpoint = resolveConfig().graphqlEndpoint;
     if (!endpoint) {
         vscode.window.showErrorMessage('Set altium365.graphqlEndpoint first.');
         return;
@@ -287,26 +286,15 @@ export async function doSelectEnvironment(
     }
 
     const target = vscode.ConfigurationTarget.Global;
-    await cfg.update('graphqlEndpoint', spec.graphqlEndpoint ?? '', target);
-    await cfg.update('authEndpoint', spec.authEndpoint ?? '', target);
-    await cfg.update('tokenEndpoint', spec.tokenEndpoint ?? '', target);
-    if (spec.actionWaitEndpoint !== undefined) {
-        await cfg.update('actionWaitEndpoint', spec.actionWaitEndpoint, target);
-    }
-    if (spec.redirectUri !== undefined) {
-        await cfg.update('redirectUri', spec.redirectUri, target);
-    }
-    if (spec.scopes !== undefined) {
-        await cfg.update('scopes', spec.scopes, target);
-    }
     await cfg.update('activeEnvironment', pick.name, target);
 
+    const resolved = resolveConfig();
     outputChannel.appendLine(`[Altium 365] Active environment: ${pick.name}`);
-    outputChannel.appendLine(`[Altium 365]   graphql: ${spec.graphqlEndpoint || '(empty)'}`);
-    outputChannel.appendLine(`[Altium 365]   auth:    ${spec.authEndpoint || '(empty)'}`);
-    outputChannel.appendLine(`[Altium 365]   token:   ${spec.tokenEndpoint || '(empty)'}`);
-    outputChannel.appendLine(`[Altium 365]   actionWait: ${spec.actionWaitEndpoint || '(empty)'}`);
-    outputChannel.appendLine(`[Altium 365]   redirect:   ${spec.redirectUri || '(empty)'}`);
+    outputChannel.appendLine(`[Altium 365]   graphql:    ${resolved.graphqlEndpoint || '(empty)'}`);
+    outputChannel.appendLine(`[Altium 365]   auth:       ${resolved.authEndpoint || '(empty)'}`);
+    outputChannel.appendLine(`[Altium 365]   token:      ${resolved.tokenEndpoint || '(empty)'}`);
+    outputChannel.appendLine(`[Altium 365]   actionWait: ${resolved.actionWaitEndpoint || '(empty)'}`);
+    outputChannel.appendLine(`[Altium 365]   redirect:   ${resolved.redirectUri || '(empty)'}`);
 
     // Tokens and selected workspace are environment-bound — offer to clear them.
     // IMPORTANT (02.3 UAT bug, 2026-05-20): do NOT fire authStateChanged before

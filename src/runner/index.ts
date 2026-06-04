@@ -8,6 +8,7 @@ import {
     getBaseAccessToken,
     readOAuthConfig,
 } from '../auth';
+import { resolveConfig } from '../config';
 import {
     getSelectedWorkspace,
     getWorkspaceApiUrl,
@@ -89,7 +90,7 @@ async function prepareRun(
     }
 
     const wcfg = vscode.workspace.getConfiguration('altium365');
-    const envGlobalEndpoint = wcfg.get<string>('graphqlEndpoint') || '';
+    const envGlobalEndpoint = resolveConfig().graphqlEndpoint;
     if (!envGlobalEndpoint) {
         vscode.window.showErrorMessage('Set "altium365.graphqlEndpoint" in settings.');
         return undefined;
