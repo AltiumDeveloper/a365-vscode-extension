@@ -316,9 +316,25 @@ async function reconcileNow(
         const previousManagedPaths = context.globalState.get<string[]>(MANAGED_PATHS_KEY, []);
         const desiredManagedPaths = injectHelper ? getManagedPythonAnalysisPaths(context) : [];
 
+        // D-13 self-heal: detect stale extension paths by pattern so a fresh
+        // globalState (new machine, profile reset, or reinstall) still evicts
+        // accumulated paths from old extension versions. Any path matching the
+        // altium.developer install pattern that is NOT in desiredManagedPaths is
+        // treated as a previously-managed path and removed.
+        const STALE_EXTENSION_RE = /[/\\]extensions[/\\]altium\.developer-[^/\\]+[/\\]python/;
+        const desiredNormSet = new Set(desiredManagedPaths.map(normalizePath));
+        const staleDetected = existingExtraPaths.filter(
+            (p) => STALE_EXTENSION_RE.test(p) && !desiredNormSet.has(normalizePath(p))
+        );
+        const prevManagedNormSet = new Set(previousManagedPaths.map(normalizePath));
+        const expandedPreviousManagedPaths = [
+            ...previousManagedPaths,
+            ...staleDetected.filter((p) => !prevManagedNormSet.has(normalizePath(p))),
+        ];
+
         const reconciled = reconcilePythonAnalysisPaths({
             existingExtraPaths,
-            previousManagedPaths,
+            previousManagedPaths: expandedPreviousManagedPaths,
             desiredManagedPaths,
             injectHelperEnabled: injectHelper,
         });

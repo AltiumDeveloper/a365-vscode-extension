@@ -114,6 +114,52 @@ describe('reconcilePythonAnalysisPaths', () => {
             '/managed/python',
         ]);
     });
+
+    it('stale extension version paths are evicted when expanded previousManagedPaths includes them (D-13 fresh-globalState case)', () => {
+        // Simulate the case where globalState was fresh (previousManagedPaths=[])
+        // but .vscode/settings.json already accumulated paths from 3 old versions.
+        // reconcileNow detects them by pattern and expands previousManagedPaths before
+        // calling reconcilePythonAnalysisPaths — this test verifies that contract.
+        const oldPaths = [
+            '/Users/dev/.vscode/extensions/altium.developer-0.1.10/python/SandboxProcess',
+            '/Users/dev/.vscode/extensions/altium.developer-0.1.10/python/SandboxProcess/.deps',
+            '/Users/dev/.vscode/extensions/altium.developer-0.1.10/python',
+            '/Users/dev/.vscode/extensions/altium.developer-0.1.11/python/SandboxProcess',
+            '/Users/dev/.vscode/extensions/altium.developer-0.1.11/python/SandboxProcess/.deps',
+            '/Users/dev/.vscode/extensions/altium.developer-0.1.11/python',
+        ];
+        const newPaths = [
+            '/Users/dev/.vscode/extensions/altium.developer-0.3.19/python/SandboxProcess',
+            '/Users/dev/.vscode/extensions/altium.developer-0.3.19/python/SandboxProcess/.deps',
+            '/Users/dev/.vscode/extensions/altium.developer-0.3.19/python',
+        ];
+        const existingExtraPaths = ['/user/custom', ...oldPaths];
+        // reconcileNow expanded previousManagedPaths to include the stale old paths
+        const expandedPreviousManagedPaths = [...oldPaths]; // old ones detected by pattern
+        const desiredManagedPaths = newPaths;
+
+        const result = reconcilePythonAnalysisPaths({
+            existingExtraPaths,
+            previousManagedPaths: expandedPreviousManagedPaths,
+            desiredManagedPaths,
+            injectHelperEnabled: true,
+        });
+
+        // User path preserved
+        expect(result).toContain('/user/custom');
+        // New version paths present
+        for (const p of newPaths) {
+            expect(result).toContain(p);
+        }
+        // All old-version paths evicted
+        for (const p of oldPaths) {
+            expect(result).not.toContain(p);
+        }
+        // Total: 1 user path + 3 new paths
+        expect(result).toHaveLength(4);
+    });
+
+    // ── End of reconcilePythonAnalysisPaths tests ─────────────────────────────
 });
 
 // ── Lifecycle tests: registerPythonAnalysisSync ───────────────────────────────
