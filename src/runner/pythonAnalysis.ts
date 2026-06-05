@@ -324,17 +324,27 @@ async function reconcileNow(
         });
 
         // Wrap config write in try/catch - can fail if workspace is readonly or config scope has issues
-        try {
-            await config.update('extraPaths', reconciled, vscode.ConfigurationTarget.Workspace);
-        } catch (e) {
+        const hasWorkspace = (vscode.workspace.workspaceFolders?.length ?? 0) > 0;
+        if (!hasWorkspace) {
+            // No folder open — workspace settings are unavailable, but the
+            // pyrightconfig.json fallback (written below) still covers remote
+            // scripts opened as temp files.
             output.appendLine(
-                `${LOG_PREFIX} failed to update python.analysis.extraPaths: ${(e as Error).message}`
+                `${LOG_PREFIX} no workspace folder open — skipping workspace settings update`
             );
-            vscode.window.showErrorMessage(
-                'Altium Developer: Failed to update Python IntelliSense paths. ' +
-                'Check workspace settings are writable.'
-            );
-            return; // Abort before updating globalState to avoid drift
+        } else {
+            try {
+                await config.update('extraPaths', reconciled, vscode.ConfigurationTarget.Workspace);
+            } catch (e) {
+                output.appendLine(
+                    `${LOG_PREFIX} failed to update python.analysis.extraPaths: ${(e as Error).message}`
+                );
+                vscode.window.showErrorMessage(
+                    'Altium Developer: Failed to update Python IntelliSense paths. ' +
+                    'Check workspace settings are writable.'
+                );
+                return; // Abort before updating globalState to avoid drift
+            }
         }
 
         // Update managed paths snapshot
