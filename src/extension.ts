@@ -54,7 +54,6 @@ export function activate(context: vscode.ExtensionContext) {
     );
     const treeView = vscode.window.createTreeView('altium365.tree', {
         treeDataProvider: treeProvider,
-        showCollapseAll: true,
     });
 
     // D-07 (revised after UAT): Show the active environment name directly in
