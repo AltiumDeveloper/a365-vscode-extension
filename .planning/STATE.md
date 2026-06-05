@@ -5,7 +5,7 @@ milestone_name: milestone
 status: complete
 stopped_at: Completed 12-01-PLAN.md
 last_updated: "2026-06-02T00:00:00.000Z"
-last_activity: 2026-06-02 - Completed Phase 12: Feature folder layout (src/ reorganised into auth/, workspace/, scripts/, ux/, runner/, shared/)
+last_activity: 2026-06-05 - Completed quick task 260605-a7k: Fix stale Python analysis paths
 progress:
   total_phases: 16
   completed_phases: 15
@@ -183,6 +183,7 @@ Recent decisions affecting current work:
 | 260601-b2c | Add vsce publish CI automation - pre-release on main push (patch=run number), stable on GitHub Release (version from tag) | 2026-06-01 | 6c5c055 | [260601-b2c-add-vsce-publish-ci-automation](./quick/260601-b2c-add-vsce-publish-ci-automation/) |
 | 260601-a1x | Remove GitHub Releases auto-updater - delete src/updater.ts, src/semverCompare.ts, test/compareVersions.test.ts, clean up package.json commands/config, extension.ts, CI workflow, and README | 2026-06-01 | 7628107 | [260601-a1x-remove-github-releases-auto-updater](./quick/260601-a1x-remove-github-releases-auto-updater/) |
 | 260601-dv8 | Refresh README.md and AGENTS.md to reflect current extension state - update extension name, commands, configuration, remove internal Dev/UAT/Prod environment details, document main concepts (global vs workspace tokens, script execution context, test events, OAuth scopes) | 2026-06-01 | 99ac002 | [260601-dv8-refresh-readme-md-and-agents-md-to-refle](./quick/260601-dv8-refresh-readme-md-and-agents-md-to-refle/) |
+| 260605-a7k | Fix stale Python analysis paths — evict old extension version paths by pattern on reconcile; gitignore .vscode/settings.json | 2026-06-05 | a037981 | [260605-a7k-fix-stale-python-analysis-paths](./quick/260605-a7k-fix-stale-python-analysis-paths/) |
 
 ## Deferred Items
 
