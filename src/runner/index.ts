@@ -52,7 +52,7 @@ export async function resolvePythonPath(): Promise<string> {
             const api: any = pyExt.exports;
             const resource = vscode.window.activeTextEditor?.document.uri;
             const details = api?.environments?.getActiveEnvironmentPath?.(resource);
-            if (details?.path) {
+            if (details?.path && path.isAbsolute(details.path)) {
                 return details.path;
             }
             const exec: string[] | undefined = api?.settings?.getExecutionDetails?.(resource)
