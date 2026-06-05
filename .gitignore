@@ -5,3 +5,4 @@ __pycache__/
 python/SandboxProcess/.deps/
 .DS_Store
 coverage/
+.vscode/settings.json
