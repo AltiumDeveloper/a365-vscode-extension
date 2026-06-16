@@ -126,6 +126,11 @@
         "category": "Altium Developer"
       },
       {
+        "command": "altium365.extensionPoint.createScript",
+        "title": "Create Script",
+        "category": "Altium Developer"
+      },
+      {
         "command": "altium365.script.runLocal",
         "title": "Run Script (Local)",
         "category": "Altium Developer"
@@ -321,6 +326,10 @@
           "when": "false"
         },
         {
+          "command": "altium365.extensionPoint.createScript",
+          "when": "false"
+        },
+        {
           "command": "altium365.script.runLocal",
           "when": "false"
         },
@@ -475,6 +484,11 @@
           "command": "altium365.script.edit",
           "when": "view == altium365.tree && viewItem == assignmentNode-script",
           "group": "2_edit@1"
+        },
+        {
+          "command": "altium365.extensionPoint.createScript",
+          "when": "view == altium365.tree && viewItem == extensionPointNode",
+          "group": "1_create@1"
         },
         {
           "command": "altium365.tree.copyId",

@@ -23,12 +23,15 @@ export {
     listScripts,
     getScript,
     updateScript,
+    createScript,
 } from './scripts';
 export {
     type ExtensionPointInfo,
+    type ExtensionPointParameterInfo,
     type AssignmentInfo,
     listExtensionPoints,
     updateAssignment,
+    addAssignment,
 } from './extensionPoints';
 export {
     type ExecutionResult,

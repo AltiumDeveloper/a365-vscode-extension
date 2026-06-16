@@ -154,3 +154,54 @@ export async function updateScript(
         timestamp: version.timestamp,
     };
 }
+
+const CREATE_SCRIPT_MUTATION = `
+    mutation CreateScript($input: GloScrCreateScriptInput!) {
+        gloScrCreateScript(input: $input) {
+            gloScrScript {
+                scriptId
+                name
+                description
+                versions(first: 1, order: [{ timestamp: DESC }]) {
+                    nodes {
+                        scriptVersionId
+                        timestamp
+                    }
+                }
+            }
+        }
+    }
+`;
+
+export async function createScript(
+    endpoint: string,
+    workspaceToken: string,
+    name: string,
+    fileToken: string,
+    description?: string
+): Promise<{ scriptId: string; name: string; description?: string; latestVersionId: string }> {
+    const input: Record<string, unknown> = {
+        name,
+        package: { fileToken },
+    };
+    if (description !== undefined) {
+        input.description = description;
+    }
+    const data = await graphqlRequest(
+        endpoint,
+        workspaceToken,
+        CREATE_SCRIPT_MUTATION,
+        { input }
+    );
+    const script = data?.gloScrCreateScript?.gloScrScript;
+    const version = script?.versions?.nodes?.[0];
+    if (!script?.scriptId || !version?.scriptVersionId) {
+        throw new Error('createScript: unexpected empty response');
+    }
+    return {
+        scriptId: script.scriptId,
+        name: script.name,
+        description: script.description,
+        latestVersionId: version.scriptVersionId,
+    };
+}
