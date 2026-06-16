@@ -29,6 +29,17 @@ export interface ExtensionPointInfo {
     entityType: string;  // e.g., "WORKSPACE", "PROJECT"
     type: string;        // e.g., "ON_RELEASE_CREATE"
     assignmentCount: number;
+    scriptName: string;
+    scriptDescription?: string;
+    scriptText: string;
+    supportedAssignmentTypes: AssignmentInfo['type'][];
+    configurationParameters: ExtensionPointParameterInfo[];
+}
+
+export interface ExtensionPointParameterInfo {
+    name: string;
+    description?: string;
+    predefinedValues: Array<{ displayText?: string; value: string }>;
 }
 
 export interface AssignmentInfo {
@@ -60,6 +71,18 @@ const LIST_EXTENSION_POINTS_QUERY = `
             description
             entityType
             type
+            scriptName
+            scriptDescription
+            scriptText
+            supportedAssignmentTypes
+            configurationParameters {
+                name
+                description
+                predefinedValues {
+                    displayText
+                    value
+                }
+            }
             assignments(first: $assignmentsFirst) {
                 nodes {
                     assignmentId
@@ -133,6 +156,11 @@ export async function listExtensionPoints(
         description?: string;
         entityType: string;
         type: string;
+        scriptName: string;
+        scriptDescription?: string;
+        scriptText: string;
+        supportedAssignmentTypes?: AssignmentInfo['type'][];
+        configurationParameters?: ExtensionPointParameterInfo[];
         assignments?: {
             nodes?: RawAssignment[];
             pageInfo?: { hasNextPage?: boolean; endCursor?: string };
@@ -156,6 +184,15 @@ export async function listExtensionPoints(
             entityType: node.entityType,
             type: node.type,
             assignmentCount: mapped.length,
+            scriptName: node.scriptName,
+            scriptDescription: node.scriptDescription,
+            scriptText: node.scriptText,
+            supportedAssignmentTypes: Array.isArray(node.supportedAssignmentTypes)
+                ? node.supportedAssignmentTypes
+                : [],
+            configurationParameters: Array.isArray(node.configurationParameters)
+                ? node.configurationParameters
+                : [],
         });
     }
 
@@ -183,15 +220,22 @@ export async function updateAssignment(
     workspaceToken: string,
     assignmentId: string,
     scriptId: string,
-    scriptVersionId: string
+    scriptVersionId: string,
+    name?: string,
+    description?: string
 ): Promise<{ assignmentId: string }> {
-    const input = {
-        script: {
-            assignmentId,
-            scriptId,
-            scriptVersionId,
-        },
+    const script: Record<string, unknown> = {
+        assignmentId,
+        scriptId,
+        scriptVersionId,
     };
+    if (name !== undefined) {
+        script.name = name;
+    }
+    if (description !== undefined) {
+        script.description = description;
+    }
+    const input = { script };
     const data = await graphqlRequest(
         endpoint,
         workspaceToken,
@@ -201,6 +245,40 @@ export async function updateAssignment(
     const result = data?.gloCusUpdateAssignment;
     if (!result?.assignmentId) {
         throw new Error('updateAssignment: unexpected empty response');
+    }
+    return {
+        assignmentId: result.assignmentId,
+    };
+}
+
+const ADD_ASSIGNMENT_MUTATION = `
+    mutation AddAssignment($input: GloCusAddAssignmentInput!) {
+        gloCusAddAssignment(input: $input) {
+            assignmentId
+        }
+    }
+`;
+
+export async function addAssignment(
+    endpoint: string,
+    workspaceToken: string,
+    extensionPointId: string,
+    configurationParameters: Array<{ name: string; value: string }> = []
+): Promise<{ assignmentId: string }> {
+    const data = await graphqlRequest(
+        endpoint,
+        workspaceToken,
+        ADD_ASSIGNMENT_MUTATION,
+        {
+            input: {
+                extensionPointId,
+                configurationParameters,
+            },
+        }
+    );
+    const result = data?.gloCusAddAssignment;
+    if (!result?.assignmentId) {
+        throw new Error('addAssignment: unexpected empty response');
     }
     return {
         assignmentId: result.assignmentId,

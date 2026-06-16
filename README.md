@@ -72,6 +72,8 @@ You can define additional environments under the `altium365.environments` settin
 
 From the Altium 365 side panel, right-click any script to **Edit**, **Publish**, or **Execute Remotely**. Scripts open as virtual VS Code documents under the `altium365:` scheme — saving the document publishes the new version back to A365.
 
+From the **Extension Points** tree, right-click an extension point and choose **Create Script** to create a new Python script, assign it to that extension point, and open it for editing. The existing run, debug, execute, edit, publish, and test-event flows then work on the created script the same way they work for other script assignments.
+
 ### Open + Edit + Publish
 
 - Right-click a script in the side panel → **Edit Script** opens the live script body in a Python editor.
@@ -146,6 +148,7 @@ All commands are prefixed with **Altium Developer:** in the Command Palette.
 | Command | Description |
 | --- | --- |
 | Edit Script | Opens a remote script in the editor (via `altium365:` scheme) |
+| Create Script | Creates a Python script from an extension point and assigns it there |
 | Publish Script | Publishes local changes to a remote script back to A365 |
 | Execute Script Remotely | Triggers server-side execution on A365 (logs stream to Output channel) |
 

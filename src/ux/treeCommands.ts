@@ -1,6 +1,19 @@
 import * as vscode from 'vscode';
+import { ensureWorkspaceToken, readOAuthConfig } from '../auth';
+import { uploadAndGetToken } from '../scripts/filesService';
 import { type A365Node } from './panel';
 import { applyWorkspaceSelection } from './commands';
+import { resolveConfig } from '../config';
+import {
+    addAssignment,
+    createScript,
+    GraphQLError,
+    getWorkspaceApiUrl,
+    getWorkspaceFilesUrl,
+    type ExtensionPointParameterInfo,
+    resolveWorkspaceFromAuthId,
+    updateAssignment,
+} from '../workspace';
 
 /**
  * Safely open an http(s) URL supplied by the GraphQL backend in the user's
@@ -35,6 +48,227 @@ async function openExternalHttpUrl(
     await vscode.env.openExternal(parsed);
 }
 
+function defaultScriptName(node: Extract<A365Node, { kind: 'extensionPointNode' }>): string {
+    const fromServer = node.extensionPoint.scriptName?.trim();
+    if (fromServer) {
+        return fromServer;
+    }
+    const base = node.extensionPoint.name.replace(/[\\/:*?"<>|]+/g, ' ').replace(/\s+/g, ' ').trim();
+    return base ? `${base} Script` : 'New Extension Point Script';
+}
+
+function buildInitialScriptSource(node: Extract<A365Node, { kind: 'extensionPointNode' }>): Uint8Array {
+    const source = node.extensionPoint.scriptText?.trimEnd();
+    if (source) {
+        return Buffer.from(`${source}\n`, 'utf8');
+    }
+    return Buffer.from(
+        [
+            'def onExecute(context, input_parameters):',
+            '    return {}',
+            '',
+        ].join('\n'),
+        'utf8'
+    );
+}
+
+async function pickConfigurationParameterValue(
+    parameter: ExtensionPointParameterInfo
+): Promise<string | undefined> {
+    if (parameter.predefinedValues.length > 0) {
+        const items: Array<vscode.QuickPickItem & { value: string }> =
+            parameter.predefinedValues.map((value) => ({
+                label: value.displayText || value.value,
+                description: value.displayText ? value.value : undefined,
+                value: value.value,
+            }));
+        const picked = await vscode.window.showQuickPick(
+            items,
+            {
+                title: 'Create Script',
+                placeHolder: parameter.description || parameter.name,
+            }
+        );
+        return picked?.value;
+    }
+
+    const value = await vscode.window.showInputBox({
+        title: 'Create Script',
+        prompt: parameter.description || parameter.name,
+        placeHolder: parameter.name,
+    });
+    return value;
+}
+
+async function collectConfigurationParameters(
+    parameters: ExtensionPointParameterInfo[]
+): Promise<Array<{ name: string; value: string }> | undefined> {
+    const values: Array<{ name: string; value: string }> = [];
+    for (const parameter of parameters) {
+        const value = await pickConfigurationParameterValue(parameter);
+        if (value === undefined) {
+            return undefined;
+        }
+        values.push({ name: parameter.name, value });
+    }
+    return values;
+}
+
+async function createScriptForExtensionPoint(
+    context: vscode.ExtensionContext,
+    output: vscode.OutputChannel,
+    node?: A365Node
+): Promise<void> {
+    if (!node || node.kind !== 'extensionPointNode') {
+        output.appendLine(
+            '[Altium 365] extensionPoint.createScript: ignored kind=' +
+                (node?.kind ?? 'undefined')
+        );
+        return;
+    }
+
+    if (
+        node.extensionPoint.supportedAssignmentTypes.length > 0 &&
+        !node.extensionPoint.supportedAssignmentTypes.includes('SCRIPT')
+    ) {
+        vscode.window.showInformationMessage(
+            'This extension point does not support script assignments.'
+        );
+        return;
+    }
+
+    const scriptName = await vscode.window.showInputBox({
+        title: 'Create Script',
+        prompt: 'Script name',
+        value: defaultScriptName(node),
+        validateInput: (value) => value.trim().length > 0 ? undefined : 'Enter a script name.',
+    });
+    if (scriptName === undefined) {
+        return;
+    }
+    const trimmedName = scriptName.trim();
+
+    const description = await vscode.window.showInputBox({
+        title: 'Create Script',
+        prompt: 'Description',
+        value: node.extensionPoint.scriptDescription || `Script for ${node.extensionPoint.name}`,
+    });
+    if (description === undefined) {
+        return;
+    }
+    const configurationParameters = await collectConfigurationParameters(
+        node.extensionPoint.configurationParameters
+    );
+    if (configurationParameters === undefined) {
+        return;
+    }
+
+    await vscode.window.withProgress(
+        {
+            location: vscode.ProgressLocation.Notification,
+            title: `Altium 365: creating ${trimmedName}...`,
+            cancellable: false,
+        },
+        async () => {
+            const envGlobalEndpoint = resolveConfig().graphqlEndpoint;
+            const workspace = await resolveWorkspaceFromAuthId(
+                context,
+                node.workspaceAuthId,
+                envGlobalEndpoint
+            );
+            if (!workspace) {
+                throw new Error('workspace not found (refresh the side panel)');
+            }
+
+            const workspaceToken = await ensureWorkspaceToken(context, readOAuthConfig(), {
+                workspaceId: workspace.workspaceId,
+                authId: workspace.authId,
+            });
+            const apiUrl = getWorkspaceApiUrl(workspace, envGlobalEndpoint);
+            const filesUrl = getWorkspaceFilesUrl(workspace);
+            const safeFileName = trimmedName.replace(/[^\w.-]+/g, '_') || 'script';
+            const fileName = safeFileName.toLowerCase().endsWith('.py')
+                ? safeFileName
+                : `${safeFileName}.py`;
+            const source = buildInitialScriptSource(node);
+
+            const fileToken = await uploadAndGetToken(filesUrl, workspaceToken, source, {
+                filename: fileName,
+            });
+            const script = await createScript(
+                apiUrl,
+                workspaceToken,
+                trimmedName,
+                fileToken,
+                description.trim() || undefined
+            );
+            const assignment = await addAssignment(
+                apiUrl,
+                workspaceToken,
+                node.extensionPoint.extensionPointId,
+                configurationParameters
+            );
+            await updateAssignment(
+                apiUrl,
+                workspaceToken,
+                assignment.assignmentId,
+                script.scriptId,
+                script.latestVersionId,
+                trimmedName,
+                description.trim() || undefined
+            );
+
+            output.appendLine(
+                `[Altium 365] Created script ${script.scriptId} and assignment ${assignment.assignmentId} for extension point ${node.extensionPoint.extensionPointId}`
+            );
+            await vscode.commands.executeCommand('altium365.tree.refresh');
+
+            const assignmentNode: A365Node = {
+                kind: 'assignmentNode',
+                workspaceId: workspace.workspaceId,
+                workspaceAuthId: workspace.authId,
+                workspaceUrl: workspace.url || node.workspaceUrl,
+                extensionPointId: node.extensionPoint.extensionPointId,
+                assignment: {
+                    assignmentId: assignment.assignmentId,
+                    name: trimmedName,
+                    description: description.trim() || undefined,
+                    type: 'SCRIPT',
+                    active: true,
+                    scriptId: script.scriptId,
+                    scriptVersionId: script.latestVersionId,
+                    scriptFileToken: fileToken,
+                    createdAt: '',
+                    createdBy: '',
+                    lastModifiedAt: '',
+                    lastModifiedBy: '',
+                },
+            };
+            await vscode.commands.executeCommand('altium365.script.edit', assignmentNode);
+        }
+    ).then(
+        () => vscode.window.showInformationMessage(`Altium 365: created ${trimmedName}.`),
+        (e) => {
+            const err = e as Error;
+            output.appendLine(
+                '[Altium 365] extensionPoint.createScript failed: ' +
+                    (err.stack ?? err.message)
+            );
+            if (err instanceof GraphQLError) {
+                try {
+                    output.appendLine(
+                        '[Altium 365]   GraphQL errors: ' +
+                            JSON.stringify(err.rawErrors).slice(0, 1000)
+                    );
+                } catch {
+                    // ignore stringify issues
+                }
+            }
+            vscode.window.showErrorMessage('Altium 365: Create Script failed: ' + err.message);
+        }
+    );
+}
+
 /**
  * Hosts tree-generic (non-script-scoped) command handlers contributed by
  * Phase 02.1. Mirrors the `registerScriptCommands` factory shape per D-11 of
@@ -48,6 +282,10 @@ export function registerTreeCommands(
     output: vscode.OutputChannel
 ): vscode.Disposable[] {
     return [
+        vscode.commands.registerCommand(
+            'altium365.extensionPoint.createScript',
+            async (node?: A365Node) => createScriptForExtensionPoint(context, output, node)
+        ),
         vscode.commands.registerCommand(
             'altium365.tree.copyId',
             async (node?: A365Node) => {
