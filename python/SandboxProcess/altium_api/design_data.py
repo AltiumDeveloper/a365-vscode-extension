@@ -48,7 +48,7 @@ class Parameter:
 class Pin:
     """An electrical pin on a schematic component.
 
-    Exposes essential pin properties: unique_id, name, number, and links
+    Exposes essential pin properties: design_pin_id, name, number, and links
     to the owning component and connected net.
     """
 
@@ -61,13 +61,25 @@ class Pin:
 
 
     @property
+    def design_pin_id(self) -> str:
+        """Get the design pin identifier of the pin.
+
+        Returns:
+            Design pin ID string
+        """
+        return self._internal_pin.design_pin_id
+
+    @property
     def unique_id(self) -> str:
         """Get the unique identifier of the pin.
+
+        Deprecated:
+            Use `design_pin_id` instead.
 
         Returns:
             Unique ID string
         """
-        return self._internal_pin.unique_id
+        return self._internal_pin.design_pin_id
 
     @property
     def component(self) -> Optional[Component]:
@@ -158,20 +170,32 @@ class Pin:
 class NetItem:
     """A named port or net label belonging to a net.
 
-    Exposes essential net item properties: unique_id, kind, and port_name.
+    Exposes essential net item properties: design_net_item_id, kind, and port_name.
     """
 
     def __init__(self, internal_net_item: InternalNetItem):
         self._internal_net_item = internal_net_item
 
     @property
+    def design_net_item_id(self) -> str:
+        """Get the design net item identifier.
+
+        Returns:
+            Design net item ID string
+        """
+        return self._internal_net_item.design_net_item_id
+
+    @property
     def unique_id(self) -> str:
         """Get the unique identifier of the net item.
+
+        Deprecated:
+            Use `design_net_item_id` instead.
 
         Returns:
             Unique ID string
         """
-        return self._internal_net_item.unique_id
+        return self._internal_net_item.design_net_item_id
 
     @property
     def kind(self) -> str:
@@ -195,7 +219,7 @@ class NetItem:
 class Component:
     """A logical schematic component composed of one or more parts.
 
-    Exposes essential component properties: unique_id, designator, parameters, name, description, pins, and nets.
+    Exposes essential component properties: design_component_id, designator, parameters, name, description, pins, and nets.
     """
 
     def __init__(self, internal_component: InternalComponent):
@@ -290,23 +314,22 @@ class Component:
     def component_type(self) -> str:
         """Get the component type.
 
+        Deprecated:
+            Use `type` instead.
+
         Returns:
             Component type string.
         """
-        return self._internal_component.component_type
+        return self._internal_component.type
 
     @property
     def type(self) -> str:
         """Get the component type.
 
-        Deprecated:
-            Use `component_type` instead.
-
-
         Returns:
             Component type string.
         """
-        return self._internal_component.component_type
+        return self._internal_component.type
 
     @property
     def variant(self) -> Optional[str]:
@@ -324,15 +347,27 @@ class Component:
 class Net:
     """A schematic net grouping all electrically connected pins.
 
-    Exposes essential net properties: unique_id, name, parameters, pins, and net_items.
+    Exposes essential net properties: design_net_id, name, parameters, pins, and net_items.
     """
 
     def __init__(self, internal_net: InternalNet):
         self._internal_net = internal_net
 
     @property
+    def design_net_id(self) -> str:
+        """Get the design net identifier.
+
+        Returns:
+            Design net ID string
+        """
+        return self._internal_net.design_net_id
+
+    @property
     def unique_id(self) -> str:
         """Get the unique identifier of the net.
+
+        Deprecated:
+            Use `design_net_id` instead.
 
         Returns:
             Unique ID string

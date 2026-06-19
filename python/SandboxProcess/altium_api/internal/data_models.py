@@ -170,7 +170,7 @@ class Pin:
     """A single electrical pin on a schematic component part.
 
     Attributes:
-        unique_id: Globally unique identifier for this pin.
+        design_pin_id: Primary identifier for this pin.
         name: Functional name of the pin (e.g. 'VCC', 'GND', 'D+').
         number: Pin number as shown on the component symbol.
         location: Position of the pin on the schematic.
@@ -180,7 +180,7 @@ class Pin:
         variant_name: Optional display name of the variant this pin belongs to.
     """
 
-    unique_id: str
+    design_pin_id: str
     name: str
     number: str
     location: Location
@@ -200,6 +200,18 @@ class Pin:
     def type_name(self) -> str:
         return "Pin"
 
+    @property
+    def unique_id(self) -> str:
+        """Get the unique identifier of the pin.
+
+        Deprecated:
+            Use `design_pin_id` instead.
+
+        Returns:
+            Unique ID string.
+        """
+        return self.design_pin_id
+
     @staticmethod
     def from_dict(data: Dict[str, Any]) -> 'Pin':
         """Deserialises a `Pin` from a raw JSON dictionary.
@@ -218,7 +230,7 @@ class Pin:
                 propagation_delay = None
 
         return Pin(
-            unique_id=data.get('uniqueId', ''),
+            design_pin_id=data.get('designPinId') or data.get('uniqueId', ''),
             name=data.get('name', ''),
             number=data.get('number', ''),
             location=Location.from_dict(data.get('location', {})),
@@ -353,7 +365,7 @@ class Component:
     variant_name: Optional[str] = None
     comment: str = ""
     description: str = ""
-    component_type: str = ""
+    type: str = ""
     library_component_id: Optional[str] = None
     nets: List['Net'] = field(default_factory=list)
 
@@ -374,20 +386,16 @@ class Component:
         return self.design_component_id
 
     @property
-    def type(self) -> str:
+    def component_type(self) -> str:
         """Get the component type.
 
         Deprecated:
-            Use `component_type` instead.
+            Use `type` instead.
 
         Returns:
             Component type string.
         """
-        return self.component_type
-
-    @type.setter
-    def type(self, value: str) -> None:
-        self.component_type = value
+        return self.type
 
     @staticmethod
     def from_dict(data: Dict[str, Any]) -> 'Component':
@@ -416,7 +424,7 @@ class Component:
             variant_name=data.get('variantName'),
             comment=data.get('comment', ''),
             description=data.get('description', ''),
-            component_type=data.get('componentType'),
+            type=data.get('componentType'),
             library_component_id=data.get('libraryComponentId'),
             nets=[],
         )
@@ -427,7 +435,7 @@ class NetItem:
     """A named port or net label attached to a schematic net.
 
     Attributes:
-        unique_id: Globally unique identifier for this net item.
+        design_net_item_id: Primary identifier for this net item.
         kind: Item kind (e.g. 'Port', 'NetLabel', 'PowerSymbol').
         port_name: Display name of the port or label.
         bounding_rectangle: Bounding box of this item on the schematic.
@@ -437,7 +445,7 @@ class NetItem:
         variant_name: Optional display name variant.
     """
 
-    unique_id: str
+    design_net_item_id: str
     kind: str
     port_name: str
     bounding_rectangle: BoundingRectangle
@@ -450,6 +458,18 @@ class NetItem:
     def type_name(self) -> str:
         return "NetItem"
 
+    @property
+    def unique_id(self) -> str:
+        """Get the unique identifier of the net item.
+
+        Deprecated:
+            Use `design_net_item_id` instead.
+
+        Returns:
+            Unique ID string.
+        """
+        return self.design_net_item_id
+
     @staticmethod
     def from_dict(data: Dict[str, Any]) -> 'NetItem':
         """Deserialises a `NetItem` from a raw JSON dictionary.
@@ -461,7 +481,7 @@ class NetItem:
             A populated `NetItem` instance.
         """
         return NetItem(
-            unique_id=data.get('uniqueId', ''),
+            design_net_item_id=data.get('designNetItemId') or data.get('uniqueId', ''),
             kind=data.get('kind', ''),
             port_name=data.get('portName', ''),
             bounding_rectangle=BoundingRectangle.from_dict(data.get('boundingRectangle', {})),
@@ -519,7 +539,7 @@ class Net:
     it at the net level directly.
 
     Attributes:
-        unique_id: Globally unique identifier for this net.
+        design_net_id: Primary identifier for this net.
         name: User-assigned net name (e.g. 'GND', 'VCC3V3').
         calculated_net_name: Net name as resolved by the ERC engine.
         color: Colour value used to highlight the net on the schematic.
@@ -531,7 +551,7 @@ class Net:
         net_items: Port or net-label items belonging to this net.
     """
 
-    unique_id: str
+    design_net_id: str
     name: str
     calculated_net_name: str
     color: int
@@ -549,6 +569,18 @@ class Net:
     @property
     def type_name(self) -> str:
         return "Net"
+
+    @property
+    def unique_id(self) -> str:
+        """Get the unique identifier of the net.
+
+        Deprecated:
+            Use `design_net_id` instead.
+
+        Returns:
+            Unique ID string.
+        """
+        return self.design_net_id
 
     @property
     def document_id(self) -> str:
@@ -573,7 +605,7 @@ class Net:
         document_id = net_items[0].document_id if net_items else (lines[0].document_id if lines else "")
 
         return Net(
-            unique_id=data.get('uniqueId', ''),
+            design_net_id=data.get('designNetId') or data.get('uniqueId', ''),
             name=data.get('name', ''),
             calculated_net_name=data.get('calculatedNetName', ''),
             color=data.get('color', 0),
@@ -717,26 +749,26 @@ class ProjectData:
         )
 
         
-        # Link each component pin to its owner and net based on pin unique_id.
+        # Link each component pin to its owner and net based on pin design_pin_id.
         pin_to_component: Dict[str, Component] = {}
         for component in project_data.components:
             component.pins = [pin for part in component.parts for pin in part.pins]
             for part in component.parts:
                 for pin in part.pins:
                     pin.component = component
-                    pin_to_component[pin.unique_id] = component
+                    pin_to_component[pin.design_pin_id] = component
 
         pin_to_net: Dict[str, Net] = {}
         for net in project_data.nets:
             for pin in net.pins:
-                pin.component = pin_to_component.get(pin.unique_id)
+                pin.component = pin_to_component.get(pin.design_pin_id)
                 pin.net = net
-                pin_to_net[pin.unique_id] = net
+                pin_to_net[pin.design_pin_id] = net
 
         for component in project_data.components:
             for part in component.parts:
                 for pin in part.pins:
-                    pin.net = pin_to_net.get(pin.unique_id)
+                    pin.net = pin_to_net.get(pin.design_pin_id)
 
         # Derive connected nets per component from linked part pins.
         for component in project_data.components:
@@ -744,9 +776,9 @@ class ProjectData:
             seen_net_ids: set[str] = set()
             for part in component.parts:
                 for pin in part.pins:
-                    if pin.net is None or pin.net.unique_id in seen_net_ids:
+                    if pin.net is None or pin.net.design_net_id in seen_net_ids:
                         continue
-                    seen_net_ids.add(pin.net.unique_id)
+                    seen_net_ids.add(pin.net.design_net_id)
                     component_nets.append(pin.net)
             component.nets = component_nets
 
@@ -832,7 +864,7 @@ class RelatedObject:
             )
 
         return RelatedObject(
-            uniqueId=obj.unique_id,
+            uniqueId=getattr(obj, 'design_pin_id', obj.unique_id),
             name=name,
             designator=designator,
             type=obj.type_name,
