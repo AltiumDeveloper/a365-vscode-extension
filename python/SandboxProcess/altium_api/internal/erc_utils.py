@@ -369,19 +369,19 @@ def is_ground_net(net: Net) -> bool:
 
 
 def collect_component_pin_ids(c: Component) -> Set[str]:
-    """Collects all pin unique IDs belonging to a component across all its parts.
+    """Collects all design pin IDs belonging to a component across all its parts.
 
     Args:
         c: A component object with a `parts` attribute, where each part has a
-           `pins` attribute containing pin objects with a `unique_id` field.
+           `pins` attribute containing pin objects with a `design_pin_id` field.
 
     Returns:
-        A set of pin unique_id strings for all pins of the component.
+        A set of pin design_pin_id strings for all pins of the component.
     """
     pin_ids = set()
     for part in c.parts:
         for pin in part.pins:
-            pin_ids.add(pin.unique_id)
+            pin_ids.add(pin.design_pin_id)
     return pin_ids
 
 
@@ -396,9 +396,9 @@ def is_connected_to_net(component: Component, net: Net) -> bool:
         True if at least one component-connected net matches the target net,
         otherwise False.
     """
-    target_net_id = net.unique_id
+    target_net_id = net.design_net_id
     if target_net_id:
-        return any(component_net.unique_id == target_net_id for component_net in component.nets)
+        return any(component_net.design_net_id == target_net_id for component_net in component.nets)
 
     target_net_name = (net.name or "").strip()
     return any((component_net.name or "").strip() == target_net_name for component_net in component.nets)
