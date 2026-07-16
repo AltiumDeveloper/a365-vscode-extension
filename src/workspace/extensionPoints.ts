@@ -52,6 +52,7 @@ export interface AssignmentInfo {
     scriptVersionId?: string;  // Present only if type === 'SCRIPT'
     scriptFileToken?: string;  // Present only if type === 'SCRIPT'
     workflowId?: string;       // Present only if type === 'WORKFLOW' (assumed field name)
+    configurationParameters: Array<{ name: string; value: string }>;
     createdAt: string;
     createdBy: string;
     lastModifiedAt: string;
@@ -90,6 +91,10 @@ const LIST_EXTENSION_POINTS_QUERY = `
                     description
                     type
                     active
+                    configurationParameters {
+                        name
+                        value
+                    }
                     ... on GloCusScriptAssignment {
                         scriptId
                         scriptVersionId
@@ -112,6 +117,7 @@ interface RawAssignment {
     scriptVersionId?: string;
     scriptFileToken?: string;
     workflowId?: string;
+    configurationParameters?: Array<{ name: string; value: string }>;
     createdAt: string;
     createdBy: string;
     lastModifiedAt: string;
@@ -129,6 +135,9 @@ function mapAssignment(a: RawAssignment): AssignmentInfo {
         scriptVersionId: a.scriptVersionId,
         scriptFileToken: a.scriptFileToken,
         workflowId: a.workflowId,
+        configurationParameters: Array.isArray(a.configurationParameters)
+            ? a.configurationParameters
+            : [],
         createdAt: a.createdAt,
         createdBy: a.createdBy,
         lastModifiedAt: a.lastModifiedAt,
