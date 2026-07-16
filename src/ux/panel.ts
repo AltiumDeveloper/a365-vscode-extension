@@ -34,6 +34,14 @@ const CTX_ASSIGNMENT_DEFAULT = 'assignmentNode-default';
 
 const OUTPUT_PREFIX = '[Altium 365] tree:';
 
+function getAssignmentDisplayName(assignment: AssignmentInfo): string {
+    const configuredName = assignment.configurationParameters
+        .find(parameter => parameter.name === 'Name')
+        ?.value?.trim();
+
+    return configuredName || assignment.name || 'Unnamed Assignment';
+}
+
 export type A365Node =
     | { kind: 'workspace'; info: WorkspaceInfo; workspaceUrl: string; url?: string }
     | {
@@ -259,7 +267,7 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
                 return item;
             }
             case 'assignmentNode': {
-                const assignmentName = n.assignment.name || 'Unnamed Assignment';
+                const assignmentName = getAssignmentDisplayName(n.assignment);
                 const item = new vscode.TreeItem(
                     assignmentName,
                     vscode.TreeItemCollapsibleState.None
@@ -560,7 +568,7 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
                 const typeOrder = { 'SCRIPT': 0, 'WORKFLOW': 1, 'DEFAULT': 2 };
                 const typeCompare = (typeOrder[a.type] || 99) - (typeOrder[b.type] || 99);
                 if (typeCompare !== 0) return typeCompare;
-                return (a.name || '').localeCompare(b.name || '');
+                return getAssignmentDisplayName(a).localeCompare(getAssignmentDisplayName(b));
             })
             .map((assignment): A365Node => ({
                 kind: 'assignmentNode',
