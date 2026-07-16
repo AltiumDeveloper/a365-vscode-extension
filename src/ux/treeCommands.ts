@@ -238,6 +238,7 @@ async function createScriptForExtensionPoint(
                     scriptId: script.scriptId,
                     scriptVersionId: script.latestVersionId,
                     scriptFileToken: fileToken,
+                    configurationParameters,
                     createdAt: '',
                     createdBy: '',
                     lastModifiedAt: '',
