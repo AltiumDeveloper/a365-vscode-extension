@@ -2,7 +2,6 @@ import { describe, it, expect, afterEach, vi } from 'vitest';
 import {
     decodeIdTokenClaims,
     userLabelFromClaims,
-    withExpiry,
     isExpired,
     getStoredTokens,
     clearAllTokens,
@@ -67,24 +66,6 @@ describe('userLabelFromClaims', () => {
 
     it('returns (signed in) for empty claims object', () => {
         expect(userLabelFromClaims({})).toBe('(signed in)');
-    });
-});
-
-// ── withExpiry ────────────────────────────────────────────────────
-
-describe('withExpiry', () => {
-    it('sets expires_at when absent', () => {
-        const tok: TokenSet = { access_token: 't', expires_in: 3600 };
-        const result = withExpiry(tok);
-        const expected = Math.floor(Date.now() / 1000) + 3570;
-        expect(result.expires_at).toBeGreaterThanOrEqual(expected - 5);
-        expect(result.expires_at).toBeLessThanOrEqual(expected + 5);
-    });
-
-    it('does not overwrite existing expires_at', () => {
-        const tok: TokenSet = { access_token: 't', expires_in: 3600, expires_at: 999 };
-        const result = withExpiry(tok);
-        expect(result.expires_at).toBe(999);
     });
 });
 
@@ -197,7 +178,7 @@ describe('refreshTokens', () => {
         const ctx = makeExtensionContext();
         await ctx.secrets.store('altium365.tokens', JSON.stringify({ access_token: 'old', refresh_token: 'rt' }));
         vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({
-            ok: true,
+            status: 200,
             text: async () => JSON.stringify({ access_token: 'new_at', expires_in: 3600 }),
         }));
         const result = await refreshTokens(ctx, cfg);
@@ -211,7 +192,7 @@ describe('refreshTokens', () => {
         const ctx = makeExtensionContext();
         await ctx.secrets.store('altium365.tokens', JSON.stringify({ access_token: 'old', refresh_token: 'original-rt' }));
         vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({
-            ok: true,
+            status: 200,
             text: async () => JSON.stringify({ access_token: 'new_at', expires_in: 3600 }),
         }));
         const result = await refreshTokens(ctx, cfg);
@@ -223,12 +204,8 @@ describe('refreshTokens', () => {
  * SKIPPED (D-08): VS Code-heavy or Node-HTTP-heavy functions
  * ──────────────────────────────────────────────────────────────────
  * signIn(ctx, cfg):
- *   Requires vscode.env.openExternal + Node https mechanics via
- *   pollActionWait. High mock complexity, low isolated test value.
- *
- * pollActionWait(endpoint, token, signal, timeoutMs):
- *   Uses Node http.request abort/timeout mechanics. Not worth
- *   simulating at this layer.
+ *   Thin wrapper around @altium-developer/a365-auth signIn plus VS Code
+ *   SecretStorage/auth-state side effects. The package owns ActionWait coverage.
  *
  * readOAuthConfig():
  *   Simple vscode.workspace.getConfiguration accessor.

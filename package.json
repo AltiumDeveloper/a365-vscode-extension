@@ -541,5 +541,8 @@
     "typescript": "^5.4.0",
     "typescript-eslint": "^8.60.1",
     "vitest": "^2.0.0"
+  },
+  "dependencies": {
+    "@altium-developer/a365-auth": "^0.1.2"
   }
 }
