@@ -6,6 +6,8 @@ tsconfig.json
 **/*.map
 **/*.ts
 node_modules/**
+!node_modules/@altium-developer/**
+auth/**
 .planning/**
 AGENTS.md
 .git/**
