@@ -27,9 +27,9 @@
 - VS Code Extension API (`@types/vscode ^1.85.0`) — extension activation, commands, UI (QuickPick, InputBox, OutputChannel, progress notifications, debug API), SecretStorage, GlobalState, configuration
 
 **Build/Dev:**
-- TypeScript compiler (`tsc`) — sole build tool, configured in `tsconfig.json`
+- TypeScript compiler (`tsc`) — typecheck only (`--noEmit`), configured in `tsconfig.json`
   - `module: commonjs`, `target: ES2020`, `strict: true`, `outDir: out`
-- No bundler (webpack/esbuild) — plain tsc output
+- `esbuild` — bundles to a single CJS `out/extension.js`, `vscode` external, `--target=node18`
 
 **Python runtime (bundled, no pip required):**
 - `python/a365.py` — stdlib-only GraphQL helper (`urllib`, `json`, `ssl`); zero dependencies
@@ -75,7 +75,7 @@
 
 **Build:**
 - `tsconfig.json` — `rootDir: src`, `outDir: out`, `strict: true`, `target: ES2020`, `module: commonjs`
-- `package.json` `scripts.compile` — `tsc -p ./`
+- `package.json` `scripts.compile` — `npm run typecheck && npm run bundle`
 - `package.json` `scripts.vscode:prepublish` — `npm run compile`
 
 ## Platform Requirements
