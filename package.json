@@ -521,8 +521,10 @@
   "scripts": {
     "vscode:prepublish": "npm run clean && npm run compile",
     "clean": "node -e \"require('fs').rmSync('out',{recursive:true,force:true})\"",
-    "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./",
+    "compile": "npm run typecheck && npm run bundle",
+    "typecheck": "tsc -p ./ --noEmit",
+    "bundle": "esbuild src/extension.ts --bundle --platform=node --format=cjs --target=node18 --external:vscode --outfile=out/extension.js --sourcemap",
+    "watch": "npm run bundle -- --watch",
     "package": "vsce package",
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
@@ -537,12 +539,13 @@
     "@typescript-eslint/parser": "^8.60.1",
     "@vitest/coverage-v8": "^2.1.9",
     "@vscode/vsce": "^3.9.1",
+    "esbuild": "^0.28.2",
     "eslint": "^10.4.1",
     "typescript": "^5.4.0",
     "typescript-eslint": "^8.60.1",
     "vitest": "^2.0.0"
   },
   "dependencies": {
-    "@altium-developer/a365-auth": "^0.1.2"
+    "@altium-developer/altium-auth": "^0.2.0"
   }
 }

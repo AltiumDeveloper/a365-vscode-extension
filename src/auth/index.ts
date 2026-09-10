@@ -5,7 +5,7 @@ import {
     signIntoWorkspace,
     type OAuthConfig,
     type TokenSet,
-} from '@altium-developer/a365-auth';
+} from '@altium-developer/altium-auth';
 import { resolveConfig } from '../config';
 import { AsyncMutex } from '../shared/asyncMutex';
 
