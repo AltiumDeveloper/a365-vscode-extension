@@ -70,7 +70,7 @@ This project uses the GSD workflow. Always:
 ## Tech Stack
 
 - TypeScript 5.4+, VS Code Extension API (≥1.85.0), Node.js ≥18
-- No bundler — plain `tsc` output to `out/`
+- `esbuild` bundles `src/extension.ts` to a single CJS `out/extension.js`; `tsc --noEmit` typechecks. Required because `@altium-developer/altium-auth` is ESM-only and the extension host loads CommonJS
 - `vsce` for VSIX packaging
 - `vitest` for unit testing
 - Python 3 for local script execution (subprocess)

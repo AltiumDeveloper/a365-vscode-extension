@@ -204,7 +204,7 @@ describe('refreshTokens', () => {
  * SKIPPED (D-08): VS Code-heavy or Node-HTTP-heavy functions
  * ──────────────────────────────────────────────────────────────────
  * signIn(ctx, cfg):
- *   Thin wrapper around @altium-developer/a365-auth signIn plus VS Code
+ *   Thin wrapper around @altium-developer/altium-auth signIn plus VS Code
  *   SecretStorage/auth-state side effects. The package owns ActionWait coverage.
  *
  * readOAuthConfig():
