@@ -69,6 +69,7 @@ export enum QuickPickItemKind { Separator = -1, Default = 0 }
 
 // ── window stubs ──────────────────────────────────────────────────
 export const window = {
+    activeTextEditor: undefined as { document: { uri: VSCodeUri } } | undefined,
     showErrorMessage: vi.fn(),
     showInformationMessage: vi.fn(),
     showWarningMessage: vi.fn(),
@@ -79,11 +80,16 @@ export const window = {
 
 // ── workspace stubs ───────────────────────────────────────────────
 export const workspace = {
-    getConfiguration: vi.fn(() => ({
+    getConfiguration: vi.fn((): { get: (key: string) => unknown } => ({
         get: vi.fn(() => undefined),
     })),
     onDidSaveTextDocument: vi.fn(() => new Disposable(() => {})),
     fs: { writeFile: vi.fn() },
+};
+
+// ── extensions stubs ──────────────────────────────────────────────
+export const extensions = {
+    getExtension: vi.fn<(id: string) => unknown>(),
 };
 
 // ── commands stubs ────────────────────────────────────────────────
