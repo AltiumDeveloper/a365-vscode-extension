@@ -89,7 +89,7 @@ export async function listWorkspaces(
     // `filesServiceUrl` so per-workspace Files Service REST calls
     // (download/upload script bodies) can resolve a workspace-scoped base URL
     // — D-19 carry-over to the Files Service tier.
-    const data = await graphqlRequest(
+    const data = await graphqlRequest<{ desWorkspaceInfos?: unknown }>(
         endpoint,
         accessToken,
         'query { desWorkspaceInfos { name workspaceId authId url location { apiServiceUrl filesServiceUrl } } }'

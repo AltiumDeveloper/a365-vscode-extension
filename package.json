@@ -528,7 +528,7 @@
     "package": "vsce package",
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
-    "lint": "eslint src test",
+    "lint": "eslint src test --max-warnings 0",
     "lint:fix": "eslint src test --fix"
   },
   "devDependencies": {

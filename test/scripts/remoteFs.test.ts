@@ -1,12 +1,11 @@
 import { describe, it, expect } from 'vitest';
+import { Uri } from 'vscode';
 import { buildScriptUri, parseScriptUri } from '../../src/scripts/remoteFs';
 
 const VALID_AUTH_ID = 'my-team';
 const VALID_SCRIPT_ID = '550e8400-e29b-41d4-a716-446655440000';
 
-function makeUri(scheme: string, path: string): any {
-    return { scheme, path, authority: '', query: '', fragment: '', fsPath: path, toString: () => `${scheme}:${path}` };
-}
+const makeUri = (scheme: string, path: string) => Uri.parse(`${scheme}:${path}`);
 
 // ── buildScriptUri ────────────────────────────────────────────────
 

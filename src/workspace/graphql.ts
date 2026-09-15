@@ -26,12 +26,12 @@ export class GraphQLError extends Error {
     }
 }
 
-export async function graphqlRequest(
+export async function graphqlRequest<T = unknown>(
     endpoint: string,
     accessToken: string,
     query: string,
     variables?: Record<string, unknown>
-): Promise<any> {
+): Promise<T | undefined> {
     const res = await fetch(endpoint, {
         method: 'POST',
         headers: {
@@ -45,7 +45,7 @@ export async function graphqlRequest(
     if (!res.ok) {
         throw new Error(`GraphQL HTTP ${res.status}: ${text.slice(0, 500)}`);
     }
-    let payload: any;
+    let payload: { data?: T; errors?: unknown };
     try {
         payload = JSON.parse(text);
     } catch {
