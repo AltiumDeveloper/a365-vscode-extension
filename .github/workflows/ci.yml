@@ -6,9 +6,62 @@ on:
   pull_request:
     branches: [main]
 
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
-  build:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run compile
+      - run: npm test
+
+      - name: Package VSIX
+        run: npm run package
+
+      - uses: actions/upload-artifact@v4
+        if: matrix.os == 'ubuntu-latest'
+        with:
+          name: altium365-vsix
+          path: '*.vsix'
+
+  gate:
+    needs: test
+    if: always()
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require all test matrix legs to pass
+        run: |
+          if [ "${{ needs.test.result }}" != "success" ]; then
+            echo "test result: ${{ needs.test.result }}"
+            exit 1
+          fi
+
+  release:
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: write  # required for gh release create
     steps:
@@ -20,7 +73,6 @@ jobs:
           node-version: '20'
       - run: npm ci
       - run: npm run compile
-      - run: npm test
 
       # Detect release type on pushes to main.
       #
@@ -34,13 +86,14 @@ jobs:
       #   version = base version string (e.g. "0.2.0")  — both types
       #   base    = major.minor (e.g. "0.2")             — both types
       - name: Determine release type
-        if: github.ref == 'refs/heads/main'
         id: release_type
         run: |
+          set -euo pipefail
           VERSION=$(node -p "require('./package.json').version")
           BASE=$(node -p "require('./package.json').version.split('.').slice(0,2).join('.')")
           TAG="v${VERSION}"
-          if git ls-remote --tags origin "${TAG}" | grep -q .; then
+          EXISTING=$(git ls-remote --tags origin "refs/tags/${TAG}")
+          if [ -n "${EXISTING}" ]; then
             echo "type=prerelease" >> "$GITHUB_OUTPUT"
           else
             echo "type=stable"     >> "$GITHUB_OUTPUT"
@@ -51,7 +104,7 @@ jobs:
       # Pre-release: stamp patch = GITHUB_RUN_NUMBER for a monotonically
       # increasing, unique version on every push (e.g. 0.2.150).
       - name: Stamp pre-release version
-        if: github.ref == 'refs/heads/main' && steps.release_type.outputs.type == 'prerelease'
+        if: steps.release_type.outputs.type == 'prerelease'
         run: |
           npm version "${{ steps.release_type.outputs.base }}.${GITHUB_RUN_NUMBER}" \
             --no-git-tag-version --allow-same-version
@@ -59,15 +112,10 @@ jobs:
       - name: Package VSIX
         run: npm run package
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: altium365-vsix
-          path: '*.vsix'
-
       # Pre-release publish — only users who opt-in for pre-release extensions
       # receive these builds.
       - name: Publish pre-release to Marketplace
-        if: github.ref == 'refs/heads/main' && steps.release_type.outputs.type == 'prerelease'
+        if: steps.release_type.outputs.type == 'prerelease'
         run: npx @vscode/vsce publish --pre-release --pat "$VSCE_PAT"
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
@@ -76,11 +124,11 @@ jobs:
       # interpolation issues, then create a GitHub Release (tag + notes + VSIX
       # attachment) and publish the stable extension.
       - name: Write release notes from commit message
-        if: github.ref == 'refs/heads/main' && steps.release_type.outputs.type == 'stable'
+        if: steps.release_type.outputs.type == 'stable'
         run: git log -1 --format='%B' > /tmp/release-notes.md
 
       - name: Create GitHub Release
-        if: github.ref == 'refs/heads/main' && steps.release_type.outputs.type == 'stable'
+        if: steps.release_type.outputs.type == 'stable'
         run: |
           gh release create "v${{ steps.release_type.outputs.version }}" \
             --title "v${{ steps.release_type.outputs.version }}" \
@@ -90,7 +138,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish stable release to Marketplace
-        if: github.ref == 'refs/heads/main' && steps.release_type.outputs.type == 'stable'
+        if: steps.release_type.outputs.type == 'stable'
         run: npx @vscode/vsce publish --pat "$VSCE_PAT"
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
