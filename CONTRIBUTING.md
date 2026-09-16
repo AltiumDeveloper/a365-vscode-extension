@@ -1,5 +1,57 @@
 # Contributing
 
+Thanks for your interest in the Altium Developer extension. Bug reports, feature
+requests and pull requests are all welcome.
+
+## Prerequisites
+
+- Node.js 20 or later
+- VS Code 1.85 or later
+- Python 3.8 or later, to exercise local script run/debug
+
+## Getting set up
+
+```
+npm ci
+npm run compile
+```
+
+`compile` runs `tsc --noEmit` and then bundles `src/extension.ts` to
+`out/extension.js` with esbuild.
+
+## Running the extension
+
+Press `F5` (the **Run Extension** launch configuration) to open a VS Code
+Extension Development Host with the extension loaded. It compiles first via the
+`npm: compile` task. Use `npm run watch` for an incremental rebuild while you
+work, and **Developer: Reload Window** in the dev host to pick up changes.
+
+## Checks
+
+| Command | What it does |
+| --- | --- |
+| `npm run lint` | ESLint over `src` and `test`, `--max-warnings 0` |
+| `npm run typecheck` | `tsc --noEmit` over `src` |
+| `npm test` | Vitest unit tests |
+| `npm run package` | Builds a `.vsix` with `vsce` |
+
+CI runs lint, compile, test and package on Ubuntu, Windows and macOS. All three
+legs must pass before a pull request can merge, so run at least `npm run lint`
+and `npm test` locally first.
+
+## Pull requests
+
+- Branch off `main` and keep the change focused on one thing.
+- Include tests for new logic. Unit tests live under `test/`, mirroring the
+  `src/` layout, and mock the VS Code API via `test/__mocks__/vscode.ts`.
+- Update `README.md` when you change anything a user can see — commands,
+  settings, scopes or behaviour. See the Documentation Maintenance section of
+  `AGENTS.md`.
+- Describe what changed and why in the PR body. The pull request template asks
+  for this.
+- Do not bump the version in `package.json` as part of a feature PR; releases
+  are handled separately, as described below.
+
 ## Versioning and Release Process
 
 `package.json` always carries the **base version** with patch = 0 (e.g. `0.2.0`, `1.4.0`). The CI workflow derives the actual published version from this base and the release type.

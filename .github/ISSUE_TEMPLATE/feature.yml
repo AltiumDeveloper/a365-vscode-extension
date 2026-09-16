@@ -1,0 +1,26 @@
+name: Feature request
+description: Suggest a capability the extension does not have
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do
+      description: Describe the task you are trying to accomplish, not just the feature you have in mind.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you like the extension to do
+    validations:
+      required: true
+
+  - type: textarea
+    id: workaround
+    attributes:
+      label: How do you handle this today
+      description: Any workaround you currently use, including doing it outside VS Code.
+    validations:
+      required: false

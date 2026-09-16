@@ -10,9 +10,13 @@ Browse Altium 365 workspaces, run and debug Python scripts locally with live API
 
 ## Installation
 
-1. Download the latest `.vsix` from the [GitHub Releases](https://github.com/altium/a365-vscode-extension/releases) page (or from the CI workflow artifacts).
-2. In VS Code, open the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`), run **Extensions: Install from VSIX...**, and select the downloaded file.
-3. Reload VS Code when prompted.
+Install **Altium Developer** from the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=altium.developer), or from the command line:
+
+```
+code --install-extension altium.developer
+```
+
+Pre-release builds are published on every push to `main`. To receive them, use **Switch to Pre-Release Version** on the extension's page in VS Code.
 
 ## Getting Started
 
@@ -60,13 +64,13 @@ When running a script, the `context.auth_token` passed to your `onExecute` funct
 - The **global token** if no workspace has been selected
 - A **workspace-scoped token** for the selected workspace if one has been chosen
 
-Signing out clears **all** tokens — both the global token and all cached workspace tokens.
+Signing out deletes **all** locally stored tokens — both the global token and every cached workspace token.
 
 ## Switching Environments
 
 Run **Altium Developer: Select Environment** from the Command Palette to switch the active A365 environment. Three environments are pre-configured (Dev, Uat, Prod). Switching environments clears the active workspace and workspace token. Run **Altium Developer: Select Workspace** again after switching to pick a workspace in the new environment.
 
-You can define additional environments under the `altium365.environments` setting; each entry may override `graphqlEndpoint`, `authEndpoint`, `tokenEndpoint`, `scopes`, `audience`, and `appId`.
+You can define additional environments under the `altium365.environments` setting; each entry may override `graphqlEndpoint`, `authEndpoint`, `tokenEndpoint`, `actionWaitEndpoint`, `redirectUri`, and `scopes`.
 
 ## Remote scripts
 
@@ -128,7 +132,7 @@ If you store more than 25 events for one script, the extension surfaces a one-ti
 
 ## Commands Reference
 
-All commands are prefixed with **Altium Developer:** in the Command Palette.
+All commands are prefixed with **Altium Developer:**. Most are available in the Command Palette; the ones marked **side panel** are offered only from the Altium 365 tree's context menus.
 
 ### Authentication & Environment
 | Command | Description |
@@ -147,8 +151,8 @@ All commands are prefixed with **Altium Developer:** in the Command Palette.
 ### Script Operations (Remote)
 | Command | Description |
 | --- | --- |
-| Edit Script | Opens a remote script in the editor (via `altium365:` scheme) |
-| Create Script | Creates a Python script from an extension point and assigns it there |
+| Edit Script | **Side panel.** Opens a remote script in the editor (via `altium365:` scheme) |
+| Create Script | **Side panel.** Creates a Python script from an extension point and assigns it there |
 | Publish Script | Publishes local changes to a remote script back to A365 |
 | Execute Script Remotely | Triggers server-side execution on A365 (logs stream to Output channel) |
 
@@ -170,19 +174,20 @@ All commands are prefixed with **Altium Developer:** in the Command Palette.
 ### Tree Actions (Context Menu)
 | Command | Description |
 | --- | --- |
-| Refresh | Refreshes the Altium 365 tree view |
+| Refresh Workspaces | Refreshes the Altium 365 tree view |
 | Copy ID | Copies workspace/project/script/extension point ID to clipboard |
 | Open in Browser | Opens workspace/project/assignment in A365 web UI |
+| Run Script (Local) | Downloads a script from the tree to a temp file and runs it locally |
+| Debug Script (Local) | Same, under the VS Code debugger |
+| Select Workspace | Makes the clicked workspace node the active workspace |
 
 ## Configuration
 
 Key settings (see VS Code Settings for the full list):
 
 - `altium365.pythonPath` — path to the Python interpreter (default: auto-detect via the Python extension or `python` on `PATH`)
-- `altium365.environments` — object of named environments; each entry can override `graphqlEndpoint`, `authEndpoint`, `tokenEndpoint`, `scopes`, `audience`, and `appId`
+- `altium365.environments` — object of named environments; each entry can override `graphqlEndpoint`, `authEndpoint`, `tokenEndpoint`, `actionWaitEndpoint`, `redirectUri`, and `scopes`
+- `altium365.activeEnvironment` — name of the active entry in `altium365.environments` (default: `Prod`); managed by **Select Environment**
+- `altium365.clientId` — OAuth2 `client_id` used for the PKCE flow. This is a public client identifier, not a secret; change it only if you have your own registered Altium application
 - `altium365.extraEnv` — extra environment variables passed to the Python process
 - `altium365.injectHelper` — inject the bundled `a365` helper module on PYTHONPATH (default: `true`)
-
-**Removed settings** (deprecated as of v0.1.0):
-- `altium365.inputParametersPath` — replaced by test events (Phase 6)
-- `altium365.promptForProjectId` — no longer used
