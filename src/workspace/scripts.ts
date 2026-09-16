@@ -42,20 +42,8 @@ export async function listScripts(
     return Array.isArray(nodes) ? (nodes as ScriptInfo[]) : [];
 }
 
-// =============================================================================
-// Phase 3 — Plan 03-03: getScript + updateScript (open / publish round-trip)
-// =============================================================================
-//
-// GraphQL shapes verified against
-// `.planning/phases/03-remote-script-ops/schema-introspection.json`. RESEARCH
-// §Code Examples documents the same selection sets (Pattern 1 — open/publish).
-//
-// Both helpers respect 02.3 D-19 by accepting an `endpoint` arg — callers
-// resolve via `getWorkspaceApiUrl(ws, fallback)` so cross-cluster workspaces
-// keep working. Tokens are workspace-scoped — callers obtain them via
-// `ensureWorkspaceToken`. Errors surface as the typed `GraphQLError` from
-// `graphqlRequest` so command-boundary handlers can map well-known codes
-// (Plan 03-05 wraps these in user-friendly toasts).
+// Helpers take an explicit `endpoint` so cross-cluster workspaces keep working;
+// callers resolve it via `getWorkspaceApiUrl(ws, fallback)`.
 
 export interface ScriptDetail {
     scriptId: string;
