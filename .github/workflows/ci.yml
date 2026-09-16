@@ -72,7 +72,6 @@ jobs:
         with:
           node-version: '20'
       - run: npm ci
-      - run: npm run compile
 
       # Detect release type on pushes to main.
       #
