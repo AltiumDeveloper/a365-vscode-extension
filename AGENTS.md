@@ -24,7 +24,7 @@ This project uses the GSD workflow. Always:
 
 **Extension entry point:** `src/extension.ts` (991 lines — command registration + UI orchestration + subprocess management)
 **Auth:** `src/auth.ts` — OAuth2 PKCE, token storage, workspace token exchange
-**Workspace:** `src/workspace.ts` — GraphQL queries for workspaces/projects, `graphqlRequest` helper
+**Workspace:** `src/workspace/` — GraphQL queries for workspaces/projects, `graphqlRequest` helper in `graphql.ts`
 **Test events:** `src/testEvents/` (1502 lines) — test event storage, resolution, FSP, status indicator
   - `identity.ts` — script identity resolution (local path vs remote workspace+scriptId)
   - `store.ts` — test event storage in `context.globalState`
@@ -80,7 +80,7 @@ This project uses the GSD workflow. Always:
 See `.planning/codebase/CONVENTIONS.md` for full details. Key points:
 - All VS Code commands prefixed `altium365.`
 - Async/await throughout; errors surfaced via `vscode.window.showErrorMessage` at command boundary
-- GraphQL requests via `graphqlRequest(endpoint, token, query, variables)` in `src/workspace.ts` — reuse this pattern for script API calls
+- GraphQL requests via `graphqlRequest<TResponse>(endpoint, token, query, variables)` in `src/workspace/graphql.ts` — pass the selection-set shape, and keep runtime-guarded fields as `unknown`
 - No module-level state except `outputChannel` singleton
 - FileSystemProvider pattern for virtual documents (`altium365:`, `altium365-event:` schemes)
 - Script identity resolution via `buildIdentity()`/`parseIdentity()` helpers in `testEvents/identity.ts`

@@ -42,7 +42,9 @@ export async function executeScript(
     workspaceToken: string,
     input: ExecuteScriptInput
 ): Promise<{ scriptExecutionId: string; status: string }> {
-    const data = await graphqlRequest(
+    const data = await graphqlRequest<{
+        gloScrExecuteScript?: { gloScrScriptExecution?: { scriptExecutionId: string; status: string } };
+    }>(
         endpoint,
         workspaceToken,
         EXECUTE_SCRIPT_MUTATION,
@@ -78,7 +80,16 @@ export async function getExecutionResult(
     workspaceToken: string,
     scriptExecutionId: string
 ): Promise<ExecutionResult> {
-    const data = await graphqlRequest(
+    const data = await graphqlRequest<{
+        gloScrScriptExecutionResult?: {
+            scriptExecutionId: string;
+            status: string;
+            failureReason?: string | null;
+            createdAt?: string | null;
+            updatedAt?: string | null;
+            executionResult?: { exitCode?: number | null };
+        };
+    }>(
         endpoint,
         workspaceToken,
         GET_EXEC_RESULT_QUERY,
@@ -123,7 +134,9 @@ export async function getExecutionLogs(
     limit: number,
     nextToken: string | null
 ): Promise<ExecutionLogPage> {
-    const data = await graphqlRequest(
+    const data = await graphqlRequest<{
+        gloScrScriptExecutionResult?: { logs?: { logs?: unknown; nextToken?: unknown } };
+    }>(
         endpoint,
         workspaceToken,
         GET_EXEC_LOGS_QUERY,
@@ -175,7 +188,9 @@ export async function executeAssignment(
         })),
     };
 
-    const data = await graphqlRequest(
+    const data = await graphqlRequest<{
+        gloCusExecuteAssignment?: { scriptExecutionId?: string };
+    }>(
         endpoint,
         workspaceToken,
         EXECUTE_ASSIGNMENT_MUTATION,

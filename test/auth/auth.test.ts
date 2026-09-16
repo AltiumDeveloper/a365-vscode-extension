@@ -7,6 +7,7 @@ import {
     clearAllTokens,
     onAuthStateChanged,
     refreshTokens,
+    type AuthState,
     type TokenSet,
 } from '../../src/auth';
 import { makeExtensionContext } from '../__mocks__/vscode';
@@ -111,7 +112,7 @@ describe('clearAllTokens', () => {
 
     it('fires onAuthStateChanged with {signedIn:false}', async () => {
         const ctx = makeExtensionContext();
-        const received: any[] = [];
+        const received: AuthState[] = [];
         const d = onAuthStateChanged((s) => received.push(s));
         try {
             await clearAllTokens(ctx);
@@ -123,7 +124,7 @@ describe('clearAllTokens', () => {
 
     it('does NOT fire onAuthStateChanged when silent:true', async () => {
         const ctx = makeExtensionContext();
-        const received: any[] = [];
+        const received: AuthState[] = [];
         const d = onAuthStateChanged((s) => received.push(s));
         try {
             // Seed a token so there's something to clear

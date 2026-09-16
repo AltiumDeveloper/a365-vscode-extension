@@ -27,7 +27,7 @@ describe('previewBody', () => {
     });
 
     it('returns fallback string for circular references (no throw)', () => {
-        const obj: any = {};
+        const obj: Record<string, unknown> = {};
         obj.self = obj;
         let result: string;
         expect(() => { result = previewBody(obj); }).not.toThrow();
@@ -78,7 +78,7 @@ describe('buildPickerItems', () => {
             events: { run1: {}, run2: {}, run3: {} },
         };
         const items = buildPickerItems(store, {});
-        const eventItems = items.filter(i => (i as any).eventName);
+        const eventItems = items.filter(i => i.eventName);
         expect(eventItems.length).toBeGreaterThanOrEqual(3);
     });
 

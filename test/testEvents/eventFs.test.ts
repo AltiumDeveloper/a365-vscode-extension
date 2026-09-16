@@ -1,9 +1,8 @@
 import { describe, it, expect } from 'vitest';
+import { Uri } from 'vscode';
 import { buildEventUri, parseEventUri } from '../../src/testEvents/eventFs';
 
-function makeUri(scheme: string, path: string): any {
-    return { scheme, path, authority: '', query: '', fragment: '', fsPath: path, toString: () => `${scheme}:${path}` };
-}
+const makeUri = (scheme: string, path: string) => Uri.parse(`${scheme}:${path}`);
 
 // ── buildEventUri ─────────────────────────────────────────────────
 

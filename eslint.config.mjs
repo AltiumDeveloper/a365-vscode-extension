@@ -26,8 +26,7 @@ export default tseslint.config(
                 { prefer: 'type-imports', fixStyle: 'inline-type-imports' },
             ],
 
-            // Warn on any — unavoidable for GraphQL payloads but flag new uses
-            '@typescript-eslint/no-explicit-any': 'warn',
+            '@typescript-eslint/no-explicit-any': 'error',
 
             // Unused vars are errors; allow underscore-prefixed intentional ignores
             '@typescript-eslint/no-unused-vars': [
@@ -44,7 +43,7 @@ export default tseslint.config(
             // Use the typed accessor functions in src/workspace/state.ts,
             // src/testEvents/store.ts, or the owning module instead.
             'no-restricted-syntax': [
-                'warn',
+                'error',
                 {
                     selector:
                         "CallExpression[callee.type='MemberExpression'][callee.property.name='get'][callee.object.property.name='globalState'] > Literal",
@@ -71,6 +70,16 @@ export default tseslint.config(
             'src/runner/pythonAnalysis.ts',
             'src/auth/index.ts',
         ],
+        rules: {
+            'no-restricted-syntax': 'off',
+        },
+    },
+
+    // ── Relax globalState rule in tests ─────────────────────────────────────
+    // Tests seed and read raw globalState to exercise the typed wrappers, so
+    // routing through the wrappers would make them assert against themselves.
+    {
+        files: ['test/**/*.ts'],
         rules: {
             'no-restricted-syntax': 'off',
         },
