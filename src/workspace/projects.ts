@@ -31,7 +31,12 @@ export async function listProjects(
     accessToken: string
 ): Promise<ProjectInfo[]> {
     return collectAllPages<ProjectInfo>(async (after) => {
-        const data = await graphqlRequest(endpoint, accessToken, LIST_PROJECTS_QUERY, {
+        const data = await graphqlRequest<{
+            desProjects?: {
+                nodes?: unknown;
+                pageInfo?: { endCursor?: unknown; hasNextPage?: unknown };
+            };
+        }>(endpoint, accessToken, LIST_PROJECTS_QUERY, {
             first: LIST_PROJECTS_PAGE_SIZE,
             after,
         });

@@ -37,7 +37,11 @@ export async function listScripts(
     endpoint: string,
     workspaceToken: string
 ): Promise<ScriptInfo[]> {
-    const data = await graphqlRequest(endpoint, workspaceToken, LIST_SCRIPTS_QUERY);
+    const data = await graphqlRequest<{ gloScrScripts?: { nodes?: unknown } }>(
+        endpoint,
+        workspaceToken,
+        LIST_SCRIPTS_QUERY
+    );
     const nodes = data?.gloScrScripts?.nodes;
     return Array.isArray(nodes) ? (nodes as ScriptInfo[]) : [];
 }
@@ -78,7 +82,13 @@ export async function getScript(
     workspaceToken: string,
     scriptId: string
 ): Promise<ScriptDetail> {
-    const data = await graphqlRequest(endpoint, workspaceToken, GET_SCRIPT_QUERY, {
+    const data = await graphqlRequest<{
+        gloScrScript?: ScriptInfo & {
+            versions?: {
+                nodes?: Array<{ scriptVersionId: string; package?: { fileToken?: unknown } }>;
+            };
+        };
+    }>(endpoint, workspaceToken, GET_SCRIPT_QUERY, {
         scriptId,
     });
     const script = data?.gloScrScript;
@@ -127,7 +137,9 @@ export async function updateScript(
     if (comment !== undefined) {
         input.comment = comment;
     }
-    const data = await graphqlRequest(
+    const data = await graphqlRequest<{
+        gloScrUpdateScript?: { gloScrScriptVersion?: { scriptVersionId: string; timestamp: string } };
+    }>(
         endpoint,
         workspaceToken,
         UPDATE_SCRIPT_MUTATION,
@@ -175,7 +187,13 @@ export async function createScript(
     if (description !== undefined) {
         input.description = description;
     }
-    const data = await graphqlRequest(
+    const data = await graphqlRequest<{
+        gloScrCreateScript?: {
+            gloScrScript?: ScriptInfo & {
+                versions?: { nodes?: Array<{ scriptVersionId: string }> };
+            };
+        };
+    }>(
         endpoint,
         workspaceToken,
         CREATE_SCRIPT_MUTATION,

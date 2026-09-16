@@ -1,5 +1,6 @@
 // Shared vscode mock for Phase 11 unit tests
 import { vi } from 'vitest';
+import type { ExtensionContext, Uri as VSCodeUri } from 'vscode';
 
 // ── EventEmitter ──────────────────────────────────────────────────
 export class EventEmitter<T> {
@@ -26,35 +27,35 @@ export class Disposable {
 export const Uri = {
     from: (parts: { scheme: string; path: string; authority?: string; query?: string; fragment?: string }) =>
         ({ ...parts, authority: parts.authority ?? '', query: parts.query ?? '', fragment: parts.fragment ?? '',
-           fsPath: parts.path, toString: () => `${parts.scheme}:${parts.path}` }) as any,
+           fsPath: parts.path, toString: () => `${parts.scheme}:${parts.path}` }) as unknown as VSCodeUri,
     parse: (value: string) => {
         const idx = value.indexOf(':');
         const scheme = idx >= 0 ? value.slice(0, idx) : value;
         const rest = idx >= 0 ? value.slice(idx + 1) : '';
-        return { scheme, path: rest, authority: '', fsPath: rest, toString: () => value } as any;
+        return { scheme, path: rest, authority: '', fsPath: rest, toString: () => value } as unknown as VSCodeUri;
     },
-    file: (path: string) => ({ scheme: 'file', path, authority: '', fsPath: path, toString: () => `file://${path}` }) as any,
+    file: (path: string) => ({ scheme: 'file', path, authority: '', fsPath: path, toString: () => `file://${path}` }) as unknown as VSCodeUri,
 };
 
 // ── FileSystemError ───────────────────────────────────────────────
 export class FileSystemError extends Error {
     public code: string = '';
-    static FileNotFound(_uri?: any): FileSystemError {
+    static FileNotFound(_uri?: unknown): FileSystemError {
         const e = new FileSystemError('FileNotFound');
         e.code = 'FileNotFound';
         return e;
     }
-    static Unavailable(msgOrUri: any): FileSystemError {
+    static Unavailable(msgOrUri: unknown): FileSystemError {
         const e = new FileSystemError(typeof msgOrUri === 'string' ? msgOrUri : 'Unavailable');
         e.code = 'Unavailable';
         return e;
     }
-    static FileNotADirectory(_uri?: any): FileSystemError {
+    static FileNotADirectory(_uri?: unknown): FileSystemError {
         const e = new FileSystemError('FileNotADirectory');
         e.code = 'FileNotADirectory';
         return e;
     }
-    static NoPermissions(_uri?: any): FileSystemError {
+    static NoPermissions(_uri?: unknown): FileSystemError {
         const e = new FileSystemError('NoPermissions');
         e.code = 'NoPermissions';
         return e;
@@ -102,7 +103,7 @@ export function makeSecretStorage() {
         get: vi.fn(async (key: string) => store.get(key)),
         store: vi.fn(async (key: string, value: string) => { store.set(key, value); }),
         delete: vi.fn(async (key: string) => { store.delete(key); }),
-        onDidChange: new EventEmitter<any>().event,
+        onDidChange: new EventEmitter<{ key: string }>().event,
     };
 }
 
@@ -124,5 +125,5 @@ export function makeExtensionContext(overrides?: Record<string, unknown>) {
         asAbsolutePath: vi.fn((rel: string) => `/mock/extension/${rel}`),
         subscriptions: [],
         ...overrides,
-    } as any;
+    } as unknown as ExtensionContext;
 }

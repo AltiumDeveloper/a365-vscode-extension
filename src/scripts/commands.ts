@@ -21,7 +21,7 @@ import { withScriptProgress } from '../runner/progress';
  * Returns undefined if the node is neither, or if it's a non-script assignment.
  */
 function extractScriptContext(
-    node: any
+    node: A365Node
 ): { scriptId: string; scriptName: string; workspaceAuthId: string; workspaceUrl: string } | undefined {
     if (node.kind === 'script') {
         return {
@@ -39,7 +39,7 @@ function extractScriptContext(
         
         return {
             scriptId: node.assignment.scriptId || '',
-            scriptName: node.assignment.name,
+            scriptName: node.assignment.name || '',
             workspaceAuthId: node.workspaceAuthId,
             workspaceUrl: node.workspaceUrl,
         };
@@ -153,7 +153,7 @@ function resolveScriptContext(
             // scriptCtx contains authId and url, but we need workspaceId too
             // Recover workspaceId from the node if available
             const workspaceId = 
-                'workspaceId' in node ? (node as any).workspaceId : '';
+                'workspaceId' in node ? node.workspaceId : '';
             return {
                 workspaceId,
                 ...scriptCtx,
@@ -420,7 +420,7 @@ async function downloadScriptToTmp(
     
     // Extract assignmentId if opened from an assignment node
     const assignmentId = node && 'kind' in node && node.kind === 'assignmentNode'
-        ? (node as any).assignment?.assignmentId
+        ? node.assignment?.assignmentId
         : undefined;
     return withScriptProgress(
         `${actionLabel}: loading...`,
@@ -521,7 +521,7 @@ async function executeRemoteFromUi(
     
     // Phase 10: Check if executing from an assignment node
     const assignmentId = node && 'kind' in node && node.kind === 'assignmentNode'
-        ? (node as any).assignment?.assignmentId
+        ? node.assignment?.assignmentId
         : undefined;
     
     // Resolve full workspace info from authId. The script context always has

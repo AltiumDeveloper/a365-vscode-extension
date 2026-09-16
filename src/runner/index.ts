@@ -37,6 +37,15 @@ interface RunPrep {
     workspaceName?: string;
 }
 
+interface PythonExtensionApi {
+    environments?: {
+        getActiveEnvironmentPath?: (resource?: vscode.Uri) => { path?: string } | undefined;
+    };
+    settings?: {
+        getExecutionDetails?: (resource?: vscode.Uri) => { execCommand?: string[] } | undefined;
+    };
+}
+
 export async function resolvePythonPath(): Promise<string> {
     const cfg = vscode.workspace.getConfiguration('altium365');
     const configured = (cfg.get<string>('pythonPath') || '').trim();
@@ -49,7 +58,7 @@ export async function resolvePythonPath(): Promise<string> {
             if (!pyExt.isActive) {
                 await pyExt.activate();
             }
-            const api: any = pyExt.exports;
+            const api = pyExt.exports as PythonExtensionApi | undefined;
             const resource = vscode.window.activeTextEditor?.document.uri;
             const details = api?.environments?.getActiveEnvironmentPath?.(resource);
             if (details?.path && path.isAbsolute(details.path)) {

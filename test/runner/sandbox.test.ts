@@ -1,11 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { getManagedPythonAnalysisPaths } from '../../src/runner/sandbox';
 import * as path from 'path';
+import { makeExtensionContext } from '../__mocks__/vscode';
 
-// Mock VS Code extension context for testing
-const createMockContext = (basePath: string) => ({
-    asAbsolutePath: (p: string) => path.join(basePath, p),
-}) as any;
+const createMockContext = (basePath: string) =>
+    makeExtensionContext({ asAbsolutePath: (p: string) => path.join(basePath, p) });
 
 describe('getManagedPythonAnalysisPaths', () => {
     it('returns paths in canonical order: SandboxProcess, SandboxProcess/.deps, python', () => {

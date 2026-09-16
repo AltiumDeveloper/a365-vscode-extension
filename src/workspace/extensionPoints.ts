@@ -149,9 +149,12 @@ export async function listExtensionPoints(
     endpoint: string,
     workspaceToken: string
 ): Promise<{ extensionPoints: ExtensionPointInfo[]; assignments: Map<string, AssignmentInfo[]> }> {
-    const data = await graphqlRequest(endpoint, workspaceToken, LIST_EXTENSION_POINTS_QUERY, {
-        assignmentsFirst: ASSIGNMENTS_PAGE_SIZE,
-    });
+    const data = await graphqlRequest<{ gloCusExtensionPoints?: unknown }>(
+        endpoint,
+        workspaceToken,
+        LIST_EXTENSION_POINTS_QUERY,
+        { assignmentsFirst: ASSIGNMENTS_PAGE_SIZE }
+    );
     // `gloCusExtensionPoints` is a direct array — verified against live API
     // 2026-05-28 (re-confirmed 2026-06-02). No connection wrapper.
     const rawNodes = data?.gloCusExtensionPoints;
@@ -245,7 +248,7 @@ export async function updateAssignment(
         script.description = description;
     }
     const input = { script };
-    const data = await graphqlRequest(
+    const data = await graphqlRequest<{ gloCusUpdateAssignment?: { assignmentId?: string } }>(
         endpoint,
         workspaceToken,
         UPDATE_ASSIGNMENT_MUTATION,
@@ -274,7 +277,7 @@ export async function addAssignment(
     extensionPointId: string,
     configurationParameters: Array<{ name: string; value: string }> = []
 ): Promise<{ assignmentId: string }> {
-    const data = await graphqlRequest(
+    const data = await graphqlRequest<{ gloCusAddAssignment?: { assignmentId?: string } }>(
         endpoint,
         workspaceToken,
         ADD_ASSIGNMENT_MUTATION,
