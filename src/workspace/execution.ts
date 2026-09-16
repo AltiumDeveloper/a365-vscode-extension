@@ -1,23 +1,11 @@
 import { graphqlRequest } from './graphql';
 
-// =============================================================================
-// Phase 3 — Plan 03-04: executeScript + getExecutionResult + getExecutionLogs
-// =============================================================================
-//
-// GraphQL shapes verified against
-// `.planning/phases/03-remote-script-ops/schema-introspection.json`. RESEARCH
-// §Pattern 2 documents the same selection sets (async execute + poll-driven
-// log streaming).
-//
-// Status + logs are split into two queries (rather than the single combined
-// query in RESEARCH §Pattern 2) so the two responses can be sized
-// independently and a malformed log-page can't poison the status read. Both
-// run in parallel each tick via `Promise.all` in `remoteExecution.ts`.
+// Status and logs are split into two queries so the responses can be sized
+// independently and a malformed log page can't poison the status read.
 
 export interface ExecutionResult {
     scriptExecutionId: string;
-    /** Server returns `String!` — see RESEARCH §Pitfall 5. Curated terminal
-     *  set lives in `remoteExecution.ts`. */
+    /** Server returns `String!`, not an enum. Curated terminal set lives in `remoteExecution.ts`. */
     status: string;
     exitCode: number | null;
     startedAt: string | null;

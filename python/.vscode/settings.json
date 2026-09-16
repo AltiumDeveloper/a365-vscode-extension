@@ -1,7 +1,0 @@
-{
-    "python.analysis.extraPaths": [
-        "/Users/dmitrykolomiets/Dev/devcenter/a365-vscode-extension/python/SandboxProcess",
-        "/Users/dmitrykolomiets/Dev/devcenter/a365-vscode-extension/python/SandboxProcess/.deps",
-        "/Users/dmitrykolomiets/Dev/devcenter/a365-vscode-extension/python"
-    ]
-}
