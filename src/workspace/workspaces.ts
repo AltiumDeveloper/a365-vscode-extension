@@ -81,18 +81,21 @@ export function getWorkspaceFilesUrl(
     );
 }
 
+// Phase 3 (Plan 03-01) bumped this selection set to also pull
+// `filesServiceUrl` so per-workspace Files Service REST calls
+// (download/upload script bodies) can resolve a workspace-scoped base URL
+// — D-19 carry-over to the Files Service tier.
+const LIST_WORKSPACES_QUERY =
+    'query { desWorkspaceInfos { name workspaceId authId url location { apiServiceUrl filesServiceUrl } } }';
+
 export async function listWorkspaces(
     endpoint: string,
     accessToken: string
 ): Promise<WorkspaceInfo[]> {
-    // Phase 3 (Plan 03-01) bumped this selection set to also pull
-    // `filesServiceUrl` so per-workspace Files Service REST calls
-    // (download/upload script bodies) can resolve a workspace-scoped base URL
-    // — D-19 carry-over to the Files Service tier.
     const data = await graphqlRequest<{ desWorkspaceInfos?: unknown }>(
         endpoint,
         accessToken,
-        'query { desWorkspaceInfos { name workspaceId authId url location { apiServiceUrl filesServiceUrl } } }'
+        LIST_WORKSPACES_QUERY
     );
     return (data?.desWorkspaceInfos as WorkspaceInfo[]) || [];
 }
