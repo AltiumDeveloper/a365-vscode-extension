@@ -81,7 +81,7 @@ export async function signIn(
     // token cache before starting a new OAuth dance so an account switch can't leave
     // stale per-workspace tokens around. D-06: silent — suppress the transient
     // signedIn:false event the drain would otherwise broadcast mid-sign-in.
-    await clearAllTokens(context, { silent: true, revoke: cfg });
+    await clearAllTokens(context, { silent: true, revokeWith: cfg });
 
     const tok = await signInWithActionWait(cfg, {
         timeoutMs,
@@ -243,13 +243,13 @@ async function revokeAll(cfg: OAuthConfig, stored: (string | undefined)[]): Prom
 
 export async function clearAllTokens(
     context: vscode.ExtensionContext,
-    options?: { silent?: boolean; revoke?: OAuthConfig }
+    options?: { silent?: boolean; revokeWith?: OAuthConfig }
 ): Promise<void> {
     const index = context.globalState.get<string[]>(GLOBAL_WS_TOKEN_INDEX_KEY, []);
     const keys = [SECRET_TOKENS, ...index.map((id) => SECRET_WS_TOKEN_PREFIX + id)];
-    if (options?.revoke) {
+    if (options?.revokeWith) {
         await revokeAll(
-            options.revoke,
+            options.revokeWith,
             await Promise.all(keys.map((key) => context.secrets.get(key)))
         );
     }

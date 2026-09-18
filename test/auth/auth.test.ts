@@ -192,7 +192,7 @@ describe('clearAllTokens with revoke', () => {
                 return { status: 200, text: async () => '' };
             })
         );
-        await clearAllTokens(ctx, { silent: true, revoke: cfg });
+        await clearAllTokens(ctx, { silent: true, revokeWith: cfg });
         expect(revoked.sort()).toEqual(['base-rt', 'ws-rt']);
         expect(stillStored).toEqual([true, true]);
         expect(await ctx.secrets.get('altium365.tokens')).toBeUndefined();
@@ -213,7 +213,7 @@ describe('clearAllTokens with revoke', () => {
                 return { status: 200, text: async () => '' };
             })
         );
-        await clearAllTokens(ctx, { silent: true, revoke: cfg });
+        await clearAllTokens(ctx, { silent: true, revokeWith: cfg });
         expect(deletesWhenRevokeReturned).toEqual([0, 0]);
     });
 
@@ -223,7 +223,7 @@ describe('clearAllTokens with revoke', () => {
         const received: AuthState[] = [];
         const d = onAuthStateChanged((s) => received.push(s));
         try {
-            await clearAllTokens(ctx, { revoke: cfg });
+            await clearAllTokens(ctx, { revokeWith: cfg });
         } finally {
             d.dispose();
         }
@@ -232,7 +232,7 @@ describe('clearAllTokens with revoke', () => {
         expect(received).toContainEqual({ signedIn: false });
     });
 
-    it('makes no network call when the revoke option is absent', async () => {
+    it('makes no network call when revokeWith is absent', async () => {
         const ctx = await seedSignedIn();
         const fetchMock = vi.fn();
         vi.stubGlobal('fetch', fetchMock);

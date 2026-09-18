@@ -24,14 +24,17 @@ git history for what changed in them.
 
 ### Changed
 
+- `README.md` now points at the VS Code Marketplace for installation, documents the
+  `clientId` and `activeEnvironment` settings, and lists the correct per-environment
+  override keys and the side-panel-only commands.
+
+### Security
+
 - Signing out now revokes the refresh token at the authorization server before deleting
   the local copies, so it can no longer be used to mint new access tokens. Switching
   accounts or environments revokes the previous session's token the same way. Revocation
   is best-effort — sign-out still completes locally when the server cannot be reached.
   Access tokens already issued remain valid until they expire.
-- `README.md` now points at the VS Code Marketplace for installation, documents the
-  `clientId` and `activeEnvironment` settings, and lists the correct per-environment
-  override keys and the side-panel-only commands.
 
 ## 0.4
 
