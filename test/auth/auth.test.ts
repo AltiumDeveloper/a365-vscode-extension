@@ -148,6 +148,99 @@ describe('clearAllTokens', () => {
     });
 });
 
+// ── clearAllTokens with revocation ────────────────────────────────
+
+describe('clearAllTokens with revoke', () => {
+    const cfg = {
+        clientId: 'test-client',
+        authEndpoint: 'https://auth.example.com/connect/authorize',
+        tokenEndpoint: 'https://auth.example.com/connect/token',
+        scopes: 'openid offline_access',
+        actionWaitEndpoint: 'https://auth.example.com/wait',
+        redirectUri: 'http://localhost/callback',
+    };
+
+    afterEach(() => vi.unstubAllGlobals());
+
+    async function seedSignedIn(): Promise<ReturnType<typeof makeExtensionContext>> {
+        const ctx = makeExtensionContext();
+        await ctx.secrets.store(
+            'altium365.tokens',
+            JSON.stringify({ access_token: 'at', refresh_token: 'base-rt' })
+        );
+        await ctx.globalState.update('altium365.workspaceTokenIds', ['ws-1']);
+        await ctx.secrets.store(
+            'altium365.workspaceTokens.ws-1',
+            JSON.stringify({ access_token: 'ws-at', refresh_token: 'ws-rt' })
+        );
+        return ctx;
+    }
+
+    it('revokes the base and workspace refresh tokens before deleting them', async () => {
+        const ctx = await seedSignedIn();
+        const revoked: string[] = [];
+        const stillStored: boolean[] = [];
+        vi.stubGlobal(
+            'fetch',
+            vi.fn(async (url: string, init: { body: string }) => {
+                expect(url).toBe('https://auth.example.com/connect/revocation');
+                const body = new URLSearchParams(init.body);
+                expect(body.get('token_type_hint')).toBe('refresh_token');
+                expect(body.get('client_id')).toBe('test-client');
+                revoked.push(body.get('token') ?? '');
+                stillStored.push(!!(await ctx.secrets.get('altium365.tokens')));
+                return { status: 200, text: async () => '' };
+            })
+        );
+        await clearAllTokens(ctx, { silent: true, revokeWith: cfg });
+        expect(revoked.sort()).toEqual(['base-rt', 'ws-rt']);
+        expect(stillStored).toEqual([true, true]);
+        expect(await ctx.secrets.get('altium365.tokens')).toBeUndefined();
+        expect(await ctx.secrets.get('altium365.workspaceTokens.ws-1')).toBeUndefined();
+    });
+
+    it('finishes every revoke before the first delete', async () => {
+        const ctx = await seedSignedIn();
+        const deleteSpy = vi.spyOn(ctx.secrets, 'delete');
+        const deletesWhenRevokeReturned: number[] = [];
+        vi.stubGlobal(
+            'fetch',
+            vi.fn(async () => {
+                // Defer past the microtask queue: only an awaited revoke can still
+                // satisfy the assertion once the response resolves on a later tick.
+                await new Promise((resolve) => setTimeout(resolve, 0));
+                deletesWhenRevokeReturned.push(deleteSpy.mock.calls.length);
+                return { status: 200, text: async () => '' };
+            })
+        );
+        await clearAllTokens(ctx, { silent: true, revokeWith: cfg });
+        expect(deletesWhenRevokeReturned).toEqual([0, 0]);
+    });
+
+    it('clears local state and fires signedIn:false when revocation fails', async () => {
+        const ctx = await seedSignedIn();
+        vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')));
+        const received: AuthState[] = [];
+        const d = onAuthStateChanged((s) => received.push(s));
+        try {
+            await clearAllTokens(ctx, { revokeWith: cfg });
+        } finally {
+            d.dispose();
+        }
+        expect(await ctx.secrets.get('altium365.tokens')).toBeUndefined();
+        expect(await ctx.secrets.get('altium365.workspaceTokens.ws-1')).toBeUndefined();
+        expect(received).toContainEqual({ signedIn: false });
+    });
+
+    it('makes no network call when revokeWith is absent', async () => {
+        const ctx = await seedSignedIn();
+        const fetchMock = vi.fn();
+        vi.stubGlobal('fetch', fetchMock);
+        await clearAllTokens(ctx, { silent: true });
+        expect(fetchMock).not.toHaveBeenCalled();
+    });
+});
+
 // ── refreshTokens ─────────────────────────────────────────────────
 
 describe('refreshTokens', () => {

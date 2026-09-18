@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import {
     refreshToken,
+    revokeRefreshToken,
     signIn as signInWithActionWait,
     signIntoWorkspace,
     type OAuthConfig,
@@ -14,6 +15,7 @@ export type { OAuthConfig, TokenSet };
 const SECRET_TOKENS = 'altium365.tokens';
 const SECRET_WS_TOKEN_PREFIX = 'altium365.workspaceTokens.';
 const GLOBAL_WS_TOKEN_INDEX_KEY = 'altium365.workspaceTokenIds';
+const REVOKE_TIMEOUT_MS = 3_000;
 
 export interface AuthState {
     user?: string;
@@ -79,7 +81,7 @@ export async function signIn(
     // token cache before starting a new OAuth dance so an account switch can't leave
     // stale per-workspace tokens around. D-06: silent — suppress the transient
     // signedIn:false event the drain would otherwise broadcast mid-sign-in.
-    await clearAllTokens(context, { silent: true });
+    await clearAllTokens(context, { silent: true, revokeWith: cfg });
 
     const tok = await signInWithActionWait(cfg, {
         timeoutMs,
@@ -206,14 +208,53 @@ export async function getStoredTokens(
     return raw ? (JSON.parse(raw) as TokenSet) : undefined;
 }
 
+function storedRefreshToken(raw: string | undefined): string | undefined {
+    if (!raw) {
+        return undefined;
+    }
+    try {
+        return (JSON.parse(raw) as TokenSet).refresh_token;
+    } catch {
+        return undefined;
+    }
+}
+
+/**
+ * Best-effort RFC 7009 revocation of every stored refresh token, under one
+ * shared deadline: the library takes no AbortSignal and fetch has no timeout.
+ */
+async function revokeAll(cfg: OAuthConfig, stored: (string | undefined)[]): Promise<void> {
+    const calls = stored
+        .map(storedRefreshToken)
+        .filter((tok): tok is string => !!tok)
+        .map((tok) => revokeRefreshToken(cfg, tok).catch(() => undefined));
+    if (calls.length === 0) {
+        return;
+    }
+    let deadline: ReturnType<typeof setTimeout> | undefined;
+    await Promise.race([
+        Promise.all(calls),
+        new Promise((resolve) => {
+            deadline = setTimeout(resolve, REVOKE_TIMEOUT_MS);
+        }),
+    ]);
+    clearTimeout(deadline);
+}
+
 export async function clearAllTokens(
     context: vscode.ExtensionContext,
-    options?: { silent?: boolean }
+    options?: { silent?: boolean; revokeWith?: OAuthConfig }
 ): Promise<void> {
-    await context.secrets.delete(SECRET_TOKENS);
     const index = context.globalState.get<string[]>(GLOBAL_WS_TOKEN_INDEX_KEY, []);
-    for (const id of index) {
-        await context.secrets.delete(SECRET_WS_TOKEN_PREFIX + id);
+    const keys = [SECRET_TOKENS, ...index.map((id) => SECRET_WS_TOKEN_PREFIX + id)];
+    if (options?.revokeWith) {
+        await revokeAll(
+            options.revokeWith,
+            await Promise.all(keys.map((key) => context.secrets.get(key)))
+        );
+    }
+    for (const key of keys) {
+        await context.secrets.delete(key);
     }
     await context.globalState.update(GLOBAL_WS_TOKEN_INDEX_KEY, undefined);
     if (!options?.silent) {
