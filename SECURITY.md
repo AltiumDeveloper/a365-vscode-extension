@@ -33,7 +33,7 @@ an access token to Python scripts that you run. The following are in scope:
 - **Sign out.** Signing out revokes the refresh token at the authorization server and
   deletes every locally stored token. Access tokens already issued are self-expiring
   JWTs; they cannot be recalled and remain valid until they expire. Sign-out failing
-  to revoke or failing to delete a token is a vulnerability.
+  to attempt revocation, or failing to delete a token, is a vulnerability.
 
 The following are **out of scope**, because they follow from what the extension is:
 

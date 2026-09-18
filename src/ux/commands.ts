@@ -165,7 +165,7 @@ export async function doSignIn(
 }
 
 export async function doSignOut(context: vscode.ExtensionContext): Promise<void> {
-    await clearAllTokens(context);
+    await clearAllTokens(context, { revokeWith: readOAuthConfig() });
     await clearSelectedWorkspace(context);
     vscode.window.showInformationMessage('Altium 365: signed out.');
 }
@@ -285,6 +285,10 @@ export async function doSelectEnvironment(
         }
     }
 
+    // Capture before the switch: afterwards readOAuthConfig() returns the new
+    // environment's endpoints, and the old token must be revoked at the old server.
+    const previousOAuth = readOAuthConfig();
+
     const target = vscode.ConfigurationTarget.Global;
     await cfg.update('activeEnvironment', pick.name, target);
 
@@ -309,7 +313,7 @@ export async function doSelectEnvironment(
         'Keep session'
     );
     if (next === 'Sign out & sign in' || next === 'Sign out only') {
-        await clearAllTokens(context);
+        await clearAllTokens(context, { revokeWith: previousOAuth });
         await clearSelectedWorkspace(context);
         await updateSignedInContext(context);
     }

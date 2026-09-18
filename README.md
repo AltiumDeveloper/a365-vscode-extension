@@ -64,7 +64,7 @@ When running a script, the `context.auth_token` passed to your `onExecute` funct
 - The **global token** if no workspace has been selected
 - A **workspace-scoped token** for the selected workspace if one has been chosen
 
-Signing out deletes **all** locally stored tokens — both the global token and every cached workspace token.
+Signing out revokes the refresh token at the authorization server and deletes **all** locally stored tokens — both the global token and every cached workspace token. Access tokens already issued are self-expiring and remain valid until they expire; they cannot be recalled.
 
 ## Switching Environments
 
