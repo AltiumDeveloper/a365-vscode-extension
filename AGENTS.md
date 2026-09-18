@@ -22,10 +22,15 @@ This project uses the GSD workflow. Always:
 
 ## Architecture Summary
 
-**Extension entry point:** `src/extension.ts` (991 lines — command registration + UI orchestration + subprocess management)
-**Auth:** `src/auth.ts` — OAuth2 PKCE, token storage, workspace token exchange
-**Workspace:** `src/workspace/` — GraphQL queries for workspaces/projects, `graphqlRequest` helper in `graphql.ts`
-**Test events:** `src/testEvents/` (1502 lines) — test event storage, resolution, FSP, status indicator
+**Extension entry point:** `src/extension.ts` — activation, wiring and the palette-level command registrations; tree context-menu commands are registered in `src/ux/treeCommands.ts`
+**Config:** `src/config.ts` — merges the active named environment over the top-level settings into a `ResolvedConfig`
+**Auth:** `src/auth/index.ts` — OAuth2 PKCE via `@altium-developer/altium-auth`, token storage, workspace token exchange
+**UX:** `src/ux/` — command registration, tree view and its context-menu commands, side panel, status bar
+**Runner:** `src/runner/` — Python interpreter resolution, subprocess launch, sandbox, script analysis
+**Scripts:** `src/scripts/` — remote script operations (edit/publish/execute), local cache, `altium365:` FileSystemProvider in `remoteFs.ts`
+**Workspace:** `src/workspace/` — GraphQL queries for workspaces/projects/extension points, `graphqlRequest` helper in `graphql.ts`
+**Shared:** `src/shared/` — `asyncMutex`, `logDedup`
+**Test events:** `src/testEvents/` — test event storage, resolution, FSP, status indicator
   - `identity.ts` — script identity resolution (local path vs remote workspace+scriptId)
   - `store.ts` — test event storage in `context.globalState`
   - `resolver.ts` — test event resolution with sibling `.params.json` import fallback
@@ -34,7 +39,6 @@ This project uses the GSD workflow. Always:
   - `commands.ts` — pick/create/edit/delete/setDefault test event commands
   - `picker.ts` — unified test event picker UI
   - `importSibling.ts` — one-time sibling `.params.json` import flow
-**Remote scripts:** `src/remoteScriptFs.ts` (350 lines) — `altium365:` FileSystemProvider for remote scripts
 **Python runtime:** `python/_runner.py` + `python/a365.py` — A365 scripting emulator
 
 **Key constraints:** 
@@ -43,24 +47,8 @@ This project uses the GSD workflow. Always:
 - Script identity = local absolute path OR `(workspaceId, scriptId)` for remote scripts
 - Status bar indicator shows active Python editor's default test event
 
-## Phase Execution Order
+## Key shipped features
 
-**Completed phases (1-13):**
-1. **Phase 1 — Packaging:** `vsce` setup, CI pipeline, Marketplace metadata, README ✅
-2. **Phase 2 — Side Panel:** `TreeDataProvider`, Activity Bar view, workspace/project/script tree, script context menu ✅
-3. **Phase 2.1 — Side Panel UX Closure:** Collapsible categories, active workspace indicator, globe button, Open in Browser ✅
-4. **Phase 2.2 — Auth Hardening:** Carry-forward code review issues (CR-01, CR-02, WR-01, WR-05) ✅
-5. **Phase 3 — Remote Script Operations:** open/edit/publish/execute remote scripts via GraphQL ✅
-6. **Phase 4 — UI Polish:** Tree icons, contextValue gating, workspace selection from tree ✅
-7. **Phase 6 — Test Events (999.3):** Test event storage, resolution, FSP, status indicator, unified picker ✅
-8. **Phase 7 — Vitest:** Unit testing infrastructure with vitest ✅
-9. **Phase 8 — Versioning:** Distinct VSIX version per build, extension rebrand to "Altium Developer" ✅
-10. **Phase 8.1 — Auth Refresh:** `offline_access` scope, silent token refresh, `onAuthStateChanged` listener ✅
-11. **Phase 9 — IntelliSense:** Editor IntelliSense for injected PYTHONPATH libraries ✅
-12. **Phase 10 — Extension Points:** Rework sidebar around extension points (vs raw scripts) ✅
-13. **Phase 11-13 — Workspace App Installation:** App installation check and install flow ✅
-
-**Key shipped features:**
 - Test events (AWS-Lambda-style named parameter sets per script)
 - Remote script FileSystemProvider (`altium365:` scheme)
 - Script identity resolution module (`testEvents/identity.ts`)
@@ -69,7 +57,7 @@ This project uses the GSD workflow. Always:
 
 ## Tech Stack
 
-- TypeScript 5.4+, VS Code Extension API (≥1.85.0), Node.js ≥18
+- TypeScript 5.4+, VS Code Extension API (≥1.85.0), Node.js ≥20
 - `esbuild` bundles `src/extension.ts` to a single CJS `out/extension.js`; `tsc --noEmit` typechecks. Required because `@altium-developer/altium-auth` is ESM-only and the extension host loads CommonJS
 - `vsce` for VSIX packaging
 - `vitest` for unit testing
@@ -80,7 +68,7 @@ This project uses the GSD workflow. Always:
 See `.planning/codebase/CONVENTIONS.md` for full details. Key points:
 - All VS Code commands prefixed `altium365.`
 - Async/await throughout; errors surfaced via `vscode.window.showErrorMessage` at command boundary
-- GraphQL requests via `graphqlRequest<TResponse>(endpoint, token, query, variables)` in `src/workspace/graphql.ts` — pass the selection-set shape, and keep runtime-guarded fields as `unknown`
+- GraphQL requests via `graphqlRequest<T = unknown>(endpoint, accessToken, query, variables?): Promise<T | undefined>` in `src/workspace/graphql.ts` — pass the selection-set shape, and keep runtime-guarded fields as `unknown`. `undefined` because a response can carry no `data` without carrying `errors`
 - No module-level state except `outputChannel` singleton
 - FileSystemProvider pattern for virtual documents (`altium365:`, `altium365-event:` schemes)
 - Script identity resolution via `buildIdentity()`/`parseIdentity()` helpers in `testEvents/identity.ts`
