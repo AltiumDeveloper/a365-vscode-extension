@@ -35,9 +35,9 @@ work, and **Developer: Reload Window** in the dev host to pick up changes.
 | `npm test` | Vitest unit tests |
 | `npm run package` | Builds a `.vsix` with `vsce` |
 
-CI runs lint, compile, test and package on Ubuntu, Windows and macOS. All three
-legs must pass before a pull request can merge, so run at least `npm run lint`
-and `npm test` locally first.
+CI runs lint, compile, test and package on Ubuntu, Windows and macOS on every
+pull request, and all three legs are expected to be green before merge. Run at
+least `npm run lint` and `npm test` locally first.
 
 ## Pull requests
 
@@ -47,6 +47,11 @@ and `npm test` locally first.
 - Update `README.md` when you change anything a user can see — commands,
   settings, scopes or behaviour. See the Documentation Maintenance section of
   `AGENTS.md`.
+- Add a `CHANGELOG.md` entry under **Unreleased** for anything a user would
+  notice. Repository, CI and test-only changes do not need one.
+- Run the change by hand in the Extension Development Host before opening the
+  pull request. AI-assisted development is welcome, but whoever opens the pull
+  request is the one who has to have tested it.
 - Describe what changed and why in the PR body. The pull request template asks
   for this.
 - Do not bump the version in `package.json` as part of a feature PR; releases
@@ -66,13 +71,15 @@ Nothing special is required — just push to `main`.
 
 To publish a new stable version:
 
-1. **Bump `package.json`** — increment `major` or `minor`, keep `patch` at `0`:
+1. **Rename `## Unreleased` in `CHANGELOG.md`** to the new base version (e.g.
+   `## 0.5`), and leave a fresh empty `## Unreleased` heading above it.
+2. **Bump `package.json`** — increment `major` or `minor`, keep `patch` at `0`:
    ```
    0.2.0  →  0.3.0   (minor bump)
    0.3.0  →  1.0.0   (major bump)
    ```
-2. **Write the release description as the commit message.** The full commit message body becomes the GitHub Release notes, so make it human-readable.
-3. **Push to `main`.**
+3. **Write the release description as the commit message.** The full commit message body becomes the GitHub Release notes, so make it human-readable.
+4. **Push to `main`.**
 
 The workflow detects that tag `v{version}` does not yet exist and runs the stable path:
 - Creates a GitHub Release tagged `v{version}` with the commit message as release notes and the `.vsix` file attached.

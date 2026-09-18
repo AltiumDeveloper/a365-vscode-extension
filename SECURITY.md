@@ -24,10 +24,10 @@ an access token to Python scripts that you run. The following are in scope:
 - **Token storage.** Tokens are stored in VS Code
   [SecretStorage](https://code.visualstudio.com/api/references/vscode-api#SecretStorage)
   (`altium365.tokens` for the account token, `altium365.workspaceTokens.<workspaceId>`
-  for each workspace-scoped token), which delegates to the OS keychain. VS Code's
-  `globalState` holds only the list of workspace IDs that have a cached token, never a
-  token value. Anything that writes a token outside SecretStorage — to disk, to
-  settings, to the Output channel — is a vulnerability.
+  for each workspace-scoped token), which delegates to the OS keychain. Of token
+  material, VS Code's `globalState` holds only the list of workspace IDs that have a
+  cached token, never a token value. Anything that writes a token outside
+  SecretStorage — to disk, to settings, to the Output channel — is a vulnerability.
 - **The auth flow itself.** Dropping PKCE, failing to verify `state`, or leaking a
   token in an error message or log line.
 - **Sign out.** Signing out revokes the refresh token at the authorization server and
@@ -48,8 +48,8 @@ The following are **out of scope**, because they follow from what the extension 
 - **`altium365.clientId`.** This is a public OAuth client identifier for a PKCE flow,
   not a secret. It ships in the extension package by design.
 - **Output channel contents.** Script output, including any parameters your script
-  prints, goes to the **Altium 365** Output channel. Scrub logs before attaching them
-  to an issue.
+  prints, goes to the **Altium Developer** Output channel. Scrub logs before
+  attaching them to an issue.
 
 ## Supported versions
 

@@ -10,6 +10,7 @@
 
 - [ ] `npm run lint` and `npm test` pass locally
 - [ ] Tests cover the new behaviour
+- [ ] Manually exercised in the Extension Development Host
 - [ ] `README.md` updated if anything user-visible changed (commands, settings, scopes, behaviour)
-- [ ] `CHANGELOG.md` updated under **Unreleased**
+- [ ] `CHANGELOG.md` updated under **Unreleased** (user-visible changes only)
 - [ ] No version bump in `package.json`

@@ -22,7 +22,7 @@ This project uses the GSD workflow. Always:
 
 ## Architecture Summary
 
-**Extension entry point:** `src/extension.ts` — activation and wiring only; commands are registered by the modules below
+**Extension entry point:** `src/extension.ts` — activation, wiring and the palette-level command registrations; tree context-menu commands are registered in `src/ux/treeCommands.ts`
 **Config:** `src/config.ts` — merges the active named environment over the top-level settings into a `ResolvedConfig`
 **Auth:** `src/auth/index.ts` — OAuth2 PKCE via `@altium-developer/altium-auth`, token storage, workspace token exchange
 **UX:** `src/ux/` — command registration, tree view and its context-menu commands, side panel, status bar

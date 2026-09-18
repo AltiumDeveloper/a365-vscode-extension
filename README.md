@@ -74,7 +74,7 @@ You can define additional environments under the `altium365.environments` settin
 
 ## Remote scripts
 
-From the Altium 365 side panel, right-click any script to **Edit**, **Publish**, or **Execute Remotely**. Scripts open as virtual VS Code documents under the `altium365:` scheme — saving the document publishes the new version back to A365.
+From the **Altium Developer** side panel, right-click any script to **Edit**, **Publish**, or **Execute Remotely**. Scripts open as virtual VS Code documents under the `altium365:` scheme — saving the document publishes the new version back to A365.
 
 From the **Extension Points** tree, right-click an extension point and choose **Create Script** to create a new Python script, assign it to that extension point, and open it for editing. The existing run, debug, execute, edit, publish, and test-event flows then work on the created script the same way they work for other script assignments.
 
@@ -88,7 +88,7 @@ From the **Extension Points** tree, right-click an extension point and choose **
 
 ### Execute Remotely
 
-- Right-click a script → **Execute Remotely** kicks off a server-side execution. A cancellable progress notification appears, and log lines stream into the **Altium 365** Output channel as they arrive (polled every 1.5 s).
+- Right-click a script → **Execute Remotely** kicks off a server-side execution. A cancellable progress notification appears, and log lines stream into the **Altium Developer** Output channel as they arrive (polled every 1.5 s).
 - Parameters come from the active **test event** for the script (see [Test Events](#test-events) below). Values are passed to the server as strings.
 
 > **Cancellation caveat.** Cancelling the progress notification stops the local poll loop, but the server-side execution continues. The Output channel will print `Remote execution cancelled (server-side execution continues)` to make this explicit. There is currently no server-side cancel API.
@@ -119,8 +119,8 @@ Test events let you keep multiple named parameterizations per script — e.g. `s
 
 For Python files (local `.py` or remote-tmp script bodies) the test-event picker is reachable from two surfaces:
 
-- **Status bar indicator** (bottom-right of VS Code, next to the Altium 365 user/env item) — shows the **current default event name** with a `$(symbol-event)` icon, only when a Python editor is active. Click it to open the unified picker (events list + Create + Edit). Turns yellow when events exist but no default is set.
-- **Altium 365 editor-title submenu** → `Pick Test Event` row — same unified picker, grouped with the other A365 actions.
+- **Status bar indicator** (bottom-right of VS Code, next to the `A365` user/env item) — shows the **current default event name** with a `$(symbol-event)` icon, only when a Python editor is active. Click it to open the unified picker (events list + Create + Edit). Turns yellow when events exist but no default is set.
+- **Altium Developer editor-title submenu** → `Pick Test Event` row — same unified picker, grouped with the other A365 actions.
 
 ### Storage
 
@@ -132,7 +132,7 @@ If you store more than 25 events for one script, the extension surfaces a one-ti
 
 ## Commands Reference
 
-All commands are prefixed with **Altium Developer:**. Most are available in the Command Palette; the ones marked **side panel** are offered only from the Altium 365 tree's context menus.
+All commands are prefixed with **Altium Developer:**. Most are available in the Command Palette; the ones marked **side panel** are offered only from the context menus of the **Workspaces** view in the Altium Developer side panel.
 
 ### Authentication & Environment
 | Command | Description |
@@ -174,7 +174,7 @@ All commands are prefixed with **Altium Developer:**. Most are available in the 
 ### Tree Actions (Context Menu)
 | Command | Description |
 | --- | --- |
-| Refresh Workspaces | Refreshes the Altium 365 tree view |
+| Refresh Workspaces | Refreshes the **Workspaces** view |
 | Copy ID | Copies workspace/project/script/extension point ID to clipboard |
 | Open in Browser | Opens workspace/project/assignment in A365 web UI |
 | Run Script (Local) | Downloads a script from the tree to a temp file and runs it locally |
