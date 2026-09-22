@@ -10,14 +10,14 @@ import { readStore, onDidChangeTestEventStore } from './store';
  * shows the current default event name with a `$(symbol-event)` icon
  * so users know at a glance which event will be used on the next Run /
  * Debug / Execute Remotely. Click invokes `altium365.testEvents.pick`,
- * which (UAT iter 5) is the unified picker: lists events, offers Create
+ * which is the unified picker: lists events, offers Create
  * / Edit current as inline actions, and SETS the picked event as the
  * default (mutating the store so the indicator text refreshes).
  *
  * UX iteration history:
  *   v1 — Language Status Item (`vscode.languages.createLanguageStatusItem`).
  *        Rejected: collapsed behind the `{}` indicator at Information
- *        severity; UAT reported "no new button visible".
+ *        severity; the button was not visible.
  *   v2 — Regular StatusBarItem wired to `testEvents.pick`. Rejected:
  *        pick was transient (returned a body, didn't mutate the store),
  *        so the indicator text never updated after a click.

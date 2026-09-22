@@ -155,7 +155,7 @@ async function doPickTestEvent(
     output: vscode.OutputChannel,
     identityArg: ScriptIdentity | undefined,
 ): Promise<void> {
-    // Unified picker (UAT iter 5, 2026-05-25): single click on the status bar
+    // Unified picker: single click on the status bar
     // / editor-title menu shows the full picker (events + Create + Edit
     // current) and picking an event SETS IT AS THE DEFAULT. The previous
     // "pick for one run" semantics returned a transient body but never
@@ -464,7 +464,7 @@ async function pickProjectIdSafe(
 
     // Branch 1 — remote script: prefer the script's owning workspace
     // over the active one. This is the "of course the context is the
-    // script's workspace" case that surfaced in UAT.
+    // script's workspace" case.
     if (
         identity.kind === 'remote' &&
         identity.workspaceAuthId &&

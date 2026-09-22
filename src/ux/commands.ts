@@ -97,7 +97,7 @@ export async function doSignIn(
             return;
         }
 
-        // Network error during poll — message format from plan 04: 'ActionWait network error: <err> (<host>)'
+        // Network error during poll — message format: 'ActionWait network error: <err> (<host>)'
         if (msg.startsWith('ActionWait network error')) {
             const hostMatch = msg.match(/\(([^)]+)\)\s*$/);
             let host = hostMatch ? hostMatch[1] : '';
@@ -114,7 +114,7 @@ export async function doSignIn(
             return;
         }
 
-        // ActionWait non-2xx HTTP status — message format from plan 04: 'ActionWait returned <status>: <body>'
+        // ActionWait non-2xx HTTP status — message format: 'ActionWait returned <status>: <body>'
         if (msg.startsWith('ActionWait returned')) {
             const statusMatch = msg.match(/^ActionWait returned (\d+)/);
             const status = statusMatch ? statusMatch[1] : '?';
@@ -296,7 +296,7 @@ export async function doSelectEnvironment(
     outputChannel.appendLine(`[Altium 365]   redirect:   ${resolved.redirectUri || '(empty)'}`);
 
     // Tokens and selected workspace are environment-bound — offer to clear them.
-    // IMPORTANT (02.3 UAT bug, 2026-05-20): do NOT fire authStateChanged before
+    // IMPORTANT: do NOT fire authStateChanged before
     // this prompt resolves. The side panel listens to that event and triggers
     // a workspace refresh — firing early would refresh against the new env's
     // graphqlEndpoint using the previous env's token, producing an auth error

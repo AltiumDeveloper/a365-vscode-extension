@@ -34,7 +34,8 @@ import { dedupLogPage } from '../shared/logDedup';
  * - The token is resolved once per execution via `ensureWorkspaceToken`.
  *   Behaviour of a long execution across an environment switch is undefined.
  * - The OutputChannel is passed in via `args.output`; this module never calls
- *   `vscode.window.createOutputChannel`.
+ *   `vscode.window.createOutputChannel`. The workspace token is never written
+ *   to it.
  * - Cancellation stops polling and writes "(server-side execution continues)";
  *   no server-side cancel is attempted because the API does not expose one.
  * - Every GraphQL call goes through `getWorkspaceApiUrl(ws, envGlobalEndpoint)`
@@ -58,7 +59,7 @@ const POLL_INTERVAL_MS = 1500;
 const LOG_PAGE_LIMIT = 500;
 const MAX_WALLCLOCK_MS = 10 * 60 * 1000;
 // Status values are `String!` per schema (not an enum) — terminal set
-// curated empirically. Observed during UAT 2026-05-20:
+// curated empirically. Observed 2026-05-20:
 //   non-terminal: "Pending" (queued), "Running" (active)
 //   terminal:     "Stopped" (normal completion path observed)
 // Other strings below are defensive guesses for failure / cancel modes
@@ -67,7 +68,7 @@ const MAX_WALLCLOCK_MS = 10 * 60 * 1000;
 // any unknown terminal surfaces immediately and we can tighten this set
 // fix-forward.
 const TERMINAL_STATUSES = new Set<string>([
-    'stopped',     // observed UAT 2026-05-20
+    'stopped',     // observed 2026-05-20
     'succeeded',   // defensive
     'failed',      // defensive
     'cancelled',   // defensive
