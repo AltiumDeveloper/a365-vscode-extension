@@ -30,10 +30,9 @@ interface RunPrep {
     env: NodeJS.ProcessEnv;
     endpoint: string;
     paramsPath: string;
-    // D-01..D-03: when caller passes a `target`, this carries the resolved
-    // workspace name so callers (runScriptAtPath / debugScriptAtPath) can
-    // log it in the OutputChannel header (RESEARCH §5.4). Undefined for
-    // the active-workspace fallback (preserves today's header).
+    // When the caller passes a `target`, this carries the resolved workspace
+    // name so runScriptAtPath / debugScriptAtPath can log it in the
+    // OutputChannel header. Undefined for the active-workspace fallback.
     workspaceName?: string;
 }
 
@@ -111,12 +110,11 @@ async function prepareRun(
     let resolvedWs: WorkspaceInfo | undefined;
 
     if (target) {
-        // D-01..D-03 (Phase 6): tree-driven invocation against a specific
-        // workspace. Mirror remoteExecution.ts:99-155 Block A — resolve the
+        // Tree-driven invocation against a specific workspace: resolve the
         // workspace (fall back to listWorkspaces if it isn't the active one)
         // then mint a workspace-scoped token via ensureWorkspaceToken and use
         // the workspace's own apiServiceUrl. Does NOT touch the active
-        // workspace selection (no implicit switch — D-01).
+        // workspace selection — no implicit switch.
         //
         // Some callers (e.g. editor-title run for cached tmp files) know the
         // workspaceAuthId but not the workspaceId (GRID). We match on either
@@ -213,13 +211,8 @@ async function prepareRun(
     const injectHelper = wcfg.get<boolean>('injectHelper', true);
     const extraEnv = wcfg.get<Record<string, string>>('extraEnv') || {};
 
-    // Unified test-event resolver (Phase 999.3 D-20). The legacy
-    // inputParametersPath escape hatch was removed in Plan 06 UAT iter 5
-    // (2026-05-25); test events stored per-script are now the sole source
-    // of truth. Sibling .params.json auto-detect and the projectId prompt
-    // were folded into the resolver. The legacy lastProjectId cache key
-    // remains in use by the project-related preset (Plan 999.3-04); not
-    // touched here.
+    // Test events stored per-script are the sole source of parameters; sibling
+    // .params.json auto-detect and the projectId prompt fold into the resolver.
     let paramsPath = '';
     {
         const idResult = resolveScriptIdentity(targetUri);
@@ -231,8 +224,6 @@ async function prepareRun(
                 { promptOnFirstRun: true },
             );
             if (params !== undefined) {
-                // Write resolver output as a tmp JSON object — same
-                // pattern as the legacy prepareRun at extension.ts:839-848.
                 const tmpFile = path.join(
                     os.tmpdir(),
                     `altium365-params-${Date.now()}-${process.pid}.json`,
@@ -252,9 +243,9 @@ async function prepareRun(
     env.ALTIUM365_TOKEN = token;
     env.PYTHONIOENCODING = 'utf-8';
     env.PYTHONUNBUFFERED = '1';
-    // D-01..D-03: when a target workspace was supplied, expose its identity
-    // to the runner (NOT the currently-active workspace) so user scripts that
-    // read ALTIUM365_WORKSPACE_* see the script's owning workspace.
+    // When a target workspace was supplied, expose its identity to the runner
+    // (NOT the currently-active workspace) so user scripts that read
+    // ALTIUM365_WORKSPACE_* see the script's owning workspace.
     const envWs = target ? resolvedWs : getSelectedWorkspace(context);
     if (envWs) {
         env.ALTIUM365_WORKSPACE_ID = envWs.workspaceId;
@@ -281,10 +272,9 @@ async function prepareRun(
 }
 
 // Reused by src/scripts/commands.ts to run a fetched A365 script body written to os.tmpdir().
-// D-01..D-03 (Phase 6): optional `target` routes execution through a specific
-// workspace's token + apiServiceUrl (the script's owning workspace, NOT the
-// currently-active one). When omitted, behavior is unchanged (palette /
-// standalone .py path uses the active workspace per D-03).
+// An optional `target` routes execution through a specific workspace's token +
+// apiServiceUrl (the script's owning workspace, NOT the currently-active one).
+// When omitted, the palette / standalone .py path uses the active workspace.
 export async function runScriptAtPath(
     context: vscode.ExtensionContext,
     outputChannel: vscode.OutputChannel,
@@ -319,10 +309,9 @@ export async function runScriptAtPath(
     );
 }
 
-// Reused by src/scripts/commands.ts to debug a fetched A365 script body
-// written to os.tmpdir(). Mirrors runScriptAtPath: same prepareRun ->
-// SandboxProcess PYTHONPATH wiring -> Python interpreter, but launches
-// debugpy instead of spawning a subprocess.
+// Reused by src/scripts/commands.ts to debug a fetched A365 script body written
+// to os.tmpdir(). Mirrors runScriptAtPath but launches debugpy instead of
+// spawning a subprocess.
 export async function debugScriptAtPath(
     context: vscode.ExtensionContext,
     outputChannel: vscode.OutputChannel,

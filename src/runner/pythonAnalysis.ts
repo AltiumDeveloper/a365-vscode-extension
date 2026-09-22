@@ -1,5 +1,5 @@
 /**
- * Python analysis extra-paths reconciliation for Phase 09 editor IntelliSense.
+ * Python analysis extra-paths reconciliation for editor IntelliSense.
  * 
  * Provides pure reconciliation logic and globalState key constants for
  * consent-aware Python analysis path sync. The extension host (extension.ts)
@@ -7,11 +7,11 @@
  * `python.analysis.extraPaths` value while preserving user-owned entries and
  * tracking extension-managed paths separately.
  * 
- * Key constraints (from 09-CONTEXT.md):
- * - D-11: Remove only extension-managed paths; never clobber user paths
- * - D-12: Track ownership via globalState; cleanup is reversible
- * - D-13: Self-heal drift between runtime helper paths and editor paths
- * - D-02: Mirror runtime PYTHONPATH order exactly
+ * Key constraints:
+ * - Remove only extension-managed paths; never clobber user paths
+ * - Track ownership via globalState; cleanup is reversible
+ * - Self-heal drift between runtime helper paths and editor paths
+ * - Mirror runtime PYTHONPATH order exactly
  */
 
 /**
@@ -139,10 +139,10 @@ let reconcileLock: Promise<void> = Promise.resolve();
  * - Check consent state (prompt once if never asked)
  * - Reconcile python.analysis.extraPaths on activation + config changes
  * - Expose explicit setup/disable command
- * - Manage pyrightconfig.json fallback for temp files (if proof requires it)
+ * - Manage pyrightconfig.json fallback for temp files
  * 
- * Per D-05/D-06/D-13: consent-gated, reversible, drift-healing.
- * Per D-08/D-09: best-effort (runtime continues if Python tooling missing).
+ * Consent-gated, reversible and drift-healing; best-effort, so the runtime
+ * continues when Python tooling is missing.
  */
 export function registerPythonAnalysisSync(
     context: vscode.ExtensionContext,
@@ -153,7 +153,7 @@ export function registerPythonAnalysisSync(
     const pylanceExt = vscode.extensions.getExtension('ms-python.vscode-pylance');
 
     if (!pythonExt || !pylanceExt) {
-        // D-09: proactive warning when tooling is missing
+        // Proactive warning when tooling is missing
         output.appendLine(
             `${LOG_PREFIX} Python or Pylance extension not found. ` +
                 'Helper IntelliSense setup requires both extensions. ' +
@@ -173,10 +173,10 @@ export function registerPythonAnalysisSync(
         .get<boolean>('injectHelper', true);
 
     if (consent === undefined && injectHelper && pythonExt && pylanceExt) {
-        // D-05: one-time prompt before first managed write
+        // One-time prompt before the first managed write
         void promptForConsent(context, output);
     } else if (consent === 'granted' && injectHelper) {
-        // D-13: self-heal drift on activation
+        // Self-heal drift on activation
         void reconcileNow(context, output);
     }
 
@@ -193,7 +193,7 @@ export function registerPythonAnalysisSync(
         if (e.affectsConfiguration('altium365.injectHelper')) {
             const consent = context.globalState.get<string>(CONSENT_KEY);
             if (consent === 'granted') {
-                // D-13: reconcile on config change
+                // Reconcile on config change
                 await reconcileNow(context, output);
             }
         }
@@ -204,8 +204,8 @@ export function registerPythonAnalysisSync(
 
 /**
  * Prompt user for one-time consent before managing python.analysis.extraPaths.
- * Per D-05: never auto-write without explicit permission.
- * Per D-06: remember decline to avoid re-prompting automatically.
+ * Never auto-writes without explicit permission, and remembers a decline to
+ * avoid re-prompting automatically.
  */
 async function promptForConsent(
     context: vscode.ExtensionContext,
@@ -235,7 +235,7 @@ async function promptForConsent(
 
 /**
  * Explicit command handler for setup/disable/repair.
- * Per D-07: allows re-enable after decline, or manual repair.
+ * Allows re-enable after a decline, or manual repair.
  */
 async function runExplicitSetup(
     context: vscode.ExtensionContext,
@@ -316,7 +316,7 @@ async function reconcileNow(
         const previousManagedPaths = context.globalState.get<string[]>(MANAGED_PATHS_KEY, []);
         const desiredManagedPaths = injectHelper ? getManagedPythonAnalysisPaths(context) : [];
 
-        // D-13 self-heal: detect stale extension paths by pattern so a fresh
+        // Self-heal: detect stale extension paths by pattern so a fresh
         // globalState (new machine, profile reset, or reinstall) still evicts
         // accumulated paths from old extension versions. Any path matching the
         // altium.developer install pattern that is NOT in desiredManagedPaths is
@@ -372,7 +372,7 @@ async function reconcileNow(
                 `${desiredManagedPaths.length} managed)`
         );
 
-        // D-03/D-04: fallback pyrightconfig.json for temp files (if proof requires it)
+        // Fallback pyrightconfig.json for temp files
         await reconcilePyrightConfigFallback(context, output, injectHelper, desiredManagedPaths);
     }).catch((e) => {
         // Log but don't block future reconciliations
@@ -386,8 +386,8 @@ async function reconcileNow(
 
 /**
  * Manage pyrightconfig.json fallback in temp root for orphan temp-file editors.
- * Per Task 1 proof: fallback-required (workspace extraPaths insufficient for temp files).
- * Per D-04: scoped to current temp-file flow only, not legacy altium365: virtual docs.
+ * Workspace extraPaths do not reach temp files, so they need the fallback.
+ * Scoped to the temp-file flow only, not to altium365: virtual documents.
  */
 async function reconcilePyrightConfigFallback(
     context: vscode.ExtensionContext,

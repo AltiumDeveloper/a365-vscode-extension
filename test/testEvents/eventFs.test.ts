@@ -78,7 +78,7 @@ describe('buildEventUri → parseEventUri round-trip', () => {
 });
 
 /*
- * SKIPPED (D-08): TestEventFs.readFile / writeFile
+ * SKIPPED: TestEventFs.readFile / writeFile
  * ──────────────────────────────────────────────────────────────────
  * These methods require ExtensionContext + OutputChannel + schema injection.
  * URI building/parsing contract above covers the testable surface.

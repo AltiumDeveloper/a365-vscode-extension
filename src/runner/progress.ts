@@ -7,23 +7,21 @@ import * as vscode from 'vscode';
  *
  * Title format is `Altium 365: ${label}` — callers supply any trailing
  * punctuation (e.g. `'Open Script: loading...'`). The helper never
- * appends an ellipsis automatically (D-08 / D-10).
+ * appends an ellipsis automatically.
  *
  * Cancellation (cooperative — v1):
  *   The `AbortSignal` passed to `op` is cooperative only. The project's
  *   network helpers (`graphqlRequest`, `ensureWorkspaceToken`, and the
  *   `vscode.workspace.fs` FileSystemProvider readFile/writeFile paths)
- *   do NOT accept an `AbortSignal` as of Phase 5, so an in-flight
+ *   do NOT accept an `AbortSignal`, so an in-flight
  *   request started before cancel will run to completion silently in
  *   the background. On cancel, this helper resolves to `undefined`
  *   immediately, the notification dismisses, and callers' existing
  *   `if (!result) return;` checks short-circuit the user-visible flow.
  *   Callers MAY inspect `signal.aborted` between awaits to skip
- *   downstream work. See
- *   `.planning/phases/05-progress-feedback-async-ops/05-RESEARCH.md`
- *   Landmine 1 for the full analysis.
+ *   downstream work.
  *
- * Error handling (D-06): non-cancel errors thrown by `op` are
+ * Error handling: non-cancel errors thrown by `op` are
  * re-thrown unchanged so caller-level `try/catch` + `outputChannel`
  * + `showErrorMessage` keep working. Only cancellation is swallowed.
  */

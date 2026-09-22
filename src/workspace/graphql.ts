@@ -1,9 +1,9 @@
 /**
  * Typed GraphQL error surfaced by `graphqlRequest` when the response body
  * carries a non-empty `errors[]` array. Mirrors the OAuth-error mapping
- * pattern landed in `doSignIn` (commit `a00dcc0`) — D-11. The legacy
- * full-fidelity JSON blob is preserved as `rawErrors` so callers can append
- * it to OutputChannel for diagnosis without losing the readable message.
+ * pattern in `doSignIn`. The full-fidelity JSON blob is preserved as
+ * `rawErrors` so callers can append it to OutputChannel for diagnosis
+ * without losing the readable message.
  */
 export class GraphQLError extends Error {
     public readonly code: string | undefined;
@@ -52,7 +52,7 @@ export async function graphqlRequest<T = unknown>(
         throw new Error(`GraphQL non-JSON response: ${text.slice(0, 500)}`);
     }
     if (payload.errors) {
-        // D-11: typed throw so command-boundary handlers can map well-known
+        // Typed throw so command-boundary handlers can map well-known
         // codes to friendly messages while still appending the full body to
         // OutputChannel via `err.rawErrors`. Transport-tier failures (HTTP /
         // non-JSON branches above) remain plain `Error`.

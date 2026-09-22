@@ -1,11 +1,11 @@
 import { graphqlRequest } from './graphql';
 
 // =============================================================================
-// Phase 10 — Plan 10-01: Extension Points and Assignments
+// Extension Points and Assignments
 // =============================================================================
 //
-// GraphQL schema verified against live A365 Dev environment (Task 1 checkpoint,
-// 2026-05-28). Field names and nesting structure confirmed.
+// GraphQL schema verified against the live A365 Dev environment on 2026-05-28.
+// Field names and nesting structure confirmed.
 //
 // Pagination shape (corrected 2026-06-02):
 //   - `gloCusExtensionPoints` returns a DIRECT ARRAY — NOT a Relay connection.
@@ -212,7 +212,7 @@ export async function listExtensionPoints(
 }
 
 // =============================================================================
-// Phase 10 — Extension Points: updateAssignment (auto-update on publish)
+// Extension Points: updateAssignment (auto-update on publish)
 // =============================================================================
 //
 // GraphQL mutation verified against live A365 Dev environment. Updates an

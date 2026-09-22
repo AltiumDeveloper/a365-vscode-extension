@@ -4,7 +4,7 @@ import * as fs from 'fs';
 import { readStore, writeStore } from './store';
 
 /**
- * One-shot sibling-import flow (Phase 999.3, D-07/D-08).
+ * One-shot sibling-import flow.
  *
  * If a local script has a `<name>.params.json` sibling AND no test events
  * are stored AND the user hasn't already declined, surfaces a non-modal
@@ -13,7 +13,7 @@ import { readStore, writeStore } from './store';
  * the sibling absolute path. On Never, the marker becomes '__declined__'
  * and the prompt never fires again for this identity.
  *
- * The sibling file is NEVER deleted (D-08 hard rule).
+ * The sibling file is NEVER deleted.
  */
 
 const IMPORT_MARKER_PREFIX = 'altium365.scriptParams.importedFrom.';

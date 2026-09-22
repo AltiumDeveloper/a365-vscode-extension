@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { type TestEventStore } from './store';
 
 /**
- * Test-event QuickPick (Phase 999.3 Plan 04, RESEARCH §Q3 / D-12).
+ * Test-event QuickPick.
  *
  * Pure UX module — reads from a passed-in TestEventStore snapshot, does
  * not touch globalState or dispatch commands. Returns a discriminated
@@ -10,12 +10,12 @@ import { type TestEventStore } from './store';
  * responsible for routing `create` / `empty` / `event` outcomes to the
  * right side-effect (store write, command dispatch, run-with-empty).
  *
- * Cancellation semantics (D-13): `undefined` means the user dismissed
+ * Cancellation semantics: `undefined` means the user dismissed
  * the picker via Esc / outside-click. Every caller MUST treat this as
  * abort — the resolver path uses it to silently skip running rather
  * than running with bogus defaults.
  *
- * Layout per RESEARCH §Q3 (refined Plan 06 UAT iter 6, 2026-05-25):
+ * Layout:
  *   [$(star-full) Default: <name>]   ← only if store.defaultEventName set
  *   ─── Saved events ───
  *   <event1>

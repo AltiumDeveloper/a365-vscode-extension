@@ -202,11 +202,11 @@ describe('collectAllPages', () => {
 });
 
 /*
- * SKIPPED (D-08): Higher-level workspace functions
+ * SKIPPED: Higher-level workspace functions
  * ──────────────────────────────────────────────────────────────────
  * listWorkspaces / listProjects / listScripts / listExtensionPoints —
  *   require full auth token + vscode.ExtensionContext chain plus
  *   deep GraphQL response shape mocking.
  *
- * pickWorkspace — requires vscode.window.showQuickPick (D-08 UI skip).
+ * pickWorkspace — requires vscode.window.showQuickPick (UI skip).
  */

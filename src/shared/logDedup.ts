@@ -3,8 +3,8 @@
  *
  * The server's `getExecutionLogs` re-sends the full transcript-so-far on every
  * poll (the `nextToken` cursor was previously trusted as a continuation token;
- * empirically it isn't, which caused ~3× duplication of every log line — see
- * Phase 7 / 07-CONTEXT.md). Strategy: ignore the cursor entirely, track how
+ * empirically it isn't, which caused ~3× duplication of every log line).
+ * Strategy: ignore the cursor entirely, track how
  * many lines we've already printed, and slice off the un-printed suffix.
  *
  * Contract-agnostic: works whether the server returns identical prefixes,

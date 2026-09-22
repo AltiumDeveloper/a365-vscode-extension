@@ -6,7 +6,7 @@ import { getSelectedWorkspace, listProjects, type WorkspaceInfo } from '../works
  *   - the picked id (string, possibly empty if user chose "no parameters")
  *   - undefined if the user cancelled
  *
- * D-08 (Phase 6): accepts an optional `target` workspace so cross-workspace
+ * Accepts an optional `target` workspace so cross-workspace
  * remote execute (and any caller acting on a non-active workspace's script)
  * can label the QuickPick with the target workspace's name instead of the
  * currently-active one, and load the project list against the target's

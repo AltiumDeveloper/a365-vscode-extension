@@ -19,8 +19,7 @@ import {
  * Safely open an http(s) URL supplied by the GraphQL backend in the user's
  * external browser. Rejects any other scheme (javascript:, file:, vscode:,
  * data:, ...) defensively — `vscode.Uri.parse` is permissive and would
- * otherwise hand a hostile or malformed backend URL to `openExternal`. See
- * WR-04 in 02.1-REVIEW.md.
+ * otherwise hand a hostile or malformed backend URL to `openExternal`.
  */
 async function openExternalHttpUrl(
     url: string,
@@ -271,12 +270,8 @@ async function createScriptForExtensionPoint(
 }
 
 /**
- * Hosts tree-generic (non-script-scoped) command handlers contributed by
- * Phase 02.1. Mirrors the `registerScriptCommands` factory shape per D-11 of
- * `.planning/phases/02.1-side-panel-ux/02.1-CONTEXT.md`.
- *
- * Currently registers `altium365.tree.copyId` (Plan 02.1-03). Future plans
- * (e.g. 02.1-05 Open in Browser) will add their handlers here alongside.
+ * Hosts tree-generic (non-script-scoped) command handlers, mirroring the
+ * `registerScriptCommands` factory shape.
  */
 export function registerTreeCommands(
     context: vscode.ExtensionContext,

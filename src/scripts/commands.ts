@@ -51,17 +51,10 @@ function extractScriptContext(
 /**
  * Registers the four `altium365.script.*` commands declared in package.json.
  *
- * Status:
- * - `altium365.script.runLocal` — LIVE (UAT-3 fix following Phase 04). The
- *   Phase 02 BLOCKED dependency on the script-download endpoint was
- *   resolved when Plan 03-03 shipped the `altium365:` FileSystemProvider
- *   readFile path. `runLocal` now: (1) reads the script body via the FSP,
- *   (2) writes it to `os.tmpdir()/altium365-<scriptId>-<basename>.py`,
- *   (3) hands off to `runScriptAtPath` (the same machinery that runs
- *   on-disk Python files via `python/_runner.py` with the A365 helper).
- * - `altium365.script.edit`, `altium365.script.publish`,
- *   `altium365.script.executeRemote` — LIVE handlers, wired in Plan 03-02
- *   on top of the `altium365:` FileSystemProvider.
+ * `runLocal` reads the script body via the `altium365:` FileSystemProvider,
+ * writes it under `os.tmpdir()`, then hands off to `runScriptAtPath` — the same
+ * machinery that runs on-disk Python files through `python/_runner.py`.
+ * `edit`, `publish` and `executeRemote` sit on the same FileSystemProvider.
  *
  * Resolution patterns:
  *   - When invoked from the tree context menu the command receives an
@@ -70,8 +63,8 @@ function extractScriptContext(
  *     `vscode.window.activeTextEditor?.document.uri` and `parseScriptUri`.
  *
  * Errors are surfaced at the command boundary via `showErrorMessage`; full
- * detail goes to OutputChannel (D-11). Plan 03-05 tightens the friendly
- * mapping with `mapGraphQLErrorToUserMessage`.
+ * detail goes to OutputChannel, with `mapGraphQLErrorToUserMessage` supplying
+ * the friendly text.
  */
 export function registerScriptCommands(
     context: vscode.ExtensionContext,
@@ -119,10 +112,7 @@ interface ScriptContext {
 /**
  * Map a known A365 GraphQL error code to a user-friendly toast message.
  * Unknown / undefined codes fall through to the raw message — better to leak
- * an internal code than to misclassify a failure (D-11, T-03-05-01).
- *
- * Curated from RESEARCH §Common Pitfalls + Phase 02 OAuth-error pattern
- * (commit a00dcc0). Codes confirmed during 03-UAT may be added later.
+ * an internal code than to misclassify a failure.
  */
 function mapGraphQLErrorToUserMessage(
     code: string | undefined,
@@ -169,7 +159,7 @@ function resolveScriptContext(
     if (!active) {
         return undefined;
     }
-    // UAT-6: tmp file (Edit/Run/Debug Local) — tracked in the local
+    // Tmp file (Edit/Run/Debug Local) — tracked in the local
     // script cache. Resolve identity directly from the registry; recover
     // workspaceId from the selected workspace if it matches, otherwise
     // return undefined for workspaceId (caller will look it up via listWorkspaces).
@@ -214,7 +204,7 @@ async function editScript(
     output: vscode.OutputChannel,
     node?: A365Node
 ): Promise<void> {
-    // UAT-6: open the script as an on-disk tmp file (the same path used
+    // Open the script as an on-disk tmp file (the same path used
     // by Run/Debug Local) so breakpoints set here apply when the user
     // hits Debug. Save publishes back to A365 via the save bridge in
     // localScriptCache.ts (calls FSP.writeFile under the hood).
@@ -248,7 +238,7 @@ async function publishScript(
         );
         return;
     }
-    // UAT-6: find the tracked tmp file for this remote script and save
+    // Find the tracked tmp file for this remote script and save
     // it. The save listener in localScriptCache.ts pushes the buffer
     // through FSP.writeFile (same publish path as before).
     const entry = findLocalScriptByRemoteId(sc.scriptId);
@@ -309,7 +299,7 @@ async function publishScript(
 }
 
 /**
- * UAT-3 fix: implement Run Script (Local) for remote scripts.
+ * Run Script (Local) for remote scripts.
  *
  * Pipeline:
  *  1. Resolve `ScriptContext` from the tree node (or active editor URI).
@@ -338,7 +328,7 @@ async function runLocalFromScriptNode(
     if (!tmpPath) {
         return;
     }
-    // D-01..D-03 (Phase 6): route through the script's owning workspace
+    // Route through the script's owning workspace
     // so cross-workspace right-click runs use the correct token + apiUrl
     // without hijacking the active-workspace selection.
     const target = sc && sc.workspaceId
@@ -355,7 +345,7 @@ async function runLocalFromScriptNode(
 }
 
 /**
- * UAT-5 fix: implement Debug Script (Local) for remote scripts. Mirrors
+ * Debug Script (Local) for remote scripts. Mirrors
  * runLocalFromScriptNode — same download-to-tmp pipeline — and then
  * hands off to debugScriptAtPath which launches debugpy against
  * `_runner.py` with the script as the first argument. Breakpoints set
@@ -371,7 +361,7 @@ async function debugLocalFromScriptNode(
     if (!tmpPath) {
         return;
     }
-    // UAT-6: open the script in editor before launching debugpy so the
+    // Open the script in the editor before launching debugpy so the
     // user can set breakpoints in the same buffer that the debugger
     // uses. If the file is already open (e.g. via Edit Script), this is
     // a no-op reveal.
@@ -386,7 +376,7 @@ async function debugLocalFromScriptNode(
             `[Altium 365] Debug Script (Local): failed to reveal editor: ${(e as Error).message}`
         );
     }
-    // D-01..D-03 (Phase 6): same target plumbing as Run (above).
+    // Same target plumbing as Run (above).
     const target = sc && sc.workspaceId
         ? { workspaceId: sc.workspaceId, workspaceAuthId: sc.workspaceAuthId }
         : undefined;
@@ -430,16 +420,16 @@ async function downloadScriptToTmp(
                 try {
                     const uri = buildScriptUri(sc.workspaceAuthId, sc.scriptId, sc.scriptName);
                     const bytes = await vscode.workspace.fs.readFile(uri);
-                    // D-09 / D-10 / D-12: Altium platform GRID format —
+                    // Altium platform GRID format —
                     //   grid:workspace:{workspaceAuthId}:scripts:script/{scriptId}
                     // The on-disk layout `altium365/<authId>/<scriptId>/<name>.py`
                     // encodes the GRID identity in the path, so (a) the editor
                     // tab title stays as the readable script name (no `altium365-…`
                     // prefix), and (b) two scripts that share a name in different
                     // workspaces resolve to distinct paths — cross-workspace
-                    // collisions are impossible. D-11: no migration of legacy
-                    // flat `altium365-<id>-<name>.py` files; the cache keys on
-                    // fsPath so they keep working until the user closes them.
+                    // collisions are impossible. Legacy flat
+                    // `altium365-<id>-<name>.py` files are not migrated; the cache
+                    // keys on fsPath so they keep working until the user closes them.
                     const safeBase = sc.scriptName.replace(/[^\w.-]+/g, '_') || 'script';
                     const fileName = safeBase.toLowerCase().endsWith('.py')
                         ? safeBase
@@ -450,17 +440,17 @@ async function downloadScriptToTmp(
                         sc.workspaceAuthId,
                         sc.scriptId
                     );
-                    // D-12: create the nested directory on demand. D-22: do NOT
-                    // wrap in a nested `withScriptProgress` — the surrounding
-                    // wrapper already covers this region.
+                    // Create the nested directory on demand. Do NOT wrap in a
+                    // nested `withScriptProgress` — the surrounding wrapper
+                    // already covers this region.
                     await fs.mkdir(dir, { recursive: true });
                     tmpPath = path.join(dir, fileName);
                     await fs.writeFile(tmpPath, bytes);
-                    // UAT-6: register the tmp path so (a) the save bridge can publish
+                    // Register the tmp path so (a) the save bridge can publish
                     // back on save, and (b) resolveScriptContext can recognize this
-                    // editor as belonging to the remote script.
-                    // Phase 10: also track assignmentId if opened from an assignment node,
-                    // so publish can auto-update the assignment to latest version.
+                    // editor as belonging to the remote script. Also track
+                    // assignmentId when opened from an assignment node, so publish
+                    // can auto-update the assignment to the latest version.
                     registerLocalScript(tmpPath, {
                         workspaceAuthId: sc.workspaceAuthId,
                         scriptId: sc.scriptId,
@@ -519,7 +509,7 @@ async function executeRemoteFromUi(
         return;
     }
     
-    // Phase 10: Check if executing from an assignment node
+    // Check if executing from an assignment node
     const assignmentId = node && 'kind' in node && node.kind === 'assignmentNode'
         ? node.assignment?.assignmentId
         : undefined;
