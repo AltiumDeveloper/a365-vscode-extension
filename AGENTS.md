@@ -4,21 +4,7 @@
 
 This is a brownfield VS Code extension for Altium 365 developers. The existing foundation (OAuth2 PKCE auth, local script run/debug, workspace/environment switching) is working. New work builds on top of it.
 
-Planning artifacts: `.planning/`
-- `PROJECT.md` — project context, requirements, decisions
-- `REQUIREMENTS.md` — scoped v1 requirements with REQ-IDs
-- `ROADMAP.md` — 3-phase execution plan
-- `STATE.md` — current state and focus
-- `config.json` — workflow preferences (YOLO mode, parallel execution, balanced models)
-- `codebase/` — architecture, stack, conventions, concerns maps
-
-## Workflow (GSD)
-
-This project uses the GSD workflow. Always:
-1. Read `STATE.md` before starting any task to understand current phase and focus
-2. Read `PLAN.md` in the active phase directory before executing
-3. Commit atomically per plan — one commit per completed plan
-4. Update `STATE.md` after each phase transition
+See `CONTRIBUTING.md` for how to build, test and submit changes.
 
 ## Architecture Summary
 
@@ -65,7 +51,7 @@ This project uses the GSD workflow. Always:
 
 ## Code Conventions
 
-See `.planning/codebase/CONVENTIONS.md` for full details. Key points:
+Key points:
 - All VS Code commands prefixed `altium365.`
 - Async/await throughout; errors surfaced via `vscode.window.showErrorMessage` at command boundary
 - GraphQL requests via `graphqlRequest<T = unknown>(endpoint, accessToken, query, variables?): Promise<T | undefined>` in `src/workspace/graphql.ts` — pass the selection-set shape, and keep runtime-guarded fields as `unknown`. `undefined` because a response can carry no `data` without carrying `errors`
