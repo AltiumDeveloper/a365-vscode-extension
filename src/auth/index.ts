@@ -23,14 +23,14 @@ export interface AuthState {
     signedIn: boolean;
 }
 
-// Module-level: auth-state emitter is a singleton broadcast channel (see CONVENTIONS.md exception).
+// Module-level: auth-state emitter is a singleton broadcast channel.
 const authStateEmitter = new vscode.EventEmitter<AuthState>();
 
 /**
  * Module-level: per-workspaceId mutex that serializes ensureWorkspaceToken's
- * cache-miss path (D-07). Closes WR-05 (index RMW race) and dedupes concurrent
- * token-exchange calls for the same workspaceId on cold-start tree expansion.
- * Single-purpose helper — same CONVENTIONS.md exception as authStateEmitter.
+ * cache-miss path. Closes a read-modify-write race on the index and dedupes
+ * concurrent token-exchange calls for the same workspaceId on cold-start tree
+ * expansion.
  */
 const workspaceTokenMutex = new AsyncMutex();
 export const onAuthStateChanged: vscode.Event<AuthState> = authStateEmitter.event;
@@ -77,10 +77,9 @@ export async function signIn(
     timeoutMs = 180_000,
     signal?: AbortSignal
 ): Promise<TokenSet> {
-    // D-05 / Phase 02.3 D-13 invariant: drain any prior identity's base + per-workspace
-    // token cache before starting a new OAuth dance so an account switch can't leave
-    // stale per-workspace tokens around. D-06: silent — suppress the transient
-    // signedIn:false event the drain would otherwise broadcast mid-sign-in.
+    // Drain any prior identity's base + per-workspace token cache before starting a
+    // new OAuth dance so an account switch can't leave stale per-workspace tokens
+    // around. Silent so the drain does not broadcast signedIn:false mid-sign-in.
     await clearAllTokens(context, { silent: true, revokeWith: cfg });
 
     const tok = await signInWithActionWait(cfg, {
@@ -124,8 +123,7 @@ export async function exchangeWorkspaceToken(
  * Returns a fresh access token for the given workspace, using a per-workspace
  * SecretStorage cache keyed by workspaceId. Calls exchangeWorkspaceToken on
  * cache miss or expiry. Maintains an index in globalState so clearAllTokens
- * can enumerate and drain every cached entry on sign-out (D-01, RESEARCH.md
- * §Pattern 4 + §Pitfall 5).
+ * can enumerate and drain every cached entry on sign-out.
  */
 export async function ensureWorkspaceToken(
     context: vscode.ExtensionContext,
@@ -283,12 +281,6 @@ export async function getActiveUserLabel(
     return userLabelFromClaims(claims);
 }
 
-/**
- * @deprecated Removed in Phase 02.1 fix WR-01. The "active workspace" cue now
- * reflects the user's explicit selection via `getSelectedWorkspace` in
- * `workspace.ts`, not the most-recently-exchanged token. Callers should use
- * `getSelectedWorkspace(context)?.workspaceId` from `./workspace`.
- */
 export function isExpired(tok: TokenSet): boolean {
     if (!tok.expires_at) {
         return false;
@@ -306,7 +298,7 @@ export function isExpired(tok: TokenSet): boolean {
  * stale-token 401 error row in the side panel.
  *
  * Use this for base-scope GraphQL callers (e.g., listWorkspaces) that must
- * never receive a workspace-scoped token (WR-05).
+ * never receive a workspace-scoped token.
  */
 export async function getBaseAccessToken(
     context: vscode.ExtensionContext,

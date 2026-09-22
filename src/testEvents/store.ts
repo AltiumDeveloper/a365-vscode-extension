@@ -1,12 +1,12 @@
 import * as vscode from 'vscode';
 
 /**
- * Test-event storage layer (Phase 999.3, D-01..D-03).
+ * Test-event storage layer.
  *
  * Stores per-script parameter templates in `context.globalState` under
  * the key `altium365.scriptParams.<identity>`. Identity is opaque here —
  * resolution lives in `./identity.ts`. The store is the single touch
- * point for the raw key prefix; no other Phase 999.3 module references
+ * point for the raw key prefix; no other module references
  * `TEST_EVENT_KEY_PREFIX` directly.
  */
 
@@ -116,7 +116,7 @@ export function eventCount(
 }
 
 /**
- * Per-identity "bloat warning has fired" flag (Phase 999.3 Plan 06, D-21).
+ * Per-identity "bloat warning has fired" flag.
  *
  * Stored in globalState under `altium365.scriptParams.bloatWarned.<identity>`.
  * The flag is set by doCreateTestEvent the first time a script crosses the

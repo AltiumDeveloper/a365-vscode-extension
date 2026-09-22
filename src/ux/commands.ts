@@ -76,12 +76,12 @@ export async function doSignIn(
     } catch (e) {
         const msg = (e as Error).message ?? String(e);
 
-        // Silent cancellation per D-12 — the closing progress notification IS the feedback.
+        // Silent cancellation — the closing progress notification IS the feedback.
         if (msg === 'Sign-in cancelled.') {
             return;
         }
 
-        // CSRF guard (exact match per D-07/D-12)
+        // CSRF guard (exact match)
         if (msg === 'State mismatch (possible CSRF).') {
             vscode.window.showErrorMessage(
                 'Altium 365 sign-in failed: state mismatch (possible CSRF).'
@@ -128,8 +128,7 @@ export async function doSignIn(
         // 'Token endpoint <status> <error>[ — <description>] (body: ...)'. Map the
         // well-known error codes to friendly messages; fall back to a generic
         // friendly message for unknown codes. The full technical detail still goes
-        // to OutputChannel so debugging is possible. D-12 final bullet superseded
-        // by this branch for 'Token endpoint' messages with a parseable OAuth code.
+        // to OutputChannel so debugging is possible.
         const tokenOAuthMatch = msg.match(
             /^Token endpoint (\d+) ([a-z_]+)(?: — ([^(]*))?\s*\(body:/
         );
@@ -158,8 +157,7 @@ export async function doSignIn(
             return;
         }
 
-        // Token endpoint failure without a parseable OAuth error, or anything else —
-        // existing pass-through preserved (D-12 final bullet)
+        // Token endpoint failure without a parseable OAuth error, or anything else.
         vscode.window.showErrorMessage(`Sign-in failed: ${msg}`);
     }
 }
@@ -191,12 +189,10 @@ export async function doSelectWorkspace(context: vscode.ExtensionContext): Promi
  * persist the selection to `globalState['altium365.selectedWorkspace']`,
  * surface success/failure UI, and refresh the side panel.
  *
- * Plan 04-04 (D-14, D-16): factored out of `doSelectWorkspace` +
- * `pickAndExchangeWorkspace` so the tree-context-menu command
- * `altium365.workspace.selectFromNode` can reuse the exact same activation
- * path (token exchange, globalState write, tree refresh, status bar refresh)
- * without going through a QuickPick. The globalState key
- * (`altium365.selectedWorkspace`) is preserved verbatim per D-16.
+ * Factored out of `doSelectWorkspace` + `pickAndExchangeWorkspace` so the
+ * tree-context-menu command `altium365.workspace.selectFromNode` can reuse the
+ * exact same activation path (token exchange, globalState write, tree refresh,
+ * status bar refresh) without going through a QuickPick.
  *
  * Errors are caught + surfaced + swallowed (no rethrow) to match the
  * pre-refactor `doSelectWorkspace` behavior — callers should not see
@@ -213,8 +209,7 @@ export async function applyWorkspaceSelection(
         });
         await setSelectedWorkspace(context, workspace);
         vscode.window.showInformationMessage('Altium 365: workspace token acquired.');
-        // WR-02 fix: refresh the side panel so the active-workspace cue
-        // (Plan 04-02 icon swap + Plan 04-04 contextValue split) follows the
+        // Refresh the side panel so the active-workspace cue follows the
         // user's explicit selection without waiting for sign-in/out.
         await vscode.commands.executeCommand('altium365.tree.refresh');
     } catch (e) {

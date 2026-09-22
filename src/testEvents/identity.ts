@@ -2,7 +2,7 @@ import type * as vscode from 'vscode';
 import { getLocalScript, normalizeLocalScriptKey } from '../scripts/localCache';
 
 /**
- * Script identity resolver (Phase 999.3, D-04..D-06).
+ * Script identity resolver.
  *
  * Single source of truth for "what identity does this script editor map to?"
  * Branches:
@@ -11,7 +11,7 @@ import { getLocalScript, normalizeLocalScriptKey } from '../scripts/localCache';
  *   - `file://` URI NOT in cache → local, identity = normalized fsPath
  *   - Any other scheme → undefined (caller treats as unsupported)
  *
- * fsPath fragility (move = orphan) is accepted per D-05.
+ * fsPath fragility — moving a file orphans its events — is accepted.
  *
  * Pure function — no outputChannel, no side effects. Safe to call from
  * activation hot paths and inside loops.

@@ -23,42 +23,22 @@ import { dedupLogPage } from '../shared/logDedup';
 /**
  * Remote-script execution module.
  *
- * Phase 3 Plan 03-04 lands the real flow per D-04b (async mutation + 1.5 s
- * status/log poll loop). The exported signature is unchanged from the 03-02
- * stub so `scriptCommands.ts` wiring is untouched.
- *
- * Decisions referenced:
- * - D-04b: async — `gloScrExecuteScript` returns a `scriptExecutionId`;
- *   client polls `gloScrScriptExecutionResult` for status + logs every
- *   1.5 s with a 10-min wall-clock backstop.
- * - D-20..D-22 (Phase 999.3): parameters resolved via the unified
- *   `resolveScriptParameters` (src/testEvents/resolver.ts), same code
- *   path as the local Python runner's `prepareRun`. The legacy
- *   `altium365.promptForProjectId` setting has been removed (Plan 06
- *   UAT iter 6, 2026-05-25 — was a no-op since D-22); the per-script
- *   test-event store lives in `globalState` (D-01) keyed by
- *   `altium365.scriptParams.<identity>` (owned by ./testEvents/store.ts).
- *   Stringification of values (Pitfall 2 — `GloScrScriptParameterInput.value: String!`)
- *   happens inside the resolver.
- * - D-08: token resolved once per execution via `ensureWorkspaceToken` (mutex,
- *   per-workspace). Long executions across env-switches are documented as
- *   undefined-behavior in the Phase 3 README.
- * - D-09: OutputChannel singleton — caller passes it in via `args.output`;
- *   this module never calls `vscode.window.createOutputChannel`.
- * - D-10: cancellation = stop polling + write
- *   "(server-side execution continues)" to OutputChannel; no server cancel
- *   attempted (the API does not expose one).
- * - D-11: kick-off mutation failure routes through the user-friendly
- *   `showErrorMessage` + full body to OutputChannel.
- * - D-19: every GraphQL call goes through `getWorkspaceApiUrl(ws,
- *   envGlobalEndpoint)` — workspace-cluster routing.
- *
- * Threat mitigations:
- * - T-03-04-01 (DoS / infinite poll): `MAX_WALLCLOCK_MS` 10-min backstop +
- *   curated terminal set + observed-status logging so UAT can tighten the set.
- * - T-03-04-02 (token leak): grep gate `! appendLine ... ${wsToken}`.
- * - T-03-04-04 (parameter type injection): all values stringified via
- *   `String(v)` before send.
+ * - Execution is async: `gloScrExecuteScript` returns a `scriptExecutionId` and
+ *   the client polls `gloScrScriptExecutionResult` for status + logs every
+ *   1.5 s, with a 10-minute wall-clock backstop against an infinite poll.
+ * - Parameters resolve through `resolveScriptParameters`, the same code path as
+ *   the local Python runner's `prepareRun`. The per-script test-event store
+ *   lives in `globalState` keyed by `altium365.scriptParams.<identity>` and is
+ *   owned by ./testEvents/store.ts. Values are stringified inside the resolver
+ *   because `GloScrScriptParameterInput.value` is `String!`.
+ * - The token is resolved once per execution via `ensureWorkspaceToken`.
+ *   Behaviour of a long execution across an environment switch is undefined.
+ * - The OutputChannel is passed in via `args.output`; this module never calls
+ *   `vscode.window.createOutputChannel`.
+ * - Cancellation stops polling and writes "(server-side execution continues)";
+ *   no server-side cancel is attempted because the API does not expose one.
+ * - Every GraphQL call goes through `getWorkspaceApiUrl(ws, envGlobalEndpoint)`
+ *   for workspace-cluster routing.
  */
 
 export interface ExecuteRemoteArgs {
@@ -96,7 +76,7 @@ const TERMINAL_STATUSES = new Set<string>([
 ]);
 
 export async function executeRemoteScript(args: ExecuteRemoteArgs): Promise<void> {
-    // ----- Block A + B: setup wrapped in withScriptProgress (D-01c, D-10) -----
+    // ----- Block A + B: setup wrapped in withScriptProgress -----
     type SetupResult = {
         ws: WorkspaceInfo;
         wsToken: string;
@@ -141,10 +121,8 @@ export async function executeRemoteScript(args: ExecuteRemoteArgs): Promise<void
                 );
                 return undefined;
             }
-            // RESEARCH §5.4: ensure the OutputChannel header below (Block C
-            // reads args.workspaceName) shows the script's actual workspace
-            // name on cross-workspace remote execute, not '<workspace-name
-            // unknown>' as observed before this fix.
+            // Block C reads args.workspaceName, so refresh it here or a
+            // cross-workspace remote execute logs '<workspace-name unknown>'.
             if (ws.name && ws.name !== args.workspaceName) {
                 args.workspaceName = ws.name;
             }
@@ -171,12 +149,9 @@ export async function executeRemoteScript(args: ExecuteRemoteArgs): Promise<void
             }
             const apiUrl = getWorkspaceApiUrl(ws, args.envGlobalEndpoint);
 
-            // ----- Block B: parameters (D-20..D-22 / Phase 999.3) -----
-            // Unified resolver — same code path as prepareRun. Phase 6 D-05's
-            // workspace-state read + projectId-prompt fallback are both gone;
-            // the legacy `promptForProjectId` setting was removed in Plan 06
-            // UAT iter 6 (was a no-op since D-22). Sibling import +
-            // silent-default semantics live inside resolveScriptParameters.
+            // ----- Block B: parameters -----
+            // Same resolver as prepareRun. Sibling import and silent-default
+            // semantics live inside resolveScriptParameters.
             const parameters = await resolveScriptParameters(
                 args.context,
                 { kind: 'remote', identity: args.scriptId },
@@ -189,14 +164,13 @@ export async function executeRemoteScript(args: ExecuteRemoteArgs): Promise<void
         { cancellable: true },
     );
     if (!setup) {
-        // Either user cancelled the spinner (silent return per D-04) or one
-        // of the four early-return-with-toast arms above already surfaced
-        // its own message.
+        // Either the user cancelled the spinner — a silent return — or one of
+        // the early-return-with-toast arms above already surfaced its message.
         return;
     }
     const { ws: _ws, wsToken, apiUrl, parameters } = setup;
 
-    // ----- Block C: OutputChannel header (D-09) -----
+    // ----- Block C: OutputChannel header -----
     args.output.show(true);
     const executionType = args.assignmentId ? 'assignment' : 'script';
     args.output.appendLine(
@@ -204,12 +178,12 @@ export async function executeRemoteScript(args: ExecuteRemoteArgs): Promise<void
             `(scriptId=${args.scriptId}${args.assignmentId ? `, assignmentId=${args.assignmentId}` : ''}, workspace=${args.workspaceName})`
     );
 
-    // ----- Block D: kick-off mutation (D-11 surface OUTSIDE withProgress) -----
+    // ----- Block D: kick-off mutation, surfaced OUTSIDE withProgress -----
     let execId: string;
     try {
         let r: { scriptExecutionId: string; status: string };
         if (args.assignmentId) {
-            // Phase 10: Execute via assignment (correct way to trigger extension points)
+            // Execute via assignment — the correct way to trigger extension points
             r = await executeAssignment(apiUrl, wsToken, {
                 assignmentId: args.assignmentId,
                 parameters,
@@ -323,7 +297,7 @@ async function runPollLoop(
             await sleep(POLL_INTERVAL_MS);
         }
 
-        // Cancellation path (D-10).
+        // Cancellation path.
         args.output.appendLine(
             '[Altium 365] Remote execution cancelled (server-side execution continues)'
         );

@@ -12,7 +12,7 @@ import { spawn } from 'child_process';
  * third-party packages (currently `requests`, `gql[all]`) that scripts and
  * the helper modules import.
  *
- * Strategy (per UAT-4):
+ * Strategy:
  *   - Both `SandboxProcess/` and `SandboxProcess/.deps/` are prepended to
  *     PYTHONPATH at every script run / debug.
  *   - `.deps/` is populated by `pip install --target` on demand. We track
@@ -220,11 +220,8 @@ export function getSandboxPythonPath(context: vscode.ExtensionContext): string[]
 /**
  * Build the canonical list of Python analysis extra paths for editor
  * IntelliSense. This mirrors the exact runtime PYTHONPATH order from
- * prepareRun (extension.ts:900-902) so editor import resolution matches
- * subprocess behavior. Order: SandboxProcess, SandboxProcess/.deps, python.
- * 
- * Used by Phase 09 consent-gated IntelliSense sync to populate
- * python.analysis.extraPaths without duplicating path-assembly logic.
+ * prepareRun so editor import resolution matches subprocess behavior.
+ * Order: SandboxProcess, SandboxProcess/.deps, python.
  */
 export function getManagedPythonAnalysisPaths(context: vscode.ExtensionContext): string[] {
     const pythonDir = context.asAbsolutePath('python');

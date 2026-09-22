@@ -131,7 +131,7 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
             return;
         }
         if (node.kind === 'projectsCategory') {
-            // WR-03 fix: clearing only the projects cache leaves the parent
+            // Clearing only the projects cache leaves the parent
             // workspace's category node (with its baked `count`) intact, so
             // the row reads "Projects (3)" while getChildren returns []. Bubble
             // to the parent workspace so loadWorkspaceChildren reruns and
@@ -145,7 +145,7 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
             return;
         }
         if (node.kind === 'scriptsCategory') {
-            // WR-03 fix: see projectsCategory above — same staleness pattern.
+            // See projectsCategory above — same staleness pattern.
             this.scriptsCache.delete(node.workspaceId);
             const parent = this.workspacesCache?.find(
                 (w): w is Extract<A365Node, { kind: 'workspace' }> =>
@@ -174,19 +174,18 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
                     n.info.name,
                     vscode.TreeItemCollapsibleState.Collapsed
                 );
-                // Active-workspace cue (D-08, D-09, D-10): reflects the user's
+                // Active-workspace cue: reflects the user's
                 // explicit selection via `Altium 365: Select Workspace`
                 // (persisted in globalState by `applyWorkspaceSelection`).
                 // Icon strategy: active = $(circle-filled), inactive = $(cloud)
                 // + descriptionForeground. The `(active)` text suffix has been
                 // dropped — the icon swap carries the signal alone.
-                // Icon choice rationale (D-10): `circle-filled` is reserved
-                // here because future 999.2 workspace-favorites will use
-                // `star-full`/`pinned`; the two cues can stack without
+                // `circle-filled` is reserved here because workspace-favorites
+                // will use `star-full`/`pinned`; the two cues can stack without
                 // semantic collision — do not swap this back to a star/pin
                 // glyph without first revisiting the favorites design.
                 //
-                // contextValue (Plan 04-04, D-11/D-12/D-13): split into
+                // contextValue is split into
                 // -active vs -inactive so package.json view/item/context can
                 // surface the "Select Workspace" entry ONLY on inactive
                 // workspaces (hiding the self-action on the already-active one).
@@ -310,11 +309,11 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
                 item.contextValue = CTX_SCRIPT;
                 item.iconPath = new vscode.ThemeIcon('file-code');
                 item.tooltip = n.script.description ?? n.script.name;
-                // D-19 / SC-4: single-click on a script leaf opens the same
-                // Edit Script path as the right-click context entry. VS Code
-                // honors TreeItem.command on leaf items under the default
-                // `workbench.list.openMode: singleClick` (RESEARCH §2.3 —
-                // there is no separate double-click event).
+                // Single-click on a script leaf opens the same Edit Script path
+                // as the right-click context entry. VS Code honors
+                // TreeItem.command on leaf items under the default
+                // `workbench.list.openMode: singleClick`; there is no separate
+                // double-click event.
                 item.command = {
                     command: 'altium365.script.edit',
                     title: 'Edit Script',
@@ -420,7 +419,7 @@ export class A365TreeDataProvider implements vscode.TreeDataProvider<A365Node> {
             workspaceId,
             authId: element.info.authId,
         });
-        // Phase 02.3 D-19: workspace-scoped queries MUST target the workspace's
+        // Workspace-scoped queries MUST target the workspace's
         // own apiServiceUrl, not the env-global graphqlEndpoint, since a
         // workspace can live on a different cluster than the env gateway.
         const endpoint = getWorkspaceApiUrl(element.info, this.getEndpoint());

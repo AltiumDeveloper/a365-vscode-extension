@@ -17,7 +17,7 @@ import { downloadByToken, uploadAndGetToken } from './filesService';
 /**
  * FileSystemProvider for the `altium365:` URI scheme.
  *
- * URI shape (D-01, revised post-UAT 2026-05-20 round 2):
+ * URI shape:
  *   `altium365:/grid:workspace:<authId>:scripts:script/<scriptId>/<displayName>`
  *
  * The path is an Altium GRID (Global Resource ID) — the canonical identifier
@@ -37,32 +37,25 @@ import { downloadByToken, uploadAndGetToken } from './filesService';
  *   GRIDs), NOT the GRID-form `workspaceId` (`grid:global::platform:
  *   workspace/<uuid>`). `resolveWorkspace` looks up `WorkspaceInfo` by
  *   matching `authId` in `listWorkspaces`. The full `workspaceId` is then
- *   obtained from that lookup for token storage (D-08).
- *
- * Decisions:
- * - D-01: this scheme + provider pattern.
- * - D-03: Save = Publish — `writeFile` IS the publish; failure throws
+ *   obtained from that lookup for token storage.
+ * - Save = Publish: `writeFile` IS the publish; failure throws
  *   `FileSystemError` so VS Code shows the standard save-failure indicator
  *   and the document stays dirty for retry.
- * - D-07 / D-19: every GraphQL call goes through `getWorkspaceApiUrl(ws,
+ * - Every GraphQL call goes through `getWorkspaceApiUrl(ws,
  *   envGlobalEndpoint)`; every Files Service REST call goes through
  *   `getWorkspaceFilesUrl(ws)`. The provider re-resolves the workspace from
  *   the URI authority on every call — no caching.
- * - D-08: tokens come from `ensureWorkspaceToken(...)`; this module NEVER
- *   caches a bearer.
+ * - Tokens come from `ensureWorkspaceToken(...)`; this module NEVER caches
+ *   a bearer.
  *
  * Threat mitigations:
- * - T-03-02-01 (path traversal): `parseScriptUri` enforces UUID regex on
+ * - Path traversal: `parseScriptUri` enforces UUID regex on
  *   `scriptId`; throws `FileNotFound` on mismatch. `workspaceId` is opaque
  *   server-issued GRID, validated by membership in `listWorkspaces` result
  *   inside `resolveWorkspace` (auth tier check beats charset check).
- * - T-03-02-02 (cross-workspace endpoint leak): the FSP re-resolves the
- *   per-call workspace from the URI's authority and looks up its endpoint /
- *   token freshly; no cross-workspace state survives in the provider.
- *
- * Plan 03-02 lands the skeleton: `readFile` and `writeFile` throw
- * `FileSystemError.Unavailable` with a "Plan 03-03" message; Plan 03-03
- * replaces those bodies with the real two-step (GraphQL → Files REST) flow.
+ * - Cross-workspace endpoint leak: the FSP re-resolves the per-call workspace
+ *   from the URI's authority and looks up its endpoint / token freshly; no
+ *   cross-workspace state survives in the provider.
  */
 
 const UUID_REGEX = /^[0-9a-fA-F-]{36}$/;
@@ -135,8 +128,7 @@ export function parseScriptUri(uri: vscode.Uri): ParsedRemoteUri {
 /**
  * FileSystemProvider for `altium365:` script URIs.
  *
- * Constructor wires the dependencies the real impl in Plan 03-03 needs;
- * Plan 03-02 only stores them. Tokens are NEVER cached here (D-08).
+ * Tokens are NEVER cached here.
  */
 export class AltiumRemoteScriptFs implements vscode.FileSystemProvider {
     private readonly _onDidChangeFile = new vscode.EventEmitter<vscode.FileChangeEvent[]>();
@@ -153,7 +145,7 @@ export class AltiumRemoteScriptFs implements vscode.FileSystemProvider {
     }
 
     watch(_uri: vscode.Uri): vscode.Disposable {
-        // No-op v1 (D-03): saves are explicit, no external watcher required.
+        // Saves are explicit, so no external watcher is required.
         return new vscode.Disposable(() => {});
     }
 
@@ -220,7 +212,7 @@ export class AltiumRemoteScriptFs implements vscode.FileSystemProvider {
         }
 
         // Token-hygiene: log only an 8-char prefix of the fileToken, never the
-        // bearer (T-03-03-02). The full token would be unique-per-version and
+        // bearer. The full token would be unique-per-version and
         // is not in itself a credential, but we keep prefixes only out of
         // caution to avoid log-spam if it ever changes shape.
         this.output.appendLine(

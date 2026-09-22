@@ -68,7 +68,7 @@ describe('parseScriptUri', () => {
 });
 
 /*
- * SKIPPED (D-08): AltiumRemoteScriptFs.readFile / writeFile
+ * SKIPPED: AltiumRemoteScriptFs.readFile / writeFile
  * ──────────────────────────────────────────────────────────────────
  * These methods require ensureWorkspaceToken + graphqlRequest (network).
  * The URI building/parsing contract above covers the testable surface.

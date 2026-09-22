@@ -10,11 +10,10 @@ import { getSelectedWorkspace } from './state';
 export interface WorkspaceLocation {
     apiServiceUrl?: string;
     /**
-     * Per-workspace Files Service base URL — Phase 3 D-19 carry-over for the
-     * Files Service tier (mirrors `apiServiceUrl`). Populated by
-     * `listWorkspaces` after the 03-01 schema bump. Older cached
-     * `WorkspaceInfo` blobs may lack this field — `getWorkspaceFilesUrl`
-     * throws actionably so callers surface a "refresh workspaces" message.
+     * Per-workspace Files Service base URL, mirroring `apiServiceUrl`.
+     * Populated by `listWorkspaces`. Older cached `WorkspaceInfo` blobs may
+     * lack this field — `getWorkspaceFilesUrl` throws actionably so callers
+     * surface a "refresh workspaces" message.
      */
     filesServiceUrl?: string;
 }
@@ -30,9 +29,9 @@ export interface WorkspaceInfo {
 /**
  * Resolve the GraphQL/API endpoint to use for workspace-scoped queries.
  *
- * Phase 02.3 UAT (2026-05-20, D-19) pinned that all post-workspace operations
- * (projects, scripts, future remote-script ops) MUST target the workspace's
- * own `DesWorkspaceInfo.location.apiServiceUrl` rather than the env-global
+ * All post-workspace operations (projects, scripts, remote-script ops) MUST
+ * target the workspace's own `DesWorkspaceInfo.location.apiServiceUrl`
+ * rather than the env-global
  * `altium365.graphqlEndpoint`. A workspace can live on a different cluster
  * than the env-global gateway, and the env-global endpoint will silently
  * return data for the wrong cluster (or error).
@@ -52,8 +51,8 @@ export function getWorkspaceApiUrl(
 /**
  * Resolve the Files Service base URL for a workspace-scoped REST call.
  *
- * Phase 3 (Plan 03-01) carries the D-19 per-workspace endpoint pattern from
- * GraphQL (`apiServiceUrl`) over to the Files Service tier. Unlike GraphQL
+ * Carries the per-workspace endpoint pattern from GraphQL (`apiServiceUrl`)
+ * over to the Files Service tier. Unlike GraphQL
  * there is no env-global Files Service URL configured in `package.json`, so
  * the helper accepts an optional `fallback` argument — callers typically pass
  * `''`. If neither the workspace nor the fallback yields a usable URL the
@@ -61,8 +60,7 @@ export function getWorkspaceApiUrl(
  * `Altium 365: Refresh` on the side panel, which calls `listWorkspaces`
  * again and repopulates `filesServiceUrl`. We deliberately do NOT silently
  * fall back to the apiServiceUrl host (the two services live on distinct
- * hostnames) — silent misroute is worse than an explicit failure (Pitfall 3
- * / threat T-03-01-04).
+ * hostnames) — a silent misroute is worse than an explicit failure.
  */
 export function getWorkspaceFilesUrl(
     ws: WorkspaceInfo | undefined,
@@ -81,10 +79,9 @@ export function getWorkspaceFilesUrl(
     );
 }
 
-// Phase 3 (Plan 03-01) bumped this selection set to also pull
-// `filesServiceUrl` so per-workspace Files Service REST calls
-// (download/upload script bodies) can resolve a workspace-scoped base URL
-// — D-19 carry-over to the Files Service tier.
+// This selection set pulls `filesServiceUrl` so per-workspace Files Service
+// REST calls (download/upload script bodies) can resolve a workspace-scoped
+// base URL.
 const LIST_WORKSPACES_QUERY =
     'query { desWorkspaceInfos { name workspaceId authId url location { apiServiceUrl filesServiceUrl } } }';
 
@@ -105,10 +102,8 @@ export async function listWorkspaces(
  * `WorkspaceInfo` (or `undefined` if the user cancelled / no workspaces
  * available / sign-in missing).
  *
- * Plan 04-04 (D-14, D-16): this function previously performed
- * `ensureWorkspaceToken` + `globalState.update('altium365.selectedWorkspace')`
- * inline. Those side effects now live in
- * `applyWorkspaceSelection(context, workspace)` in `extension.ts` so the
+ * The token exchange and `globalState.update('altium365.selectedWorkspace')`
+ * side effects live in `applyWorkspaceSelection(context, workspace)` so the
  * tree-context-menu `altium365.workspace.selectFromNode` command can reuse
  * the exact same activation path without going through a QuickPick. This
  * helper is now a pure picker — no token exchange, no globalState write.

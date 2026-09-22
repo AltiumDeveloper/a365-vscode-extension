@@ -5,9 +5,8 @@
  * file *tokens* (UUIDs); the actual byte content flows over a separate REST
  * service whose contract is NOT introspectable. The endpoints, verbs, body
  * shape, and response envelope below are encoded from a live dev1 portal
- * smoke-probe captured by an operator on 2026-05-20 (RESEARCH §Files
- * Service / Pattern 1; Open Question 1; Assumptions A1/A2). Re-verify if
- * portal traffic visibly changes.
+ * smoke-probe captured by an operator on 2026-05-20. Re-verify if portal
+ * traffic visibly changes.
  *
  * Pinned contract (operator-captured 2026-05-20, dev1 portal):
  *
@@ -29,13 +28,12 @@
  *
  *   Auth tier: workspace-scoped (NOT base) — same token used by
  *   per-workspace GraphQL. Resolve via `ensureWorkspaceToken(ctx, ws)` at
- *   every call (D-08). NEVER cache tokens in this module.
+ *   every call. NEVER cache tokens in this module.
  *
- *   D-17: ActionWait long-poll uses Node `https` and is unaffected; this
- *   module is allowed to use `globalThis.fetch` (consistent with
- *   `graphqlRequest`).
+ *   The ActionWait long-poll uses Node `https` and is unaffected; this module
+ *   is allowed to use `globalThis.fetch`, consistent with `graphqlRequest`.
  *
- *   Token hygiene (V5 / threat T-03-01-01): the bearer token MUST NEVER
+ *   Token hygiene: the bearer token MUST NEVER
  *   appear in any thrown error message or appendLine. Error bodies are
  *   truncated to 500 characters; `Authorization` header is never echoed.
  */
@@ -49,7 +47,7 @@ const UPLOAD_VERB = 'POST' as const;
 // fileToken charset: UUID-v4 (hex + dashes only). Tighter than the original
 // draft (which permitted dots/slashes/underscores) because the smoke-probe
 // confirmed pure UUIDs (e.g. `3038c52a-c406-443e-a88b-18205cf6c938`).
-// Path-traversal defence (V5 / T-03-01-02) — validate before URL build.
+// Path-traversal defence — validate before URL build.
 const FILE_TOKEN_CHARSET = /^[A-Za-z0-9-]+$/;
 
 function ensureValidFileToken(fileToken: string): void {
@@ -68,7 +66,7 @@ function trimTrailingSlash(url: string): string {
  * GET the raw script body bytes for a published file token.
  *
  * @param filesServiceUrl Per-workspace Files Service base URL — resolve via
- *   `getWorkspaceFilesUrl(ws)` at every call (D-19 carry-over). Never accept
+ *   `getWorkspaceFilesUrl(ws)` at every call. Never accept
  *   from untrusted input.
  * @param fileToken Server-issued opaque identifier (UUID-shaped, charset
  *   validated against {@link FILE_TOKEN_CHARSET} before URL construction).
@@ -134,9 +132,8 @@ export async function uploadAndGetToken(
 
     // Use the Web standard FormData + Blob (available in Node ≥ 18 / VS Code
     // host runtime). Do NOT set Content-Type manually — the runtime appends
-    // the correct multipart boundary automatically. RESEARCH Pitfall on
-    // multipart auth: if Content-Type is hand-set, the boundary is missing
-    // and the server rejects the upload.
+    // the correct multipart boundary automatically. Hand-setting Content-Type
+    // drops the boundary and the server rejects the upload.
     // Construct from a concrete ArrayBuffer slice so the BlobPart is a clean
     // standalone buffer (not a view that may share underlying memory).
     const ab = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);

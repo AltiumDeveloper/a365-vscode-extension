@@ -4,7 +4,7 @@ import { reconcilePythonAnalysisPaths } from '../../src/runner/pythonAnalysis';
 // ── Unit tests: reconcilePythonAnalysisPaths ──────────────────────────────────
 
 describe('reconcilePythonAnalysisPaths', () => {
-    it('previous managed paths are removed while unrelated user paths stay intact per D-11', () => {
+    it('previous managed paths are removed while unrelated user paths stay intact', () => {
         const existingExtraPaths = [
             '/user/custom/path',
             '/managed/SandboxProcess',
@@ -32,7 +32,7 @@ describe('reconcilePythonAnalysisPaths', () => {
         ]);
     });
 
-    it('enabling injectHelper re-appends the current managed paths in canonical order per D-02 and D-13', () => {
+    it('enabling injectHelper re-appends the current managed paths in canonical order', () => {
         const existingExtraPaths = [
             '/user/custom/path',
         ];
@@ -60,7 +60,7 @@ describe('reconcilePythonAnalysisPaths', () => {
         ]);
     });
 
-    it('disabling injectHelper returns only preserved user paths while keeping the managed-path snapshot reversible per D-11/D-12', () => {
+    it('disabling injectHelper returns only preserved user paths while keeping the managed-path snapshot reversible', () => {
         const existingExtraPaths = [
             '/user/custom/path',
             '/old/SandboxProcess',
@@ -115,7 +115,7 @@ describe('reconcilePythonAnalysisPaths', () => {
         ]);
     });
 
-    it('stale extension version paths are evicted when expanded previousManagedPaths includes them (D-13 fresh-globalState case)', () => {
+    it('stale extension version paths are evicted when expanded previousManagedPaths includes them (fresh-globalState case)', () => {
         // Simulate the case where globalState was fresh (previousManagedPaths=[])
         // but .vscode/settings.json already accumulated paths from 3 old versions.
         // reconcileNow detects them by pattern and expands previousManagedPaths before
@@ -290,7 +290,6 @@ describe('registerPythonAnalysisSync', () => {
         expect(pylanceExt).toBeUndefined();
 
         // Expected behavior: warning should be shown, but runtime execution continues
-        // (Best-effort integration per D-08/D-09)
     });
 
     it('Test 4: toggling altium365.injectHelper off removes only managed entries', async () => {

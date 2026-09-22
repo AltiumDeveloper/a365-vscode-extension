@@ -13,7 +13,7 @@ import {
 
 /**
  * Soft cap on stored events per script. Crossing this triggers a
- * one-time informational toast (D-21 / RESEARCH §Q9). Not a hard limit
+ * one-time informational toast. Not a hard limit
  * — storage continues to function past the threshold.
  */
 const BLOAT_WARN_THRESHOLD = 25;
@@ -30,22 +30,19 @@ import {
 } from '../workspace';
 
 /**
- * Test-event commands (Phase 999.3 Plan 04, D-10..D-14).
+ * Test-event commands.
  *
- * Five palette-eligible commands wrapping the storage/picker/FSP layers
- * from Plans 01-03. All operate on globalState (D-04 — never
- * workspaceState). All resolve a `ScriptIdentity` from either an
- * explicit argument (resolver-path dispatch from resolver.ts) or the
- * active editor's URI (palette-path).
+ * Five palette-eligible commands wrapping the storage/picker/FSP layers.
+ * All operate on globalState, never workspaceState, and resolve a
+ * `ScriptIdentity` from either an explicit argument (resolver-path dispatch
+ * from resolver.ts) or the active editor's URI (palette-path).
  *
- * CONVENTIONS: registration factory + private `do*` handlers; all
- * command bodies wrap in try/catch with outputChannel + showErrorMessage
- * at the boundary so background failures never surface as raw stack
- * traces.
+ * Registration factory + private `do*` handlers; all command bodies wrap in
+ * try/catch with outputChannel + showErrorMessage at the boundary so
+ * background failures never surface as raw stack traces.
  *
- * D-13 cancellation: every input/picker dialog that returns undefined
- * is treated as silent abort — no error toast, no console noise beyond
- * a debug-level outputChannel line.
+ * Cancellation: every input/picker dialog that returns undefined is treated
+ * as a silent abort — no error toast, no noise beyond an outputChannel line.
  *
  * Return values: `create` returns `{ name, body }` (or undefined on
  * cancel) so the resolver TODO-stub replacement path can route the
@@ -285,7 +282,7 @@ async function doCreateTestEvent(
             (store.defaultEventName === trimmedName ? ' (set as default)' : ''),
     );
 
-    // Bloat warning (D-21): one-time toast when crossing threshold.
+    // Bloat warning: one-time toast when crossing the threshold.
     // Fires from .create ONLY — .edit and .setDefault are legitimate
     // maintenance and must not nag the user.
     const totalEvents = Object.keys(store.events).length;
@@ -546,7 +543,7 @@ async function mintAndPickProject(
         });
         return entered === undefined ? undefined : entered.trim();
     }
-    // Phase 02.3 D-19: workspace-scoped queries (listProjects) MUST target
+    // Workspace-scoped queries (listProjects) MUST target
     // the workspace's own apiServiceUrl, not the env-global graphqlEndpoint.
     // A workspace can live on a different regional cluster, and using the
     // env-global endpoint silently returns data from the wrong cluster or

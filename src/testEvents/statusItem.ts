@@ -3,8 +3,7 @@ import { type ScriptIdentity, resolveScriptIdentity } from './identity';
 import { readStore, onDidChangeTestEventStore } from './store';
 
 /**
- * Status bar indicator for the active script's default test event
- * (Phase 999.3 Plan 06 UX iteration v2, 2026-05-25).
+ * Status bar indicator for the active script's default test event.
  *
  * Sits on the right side of the status bar, visible only when a Python
  * editor (local `.py` or remote-tmp `altium365:` body) is active. Text

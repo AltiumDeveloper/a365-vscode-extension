@@ -39,7 +39,7 @@ export interface LocalScriptIdentity {
 
 const registry = new Map<string, LocalScriptIdentity>();
 
-/** Case-normalized fsPath key — lowercase on win32/darwin, raw on linux. Single source of truth for cross-module identity equality (per .planning/phases/999.3-script-test-events-backlog/999.3-RESEARCH.md §Don't Hand-Roll Q5). */
+/** Case-normalized fsPath key — lowercase on win32/darwin, raw on linux. Single source of truth for cross-module identity equality. */
 export function normalizeLocalScriptKey(fsPath: string): string {
     // Resolve symlinks to canonical path (fixes macOS /var vs /private/var mismatch)
     let resolved: string;
@@ -90,17 +90,16 @@ export function findLocalScriptByRemoteId(
 /**
  * Rehydrate the in-memory cache by scanning the on-disk GRID layout
  * `os.tmpdir()/altium365/<workspaceAuthId>/<scriptId>/<name>.py`
- * (introduced by Plan 06-01 D-10/D-12). Called SYNCHRONOUSLY on
- * extension activation so that remote-tmp `.py` tabs restored by VS
- * Code from a previous session are recognized as remote BEFORE the
- * `altium365.activeIsRemoteScript` context key (D-15) is seeded —
+ * Called SYNCHRONOUSLY on extension activation so that remote-tmp `.py`
+ * tabs restored by VS Code from a previous session are recognized as remote
+ * BEFORE the `altium365.activeIsRemoteScript` context key is seeded —
  * otherwise the submenu hides Execute Remotely / Publish for restored
  * tabs until the user re-downloads the script.
  *
  * Sync I/O is acceptable here: the walk is bounded (typically a handful
  * of dirs, a few dozen files at most) and runs once at startup. The
  * async equivalent introduced a race where the seed fired before
- * rehydration completed (UAT-3).
+ * rehydration completed.
  *
  * Best-effort: silently swallows ENOENT (no remote scripts ever
  * downloaded) and any per-entry errors (partial cache > broken
@@ -159,13 +158,12 @@ export function rehydrateLocalScriptCacheFromDisk(): number {
  * Bypasses `vscode.workspace.fs.writeFile` (which probes parent
  * directories via stat and trips on the FSP's flat URI model — it
  * surfaced as "Unable to create folder ... that already exists but is
- * not a directory" during UAT-7). Calls the FSP's `writeFile` directly
+ * not a directory"). Calls the FSP's `writeFile` directly
  * with `create:true, overwrite:true`, matching the contract used when
  * VS Code saves a doc opened on the altium365: URI.
  * 
- * Phase 10: After successful publish, if the script was opened via an
- * assignment node, automatically updates that assignment to the latest
- * script version using the `updateAssignment` GraphQL mutation.
+ * After a successful publish, a script opened via an assignment node has
+ * that assignment updated to the latest version via `updateAssignment`.
  */
 export function registerLocalScriptSaveBridge(
     context: vscode.ExtensionContext,
@@ -202,8 +200,8 @@ export function registerLocalScriptSaveBridge(
                         3000
                     );
                     
-                    // Phase 10: If script was opened from an assignment node,
-                    // auto-update the assignment to the latest published version.
+                    // A script opened from an assignment node auto-updates the
+                    // assignment to the latest published version.
                     if (identity.assignmentId) {
                         try {
                             // Resolve workspace from authId using the centralized helper

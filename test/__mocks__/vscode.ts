@@ -1,4 +1,4 @@
-// Shared vscode mock for Phase 11 unit tests
+// Shared vscode mock for the unit tests
 import { vi } from 'vitest';
 import type { ExtensionContext, Uri as VSCodeUri } from 'vscode';
 
@@ -102,7 +102,7 @@ export const env = {
     openExternal: vi.fn(),
 };
 
-// ── Factory functions (D-03) ──────────────────────────────────────
+// ── Factory functions ─────────────────────────────────────────────
 export function makeSecretStorage() {
     const store = new Map<string, string>();
     return {

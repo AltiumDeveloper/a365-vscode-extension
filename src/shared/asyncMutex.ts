@@ -5,17 +5,15 @@
  * the next `fn` starts only after the previous one settles (resolve OR reject).
  * Calls with DIFFERENT keys run independently in parallel.
  *
- * Used by `src/auth.ts` (per D-07 / D-08) to:
+ * Used by `src/auth` to:
  *   1. Serialize read-modify-write of `GLOBAL_WS_TOKEN_INDEX_KEY`.
  *   2. Deduplicate concurrent `exchangeWorkspaceToken` calls for the same
  *      workspaceId, so a cold-start expansion across N workspaces performs
  *      exactly N exchanges, not N×concurrent-callers exchanges.
  *
- * CONVENTIONS exception: this module holds an internal `locks` Map as
- * module-class state. This is allowed because the file is a single-purpose
- * helper analogous to the `outputChannel` / `authStateEmitter` exceptions
- * documented in `.planning/codebase/CONVENTIONS.md`. Workspace count is
- * bounded, so we intentionally do not garbage-collect drained keys.
+ * This module holds an internal `locks` Map as module-class state, the same
+ * single-purpose-helper exception as `outputChannel` / `authStateEmitter`.
+ * Workspace count is bounded, so drained keys are deliberately not collected.
  */
 export class AsyncMutex {
   private locks = new Map<string, Promise<unknown>>();

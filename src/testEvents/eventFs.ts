@@ -2,14 +2,13 @@ import * as vscode from 'vscode';
 import { readStore, writeStore, type TestEventStore } from './store';
 
 /**
- * Test-event FileSystemProvider on the `altium365-event://` scheme
- * (Phase 999.3, D-15). Backs editable JSON tabs whose Cmd+S commits to
- * `context.globalState` via `writeStore`. Used by the test-events
- * commands (Plan 999.3-04) and the JSONSchema binding declared in
- * package.json `contributes.jsonValidation` (Plan 999.3-03 / D-16).
+ * Test-event FileSystemProvider on the `altium365-event://` scheme. Backs
+ * editable JSON tabs whose Cmd+S commits to `context.globalState` via
+ * `writeStore`. Used by the test-events commands and the JSONSchema binding
+ * declared in package.json `contributes.jsonValidation`.
  *
- * URI shape (Pitfall 1 — encodeURIComponent on identity and event-name
- * to survive identities containing ':' and win32-style backslashes).
+ * URI shape — encodeURIComponent on identity and event-name so identities
+ * containing ':' and win32-style backslashes survive.
  *
  * Identity lives in the FIRST PATH SEGMENT (not authority) because
  * `vscode.Uri.parse` lowercases the authority per RFC 3986 §3.2.2,
@@ -19,13 +18,13 @@ import { readStore, writeStore, type TestEventStore } from './store';
  *
  *     altium365-event:/<encodeURIComponent(identity)>/<encodeURIComponent(eventName)>.json
  *
- * Two-layer JSONSchema strategy (RESEARCH §Q2):
- *   1. package.json `jsonValidation` declarative binding (Plan 999.3-03 Task 2).
+ * Two-layer JSONSchema strategy:
+ *   1. package.json `jsonValidation` declarative binding.
  *   2. `readFile` injects a `$schema` field pointing at the bundled
  *      `schemas/test-event.schema.json` file:// URL as a runtime fallback.
  *      `writeFile` strips the injected field before persisting.
  *
- * NOTE (Pitfall 6 / RESEARCH §Q1): the literal onDidSaveTextDocument
+ * NOTE: the literal onDidSaveTextDocument
  * save-bridge pattern from localScriptCache.ts is intentionally NOT
  * copied here. That listener filters `doc.uri.scheme !== 'file'` and
  * would never fire for altium365-event://. The FileSystemProvider's
@@ -107,7 +106,7 @@ export class TestEventFs implements vscode.FileSystemProvider {
         const schemaUri = vscode.Uri
             .file(this.ctx.asAbsolutePath(SCHEMA_BASENAME))
             .toString();
-        // Layer-2 fallback per RESEARCH §Q2 — `$schema` is stripped on writeFile.
+        // Layer-2 fallback — `$schema` is stripped on writeFile.
         const withSchema = { $schema: schemaUri, ...payload };
         return Buffer.from(JSON.stringify(withSchema, null, 2), 'utf-8');
     }
@@ -163,11 +162,9 @@ export class TestEventFs implements vscode.FileSystemProvider {
     }
 
     async delete(uri: vscode.Uri): Promise<void> {
-        // Per RESEARCH §Q1: delegate to the command so user gets the
-        // confirmation flow. Plan 999.3-04 registers altium365.testEvents.delete;
-        // until then this is a soft no-op (FSP delete is only reachable via
-        // VS Code's explorer or programmatic call; the test-event editor tab
-        // close path does NOT invoke delete).
+        // Delegate to the command so the user gets the confirmation flow.
+        // FSP delete is only reachable via VS Code's explorer or a programmatic
+        // call; closing a test-event editor tab does NOT invoke it.
         const parsed = parseEventUri(uri);
         if (!parsed) {
             throw vscode.FileSystemError.FileNotFound(uri);
