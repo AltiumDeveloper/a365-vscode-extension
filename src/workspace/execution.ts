@@ -5,7 +5,7 @@ import { graphqlRequest } from './graphql';
 
 export interface ExecutionResult {
     scriptExecutionId: string;
-    /** Server returns `String!`, not an enum. Curated terminal set lives in `remoteExecution.ts`. */
+    /** Server returns `String!`, not an enum. Curated terminal set lives in `src/scripts/execution.ts`. */
     status: string;
     exitCode: number | null;
     startedAt: string | null;
@@ -144,7 +144,7 @@ export async function getExecutionLogs(
     );
     const page = data?.gloScrScriptExecutionResult?.logs;
     if (!page) {
-        // Defensive — never throw mid-poll on log fetch (Pitfall 5).
+        // Defensive — never throw mid-poll on log fetch.
         return { logs: [], nextToken: '' };
     }
     const logs = Array.isArray(page.logs) ? (page.logs as string[]) : [];
@@ -154,7 +154,7 @@ export async function getExecutionLogs(
 }
 
 // =============================================================================
-// Phase 10 — Extension Points: executeAssignment (trigger extension points)
+// Extension Points: executeAssignment (trigger extension points)
 // =============================================================================
 //
 // Execute an assignment via gloCusExecuteAssignment mutation. This is the

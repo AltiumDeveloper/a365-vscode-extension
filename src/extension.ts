@@ -56,7 +56,7 @@ export function activate(context: vscode.ExtensionContext) {
         treeDataProvider: treeProvider,
     });
 
-    // D-07 (revised after UAT): Show the active environment name directly in
+    // Show the active environment name directly in
     // the tree view title (e.g. "Altium 365 — Production") so users can see
     // which env is active at a glance without scanning for dimmed description
     // text. Sourced from the canonical `altium365.activeEnvironment` config
@@ -96,8 +96,8 @@ export function activate(context: vscode.ExtensionContext) {
         { isCaseSensitive: true, isReadonly: false }
     );
 
-    // Phase 999.3 D-15: writable virtual scheme backing test-event JSON
-    // tabs. Cmd+S commits via TestEventFs.writeFile → writeStore.
+    // Writable virtual scheme backing test-event JSON tabs.
+    // Cmd+S commits via TestEventFs.writeFile → writeStore.
     const testEventFs = new TestEventFs(context, outputChannel);
     const testEventFsRegistration = vscode.workspace.registerFileSystemProvider(
         'altium365-event',
@@ -109,7 +109,7 @@ export function activate(context: vscode.ExtensionContext) {
     const treeCommandDisposables = registerTreeCommands(context, outputChannel);
     const testEventCommandDisposables = registerTestEventCommands(context, outputChannel);
 
-    // D-15 / UAT-3: rehydrate the localScriptCache from the on-disk GRID layout
+    // Rehydrate the localScriptCache from the on-disk GRID layout
     // BEFORE registering the status bar item so its initial refresh() call sees
     // the correct remote identity for any restored tmp-file tab. Also required
     // before the active-remote context key seed below. Sync I/O is intentional —
@@ -169,7 +169,7 @@ export function activate(context: vscode.ExtensionContext) {
             treeProvider.refresh();
             await updateSignedInContext(context);
         }),
-        // D-07 (revised after UAT): Refresh tree view title when the active
+        // Refresh tree view title when the active
         // environment changes. TreeView.title is not re-read by provider
         // refresh, so we listen to the canonical configuration event — this
         // keeps wiring decoupled from `doSelectEnvironment` which mutates the
@@ -193,11 +193,9 @@ export function activate(context: vscode.ExtensionContext) {
         ...pythonAnalysisSyncDisposables
     );
 
-    // Plan 999.3-06 Task 2: activation boot line so dogfooders can see
-    // in the output channel that the test-events subsystem booted, and
-    // get a quick read on identity-count growth over time. Filters out
-    // bloatWarned.* meta-keys so the number reflects scripts with stored
-    // events, not the flag-tracking sidecar.
+    // Activation boot line for the output channel. Filters out bloatWarned.*
+    // meta-keys so the count reflects scripts with stored events, not the
+    // flag-tracking sidecar.
     const identityCount = context.globalState
         .keys()
         .filter(
@@ -210,7 +208,7 @@ export function activate(context: vscode.ExtensionContext) {
         `[Altium 365] testEvents.activate: subsystem active — ${identityCount} identities tracked.`
     );
 
-    // D-15: seed BEFORE listener registration (RESEARCH §2.2) so submenu
+    // Seed BEFORE listener registration so submenu
     // items show correct visibility from the first frame — not after the
     // next tab switch.
     updateActiveRemoteContext(vscode.window.activeTextEditor);

@@ -105,10 +105,10 @@ describe('buildPickerItems', () => {
 });
 
 /*
- * SKIPPED (D-08): pickTestEvent full QuickPick flow
+ * SKIPPED: pickTestEvent full QuickPick flow
  * ──────────────────────────────────────────────────────────────────
  * pickTestEvent creates a vscode.QuickPick, wires onDidAccept/onDidHide,
  * and awaits user interaction. This requires a complex QuickPick mock
- * that simulates accept/hide events. Per D-08, skip VS Code-heavy UI flows.
+ * that simulates accept/hide events. VS Code-heavy UI flows are skipped.
  * The pure item-building logic (buildPickerItems) is tested above.
  */

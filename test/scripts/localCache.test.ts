@@ -62,11 +62,11 @@ describe('findLocalScriptByRemoteId', () => {
 });
 
 /*
- * SKIPPED (D-08):
+ * SKIPPED:
  * ──────────────────────────────────────────────────────────────────
  * rehydrateLocalScriptCacheFromDisk() — reads readdirSync from tmpdir;
  *   requires a stable tmpdir fixture to test meaningfully. Skip.
  *
  * registerLocalScriptSaveBridge() — requires vscode.workspace.onDidSaveTextDocument
- *   (VS Code API heavy, per D-08). Skip.
+ *   (VS Code API heavy). Skip.
  */

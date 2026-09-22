@@ -33,7 +33,7 @@ describe('stringifyEvent', () => {
 });
 
 /*
- * SKIPPED (D-08): resolveScriptParameters full function
+ * SKIPPED: resolveScriptParameters full function
  * ──────────────────────────────────────────────────────────────────
  * resolveScriptParameters orchestrates vscode.commands.executeCommand,
  * AsyncMutex, OutputChannel, and sibling import. High mock complexity.

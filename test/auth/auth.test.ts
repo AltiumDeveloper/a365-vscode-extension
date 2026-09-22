@@ -295,7 +295,7 @@ describe('refreshTokens', () => {
 });
 
 /*
- * SKIPPED (D-08): VS Code-heavy or Node-HTTP-heavy functions
+ * SKIPPED: VS Code-heavy or Node-HTTP-heavy functions
  * ──────────────────────────────────────────────────────────────────
  * signIn(ctx, cfg):
  *   Thin wrapper around @altium-developer/altium-auth signIn plus VS Code
