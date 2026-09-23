@@ -36,8 +36,10 @@ work, and **Developer: Reload Window** in the dev host to pick up changes.
 | `npm run package` | Builds a `.vsix` with `vsce` |
 
 CI runs lint, compile, test and package on Ubuntu, Windows and macOS on every
-pull request, and all three legs are expected to be green before merge. Run at
-least `npm run lint` and `npm test` locally first.
+pull request. All three legs must pass before a pull request can merge: `main`
+has a ruleset requiring a pull request, one approving review, and the `gate`
+check that aggregates the matrix. Run at least `npm run lint` and `npm test`
+locally first.
 
 ## Pull requests
 
