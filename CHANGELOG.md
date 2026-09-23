@@ -33,8 +33,11 @@ git history for what changed in them.
 - The Python sandbox dependencies are pinned to tested ranges, so a local script run no
   longer resolves whatever `gql` and `requests` happen to be current. `gql` is held to
   the 4.x line, whose aiohttp transport verifies TLS certificates by default, and
-  `requests` to 2.32.4 or later. The first run after upgrading reinstalls
-  `python/SandboxProcess/.deps/`.
+  `requests` to 2.32.4 or later.
+- Installing the Python sandbox dependencies now replaces `python/SandboxProcess/.deps/`
+  instead of unpacking over it. `pip install --target` leaves an already-present package
+  untouched, so every change to `requirements.txt` since the directory was introduced has
+  been recorded as applied while the old versions stayed on disk.
 
 - Signing out now revokes the refresh token at the authorization server before deleting
   the local copies, so it can no longer be used to mint new access tokens. Switching

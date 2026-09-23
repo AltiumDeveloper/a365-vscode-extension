@@ -119,6 +119,8 @@ export async function ensureSandboxDeps(
         }
     }
 
+    // pip --target skips packages whose directory already exists, and --upgrade does not fix it.
+    fs.rmSync(depsDir, { recursive: true, force: true });
     fs.mkdirSync(depsDir, { recursive: true });
 
     const ok = await vscode.window.withProgress(
