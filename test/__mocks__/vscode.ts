@@ -76,7 +76,18 @@ export const window = {
     showQuickPick: vi.fn(),
     createQuickPick: vi.fn(),
     setStatusBarMessage: vi.fn(),
+    withProgress: vi.fn(
+        <T>(
+            _options: unknown,
+            task: (
+                progress: { report: (value: unknown) => void },
+                token: { onCancellationRequested: (cb: () => void) => void }
+            ) => Promise<T>
+        ) => task({ report: () => {} }, { onCancellationRequested: () => {} })
+    ),
 };
+
+export enum ProgressLocation { SourceControl = 1, Window = 10, Notification = 15 }
 
 // ── workspace stubs ───────────────────────────────────────────────
 export const workspace = {
