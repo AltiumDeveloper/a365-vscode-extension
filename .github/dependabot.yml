@@ -7,6 +7,13 @@ updates:
     groups:
       dev-dependencies:
         dependency-type: development
+    ignore:
+      # Must not exceed engines.vscode, or vsce refuses to package.
+      - dependency-name: "@types/vscode"
+      # typescript-eslint 8 peers typescript <6.1.0.
+      - dependency-name: typescript
+        update-types:
+          - version-update:semver-major
   - package-ecosystem: github-actions
     directory: /
     schedule:
