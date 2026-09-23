@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as path from 'path';
 import { makeExtensionContext } from '../__mocks__/vscode';
+import { ensureSandboxDeps, getSandboxDepsDir } from '../../src/runner/sandbox';
 
 const calls: string[] = [];
 
@@ -32,7 +33,6 @@ vi.mock('child_process', () => ({
     }),
 }));
 
-const { ensureSandboxDeps, getSandboxDepsDir } = await import('../../src/runner/sandbox');
 
 describe('ensureSandboxDeps', () => {
     beforeEach(() => {

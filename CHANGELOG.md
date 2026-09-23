@@ -30,6 +30,14 @@ git history for what changed in them.
 
 ### Security
 
+- Running a Python script locally now shows a cancellable progress notification, and
+  cancelling it terminates the script. Previously a script that hung or looped had no
+  stop control at all and kept running until VS Code exited.
+- Closing VS Code terminates any local script still running instead of leaving it
+  orphaned.
+- The temporary parameters file written for each run is now deleted once the run ends,
+  for Debug as well as Run. Previously every run left an `altium365-params-*.json` file
+  in the system temp directory containing that run's test event values.
 - The Python sandbox dependencies are pinned to tested ranges, so a local script run no
   longer resolves whatever `gql` and `requests` happen to be current. `gql` is held to
   the 4.x line, whose aiohttp transport verifies TLS certificates by default, and

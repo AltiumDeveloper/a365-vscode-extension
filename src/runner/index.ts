@@ -18,8 +18,52 @@ import {
     type WorkspaceInfo,
 } from '../workspace';
 import { ensureSandboxDeps, getSandboxPythonPath } from './sandbox';
+import { withScriptProgress } from './progress';
+
 import { resolveScriptIdentity } from '../testEvents/identity';
 import { resolveScriptParameters } from '../testEvents/resolver';
+
+// Echoed back on vscode.DebugSession.configuration, which is the only handle a
+// terminate listener gets on the run that created the file.
+const DEBUG_PARAMS_KEY = 'altium365ParamsPath';
+
+const runningScripts = new Set<ReturnType<typeof spawn>>();
+
+function removeParamsFile(paramsPath: string, outputChannel: vscode.OutputChannel): void {
+    if (!paramsPath) {
+        return;
+    }
+    try {
+        fs.unlinkSync(paramsPath);
+    } catch (e) {
+        const err = e as NodeJS.ErrnoException;
+        if (err.code !== 'ENOENT') {
+            outputChannel.appendLine(
+                `[Altium 365] Failed to remove ${paramsPath}: ${err.message}`
+            );
+        }
+    }
+}
+
+/**
+ * Terminates scripts still running at shutdown and removes the params file of a
+ * debug session once it ends. Register on `context.subscriptions`.
+ */
+export function registerRunLifecycle(outputChannel: vscode.OutputChannel): vscode.Disposable {
+    const debugCleanup = vscode.debug.onDidTerminateDebugSession((session) => {
+        const paramsPath = session.configuration?.[DEBUG_PARAMS_KEY];
+        if (typeof paramsPath === 'string') {
+            removeParamsFile(paramsPath, outputChannel);
+        }
+    });
+    return new vscode.Disposable(() => {
+        debugCleanup.dispose();
+        for (const proc of runningScripts) {
+            proc.kill();
+        }
+        runningScripts.clear();
+    });
+}
 
 interface RunPrep {
     python: string;
@@ -298,15 +342,41 @@ export async function runScriptAtPath(
         outputChannel.appendLine(`[Altium 365] Params:   ${paramsPath}`);
     }
 
-    const proc = spawn(python, ['-u', runnerPath, ...args], { cwd: scriptDir, env });
-    proc.stdout.on('data', (d) => outputChannel.append(d.toString()));
-    proc.stderr.on('data', (d) => outputChannel.append(d.toString()));
-    proc.on('error', (err) =>
-        outputChannel.appendLine(`[Altium 365] Failed to start Python: ${err.message}`)
-    );
-    proc.on('close', (code) =>
-        outputChannel.appendLine(`\n[Altium 365] Exit code: ${code}`)
-    );
+    try {
+        await withScriptProgress(
+            `Running ${path.basename(resolvedPath)}`,
+            (signal) =>
+                new Promise<void>((resolve) => {
+                    const proc = spawn(python, ['-u', runnerPath, ...args], {
+                        cwd: scriptDir,
+                        env,
+                    });
+                    runningScripts.add(proc);
+                    const onAbort = () => proc.kill();
+                    signal.addEventListener('abort', onAbort);
+                    const finish = () => {
+                        signal.removeEventListener('abort', onAbort);
+                        runningScripts.delete(proc);
+                        resolve();
+                    };
+                    proc.stdout.on('data', (d) => outputChannel.append(d.toString()));
+                    proc.stderr.on('data', (d) => outputChannel.append(d.toString()));
+                    proc.on('error', (err) => {
+                        outputChannel.appendLine(
+                            `[Altium 365] Failed to start Python: ${err.message}`
+                        );
+                        finish();
+                    });
+                    proc.on('close', (code) => {
+                        outputChannel.appendLine(`\n[Altium 365] Exit code: ${code}`);
+                        finish();
+                    });
+                }),
+            { cancellable: true },
+        );
+    } finally {
+        removeParamsFile(paramsPath, outputChannel);
+    }
 }
 
 // Reused by src/scripts/commands.ts to debug a fetched A365 script body written
@@ -346,6 +416,7 @@ export async function debugScriptAtPath(
         justMyCode: false,
         python,
         env,
+        [DEBUG_PARAMS_KEY]: paramsPath,
     };
 
     const started = await vscode.debug.startDebugging(undefined, debugConfig);
@@ -353,5 +424,6 @@ export async function debugScriptAtPath(
         vscode.window.showErrorMessage(
             'Failed to start debugger. Make sure the "Python Debugger" (ms-python.debugpy) extension is installed.'
         );
+        removeParamsFile(paramsPath, outputChannel);
     }
 }
