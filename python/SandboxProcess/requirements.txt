@@ -1,2 +1,4 @@
-requests
-gql[all]
+# gql 4 is the tested line; 3.x's AIOHTTPTransport skips TLS verification by default.
+gql[all]>=4.0,<5
+# 2.32.4 is the floor that clears the .netrc credential leak, GHSA-9hjg-9r4m-mvj7.
+requests>=2.32.4,<3

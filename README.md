@@ -5,7 +5,7 @@ Browse Altium 365 workspaces, run and debug Python scripts locally with live API
 ## Prerequisites
 
 - VS Code 1.85 or later
-- Python 3.8 or later on your system `PATH` (or configured via the `altium365.pythonPath` setting)
+- Python 3.8.1 or later on your system `PATH` (or configured via the `altium365.pythonPath` setting)
 - An Altium 365 account with access to at least one workspace
 
 ## Installation
