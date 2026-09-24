@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import * as vscode from 'vscode';
-import { onAuthStateChanged, readOAuthConfig, type AuthState } from '../../src/auth';
+import { getStoredTokens, readOAuthConfig } from '../../src/auth';
 import { doSelectEnvironment } from '../../src/ux/commands';
 import { makeExtensionContext } from '../__mocks__/vscode';
 
@@ -32,7 +32,7 @@ beforeEach(() => {
     );
 });
 
-async function keepSessionSwitchTo(target: string): Promise<AuthState[]> {
+async function keepSessionSwitchTo(target: string): Promise<vscode.ExtensionContext> {
     const ctx = makeExtensionContext();
     await ctx.secrets.store(
         'altium365.tokens',
@@ -44,24 +44,19 @@ async function keepSessionSwitchTo(target: string): Promise<AuthState[]> {
     vi.mocked(vscode.window.showInformationMessage).mockResolvedValue(
         'Keep session' as unknown as vscode.MessageItem
     );
-    const received: AuthState[] = [];
-    const d = onAuthStateChanged((s) => received.push(s));
-    try {
-        await doSelectEnvironment(ctx, { appendLine: vi.fn() } as unknown as vscode.OutputChannel);
-    } finally {
-        d.dispose();
-    }
-    return received;
+    await doSelectEnvironment(ctx, { appendLine: vi.fn() } as unknown as vscode.OutputChannel);
+    return ctx;
 }
 
 describe('doSelectEnvironment with Keep session', () => {
-    it('reports signed out in an environment with a different auth server', async () => {
-        expect(await keepSessionSwitchTo('Dev')).toEqual([{ signedIn: false, environment: 'Dev' }]);
+    it('hides the kept session in an environment with a different auth server', async () => {
+        const ctx = await keepSessionSwitchTo('Dev');
+        expect(await getStoredTokens(ctx)).toBeUndefined();
+        expect(await ctx.secrets.get('altium365.tokens')).toContain('prod-at');
     });
 
-    it('keeps the session in an environment sharing the auth server', async () => {
-        expect(await keepSessionSwitchTo('ProdUs')).toEqual([
-            { signedIn: true, environment: 'ProdUs' },
-        ]);
+    it('keeps the session usable in an environment sharing the auth server', async () => {
+        const ctx = await keepSessionSwitchTo('ProdUs');
+        expect((await getStoredTokens(ctx))?.access_token).toBe('prod-at');
     });
 });

@@ -2,7 +2,6 @@ import * as vscode from 'vscode';
 import {
     clearAllTokens,
     ensureWorkspaceToken,
-    fireAuthStateChanged,
     getStoredTokens,
     readOAuthConfig,
     signIn,
@@ -296,11 +295,6 @@ export async function doSelectEnvironment(
     outputChannel.appendLine(`[Altium 365]   redirect:   ${resolved.redirectUri || '(empty)'}`);
 
     // Tokens and selected workspace are environment-bound — offer to clear them.
-    // IMPORTANT: do NOT fire authStateChanged before
-    // this prompt resolves. The side panel listens to that event and triggers
-    // a workspace refresh — firing early would refresh against the new env's
-    // graphqlEndpoint using the previous env's token, producing an auth error
-    // in the panel before the user even decides what to do with their session.
     const next = await vscode.window.showInformationMessage(
         `Switched to "${pick.name}". Sign out current session and select a workspace in the new environment?`,
         'Sign out & sign in',
@@ -311,15 +305,6 @@ export async function doSelectEnvironment(
         await clearAllTokens(context, { revokeWith: previousOAuth });
         await clearSelectedWorkspace(context);
         await updateSignedInContext(context);
-    }
-
-    // Fire AFTER the prompt + any token clearing so listeners see a consistent
-    // (env, token) pair. signIn() below will fire its own event on completion.
-    try {
-        const tok = await getStoredTokens(context);
-        fireAuthStateChanged({ signedIn: !!tok, environment: pick.name });
-    } catch {
-        // best-effort broadcast
     }
 
     if (next === 'Sign out & sign in') {
