@@ -40,9 +40,9 @@ import a365
 data = a365.query("query { __typename }")
 ```
 
-While a script runs, a progress notification appears. Cancelling it terminates the script. Closing VS Code also terminates anything still running, so a script that hangs or loops cannot outlive the window.
+While a script runs, a progress notification appears. Cancelling it stops the script and its subprocesses. Closing VS Code does the same for any script still running.
 
-To debug a script, run **Altium Developer: Debug Python Script** from the Command Palette or the editor title bar. The script launches under the VS Code debugger, so breakpoints, step-through, and variable inspection all work. Debug sessions are not cancelled by the progress notification — stop them from the debug toolbar.
+To debug a script, run **Altium Developer: Debug Python Script** from the Command Palette or the editor title bar. The script launches under the VS Code debugger, so breakpoints, step-through, and variable inspection all work. Stop a debug session from the debug toolbar.
 
 ## Authentication & Scopes
 

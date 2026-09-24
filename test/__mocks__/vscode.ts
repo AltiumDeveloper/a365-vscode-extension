@@ -101,7 +101,7 @@ export const workspace = {
 // ── debug stubs ───────────────────────────────────────────────────
 export const debugSessionTerminated = new EventEmitter<{ configuration?: Record<string, unknown> }>();
 export const debug = {
-    startDebugging: vi.fn(async () => true),
+    startDebugging: vi.fn(async (_folder: unknown, _config: Record<string, unknown>) => true),
     onDidTerminateDebugSession: debugSessionTerminated.event,
 };
 

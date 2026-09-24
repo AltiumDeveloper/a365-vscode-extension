@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
-import { spawn } from 'child_process';
+import { spawn, type ChildProcess } from 'child_process';
 import {
     ensureWorkspaceToken,
     getBaseAccessToken,
@@ -27,7 +27,32 @@ import { resolveScriptParameters } from '../testEvents/resolver';
 // terminate listener gets on the run that created the file.
 const DEBUG_PARAMS_KEY = 'altium365ParamsPath';
 
-const runningScripts = new Set<ReturnType<typeof spawn>>();
+const KILL_GRACE_MS = 2000;
+
+const runningScripts = new Set<ChildProcess>();
+
+function killProcessTree(
+    proc: ChildProcess,
+    signal: NodeJS.Signals,
+    outputChannel: vscode.OutputChannel
+): void {
+    if (proc.pid === undefined) {
+        return;
+    }
+    if (process.platform === 'win32') {
+        spawn('taskkill', ['/pid', String(proc.pid), '/T', '/F']).on('error', (err) =>
+            outputChannel.appendLine(`[Altium 365] taskkill failed: ${err.message}`)
+        );
+        return;
+    }
+    try {
+        process.kill(-proc.pid, signal);
+    } catch (e) {
+        if ((e as NodeJS.ErrnoException).code !== 'ESRCH') {
+            throw e;
+        }
+    }
+}
 
 function removeParamsFile(paramsPath: string, outputChannel: vscode.OutputChannel): void {
     if (!paramsPath) {
@@ -59,7 +84,7 @@ export function registerRunLifecycle(outputChannel: vscode.OutputChannel): vscod
     return new vscode.Disposable(() => {
         debugCleanup.dispose();
         for (const proc of runningScripts) {
-            proc.kill();
+            killProcessTree(proc, 'SIGKILL', outputChannel);
         }
         runningScripts.clear();
     });
@@ -276,7 +301,10 @@ async function prepareRun(
                 for (const p of params) {
                     obj[p.key] = p.value;
                 }
-                fs.writeFileSync(tmpFile, JSON.stringify(obj, null, 2), 'utf-8');
+                fs.writeFileSync(tmpFile, JSON.stringify(obj, null, 2), {
+                    encoding: 'utf-8',
+                    mode: 0o600,
+                });
                 paramsPath = tmpFile;
             }
         }
@@ -350,9 +378,18 @@ export async function runScriptAtPath(
                     const proc = spawn(python, ['-u', runnerPath, ...args], {
                         cwd: scriptDir,
                         env,
+                        detached: process.platform !== 'win32',
                     });
                     runningScripts.add(proc);
-                    const onAbort = () => proc.kill();
+                    const onAbort = () => {
+                        killProcessTree(proc, 'SIGTERM', outputChannel);
+                        if (process.platform !== 'win32') {
+                            setTimeout(
+                                () => killProcessTree(proc, 'SIGKILL', outputChannel),
+                                KILL_GRACE_MS
+                            ).unref();
+                        }
+                    };
                     signal.addEventListener('abort', onAbort);
                     const finish = () => {
                         signal.removeEventListener('abort', onAbort);
@@ -367,9 +404,9 @@ export async function runScriptAtPath(
                         );
                         finish();
                     });
+                    proc.on('exit', finish);
                     proc.on('close', (code) => {
                         outputChannel.appendLine(`\n[Altium 365] Exit code: ${code}`);
-                        finish();
                     });
                 }),
             { cancellable: true },
