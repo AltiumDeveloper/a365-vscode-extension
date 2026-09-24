@@ -72,6 +72,8 @@ Signing out revokes the refresh token at the authorization server and deletes **
 
 Run **Altium Developer: Select Environment** from the Command Palette to switch the active A365 environment. Three environments are pre-configured (Dev, Uat, Prod). Switching environments clears the active workspace and workspace token. Run **Altium Developer: Select Workspace** again after switching to pick a workspace in the new environment.
 
+If you choose **Keep session** and the new environment uses a different sign-in server, the extension shows you as signed out there. Switching back picks the kept session up again; signing in replaces it.
+
 You can define additional environments under the `altium365.environments` setting; each entry may override `graphqlEndpoint`, `authEndpoint`, `tokenEndpoint`, `actionWaitEndpoint`, `redirectUri`, and `scopes`.
 
 ## Remote scripts

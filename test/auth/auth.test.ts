@@ -7,6 +7,7 @@ import {
     clearAllTokens,
     onAuthStateChanged,
     refreshTokens,
+    ensureWorkspaceToken,
     type AuthState,
     type TokenSet,
 } from '../../src/auth';
@@ -278,8 +279,9 @@ describe('refreshTokens', () => {
         const result = await refreshTokens(ctx, cfg);
         expect(result?.access_token).toBe('new_at');
         // Token should now be in storage
-        const stored = await getStoredTokens(ctx);
+        const stored = await getStoredTokens(ctx, cfg);
         expect(stored?.access_token).toBe('new_at');
+        expect(await getStoredTokens(ctx)).toBeUndefined();
     });
 
     it('preserves original refresh_token when rotation not returned', async () => {
@@ -291,6 +293,85 @@ describe('refreshTokens', () => {
         }));
         const result = await refreshTokens(ctx, cfg);
         expect(result?.refresh_token).toBe('original-rt');
+    });
+});
+
+// ── token origin ──────────────────────────────────────────────────
+
+describe('token origin', () => {
+    const prod = {
+        clientId: 'test-client',
+        tokenEndpoint: 'https://auth.prod.example.com/connect/token',
+        scopes: 'openid offline_access',
+    };
+    const dev = { ...prod, tokenEndpoint: 'https://auth.dev.example.com/connect/token' };
+
+    afterEach(() => vi.unstubAllGlobals());
+
+    async function seedBase(origin?: typeof prod): Promise<ReturnType<typeof makeExtensionContext>> {
+        const ctx = makeExtensionContext();
+        await ctx.secrets.store(
+            'altium365.tokens',
+            JSON.stringify({ access_token: 'prod-at', refresh_token: 'prod-rt', origin })
+        );
+        return ctx;
+    }
+
+    it('hides a base token minted by another auth server', async () => {
+        const ctx = await seedBase(prod);
+        expect(await getStoredTokens(ctx, dev)).toBeUndefined();
+        expect((await getStoredTokens(ctx, prod))?.access_token).toBe('prod-at');
+    });
+
+    it('treats a different clientId as another auth server', async () => {
+        const ctx = await seedBase(prod);
+        expect(await getStoredTokens(ctx, { ...prod, clientId: 'other' })).toBeUndefined();
+    });
+
+    it('adopts a token with no recorded origin into the active config', async () => {
+        const ctx = await seedBase();
+        expect((await getStoredTokens(ctx, dev))?.access_token).toBe('prod-at');
+    });
+
+    it('never sends a foreign refresh token to the active token endpoint', async () => {
+        const ctx = await seedBase(prod);
+        const fetchMock = vi.fn();
+        vi.stubGlobal('fetch', fetchMock);
+        expect(await refreshTokens(ctx, dev)).toBeUndefined();
+        expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it('treats a foreign workspace token as a cache miss', async () => {
+        const ctx = makeExtensionContext();
+        await ctx.secrets.store(
+            'altium365.workspaceTokens.ws-1',
+            JSON.stringify({ access_token: 'prod-ws-at', origin: prod })
+        );
+        const workspace = { workspaceId: 'ws-1', authId: 'auth-1' };
+        await expect(ensureWorkspaceToken(ctx, dev, workspace)).rejects.toThrow('Sign in first.');
+        expect(await ensureWorkspaceToken(ctx, prod, workspace)).toBe('prod-ws-at');
+    });
+
+    it('revokes each token at the server that minted it', async () => {
+        const ctx = await seedBase(prod);
+        await ctx.globalState.update('altium365.workspaceTokenIds', ['ws-1']);
+        await ctx.secrets.store(
+            'altium365.workspaceTokens.ws-1',
+            JSON.stringify({ access_token: 'legacy-at', refresh_token: 'legacy-rt' })
+        );
+        const revoked: Record<string, string> = {};
+        vi.stubGlobal(
+            'fetch',
+            vi.fn(async (url: string, init: { body: string }) => {
+                revoked[new URLSearchParams(init.body).get('token') ?? ''] = url;
+                return { status: 200, text: async () => '' };
+            })
+        );
+        await clearAllTokens(ctx, { silent: true, revokeWith: dev });
+        expect(revoked).toEqual({
+            'prod-rt': 'https://auth.prod.example.com/connect/revocation',
+            'legacy-rt': 'https://auth.dev.example.com/connect/revocation',
+        });
     });
 });
 
