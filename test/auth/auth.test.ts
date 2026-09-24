@@ -7,10 +7,20 @@ import {
     clearAllTokens,
     onAuthStateChanged,
     refreshTokens,
+    ensureWorkspaceToken,
+    readOAuthConfig,
+    signIn,
+    stampUnstampedTokens,
     type AuthState,
     type TokenSet,
 } from '../../src/auth';
+import type * as AltiumAuth from '@altium-developer/altium-auth';
 import { makeExtensionContext } from '../__mocks__/vscode';
+
+vi.mock('@altium-developer/altium-auth', async (orig) => ({
+    ...(await orig<typeof AltiumAuth>()),
+    signIn: vi.fn(async () => ({ access_token: 'at', refresh_token: 'rt' })),
+}));
 
 // Helper: build a minimal 3-part JWT with the given payload object
 function makeJwt(payload: object): string {
@@ -278,8 +288,19 @@ describe('refreshTokens', () => {
         const result = await refreshTokens(ctx, cfg);
         expect(result?.access_token).toBe('new_at');
         // Token should now be in storage
-        const stored = await getStoredTokens(ctx);
+        const stored = await getStoredTokens(ctx, cfg);
         expect(stored?.access_token).toBe('new_at');
+    });
+
+    it('records the refreshing config as the token origin', async () => {
+        const ctx = makeExtensionContext();
+        await ctx.secrets.store('altium365.tokens', JSON.stringify({ access_token: 'old', refresh_token: 'rt' }));
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({
+            status: 200,
+            text: async () => JSON.stringify({ access_token: 'new_at', expires_in: 3600 }),
+        }));
+        await refreshTokens(ctx, cfg);
+        expect(JSON.parse((await ctx.secrets.get('altium365.tokens')) ?? '{}').origin).toEqual(cfg);
     });
 
     it('preserves original refresh_token when rotation not returned', async () => {
@@ -294,19 +315,135 @@ describe('refreshTokens', () => {
     });
 });
 
+// ── token origin ──────────────────────────────────────────────────
+
+describe('token origin', () => {
+    const prod = {
+        clientId: 'test-client',
+        tokenEndpoint: 'https://auth.prod.example.com/connect/token',
+        scopes: 'openid offline_access',
+    };
+    const dev = { ...prod, tokenEndpoint: 'https://auth.dev.example.com/connect/token' };
+
+    afterEach(() => vi.unstubAllGlobals());
+
+    async function seedBase(origin?: typeof prod): Promise<ReturnType<typeof makeExtensionContext>> {
+        const ctx = makeExtensionContext();
+        await ctx.secrets.store(
+            'altium365.tokens',
+            JSON.stringify({ access_token: 'prod-at', refresh_token: 'prod-rt', origin })
+        );
+        return ctx;
+    }
+
+    it('hides a base token minted by another auth server', async () => {
+        const ctx = await seedBase(prod);
+        expect(await getStoredTokens(ctx, dev)).toBeUndefined();
+        expect((await getStoredTokens(ctx, prod))?.access_token).toBe('prod-at');
+    });
+
+    it('treats a different clientId as another auth server', async () => {
+        const ctx = await seedBase(prod);
+        expect(await getStoredTokens(ctx, { ...prod, clientId: 'other' })).toBeUndefined();
+    });
+
+    it('adopts a token with no recorded origin into the active config', async () => {
+        const ctx = await seedBase();
+        expect((await getStoredTokens(ctx, dev))?.access_token).toBe('prod-at');
+    });
+
+    it('never sends a foreign refresh token to the active token endpoint', async () => {
+        const ctx = await seedBase(prod);
+        const fetchMock = vi.fn();
+        vi.stubGlobal('fetch', fetchMock);
+        expect(await refreshTokens(ctx, dev)).toBeUndefined();
+        expect(fetchMock).not.toHaveBeenCalled();
+        expect(await ctx.secrets.get('altium365.tokens')).toContain('prod-rt');
+    });
+
+    it('treats a foreign workspace token as a cache miss', async () => {
+        const ctx = makeExtensionContext();
+        await ctx.secrets.store(
+            'altium365.workspaceTokens.ws-1',
+            JSON.stringify({ access_token: 'prod-ws-at', origin: prod })
+        );
+        const fetchMock = vi.fn();
+        vi.stubGlobal('fetch', fetchMock);
+        const workspace = { workspaceId: 'ws-1', authId: 'auth-1' };
+        await expect(ensureWorkspaceToken(ctx, dev, workspace)).rejects.toThrow('Sign in first.');
+        expect(fetchMock).not.toHaveBeenCalled();
+        expect(await ensureWorkspaceToken(ctx, prod, workspace)).toBe('prod-ws-at');
+    });
+
+    it('records the exchanging config as the workspace token origin', async () => {
+        const ctx = await seedBase(prod);
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({
+            status: 200,
+            text: async () => JSON.stringify({ access_token: 'prod-ws-at', expires_in: 3600 }),
+        }));
+        await ensureWorkspaceToken(ctx, prod, { workspaceId: 'ws-2', authId: 'auth-2' });
+        const raw = await ctx.secrets.get('altium365.workspaceTokens.ws-2');
+        expect(JSON.parse(raw ?? '{}').origin).toEqual(prod);
+    });
+
+    it('revokes each token at the server that minted it', async () => {
+        const ctx = await seedBase(prod);
+        await ctx.globalState.update('altium365.workspaceTokenIds', ['ws-1']);
+        await ctx.secrets.store(
+            'altium365.workspaceTokens.ws-1',
+            JSON.stringify({ access_token: 'legacy-at', refresh_token: 'legacy-rt' })
+        );
+        const revoked: Record<string, string> = {};
+        vi.stubGlobal(
+            'fetch',
+            vi.fn(async (url: string, init: { body: string }) => {
+                revoked[new URLSearchParams(init.body).get('token') ?? ''] = url;
+                return { status: 200, text: async () => '' };
+            })
+        );
+        await clearAllTokens(ctx, { silent: true, revokeWith: dev });
+        expect(revoked).toEqual({
+            'prod-rt': 'https://auth.prod.example.com/connect/revocation',
+            'legacy-rt': 'https://auth.dev.example.com/connect/revocation',
+        });
+    });
+
+    it('signIn records the signing config as the token origin', async () => {
+        const ctx = makeExtensionContext();
+        await signIn(ctx, prod);
+        expect(JSON.parse((await ctx.secrets.get('altium365.tokens')) ?? '{}').origin).toEqual(prod);
+    });
+
+    it('stamps tokens with no origin with the active config, once', async () => {
+        const ctx = await seedBase();
+        await ctx.globalState.update('altium365.workspaceTokenIds', ['ws-1', 'ws-2']);
+        await ctx.secrets.store(
+            'altium365.workspaceTokens.ws-1',
+            JSON.stringify({ access_token: 'legacy-ws-at' })
+        );
+        await ctx.secrets.store(
+            'altium365.workspaceTokens.ws-2',
+            JSON.stringify({ access_token: 'prod-ws-at', origin: prod })
+        );
+        await stampUnstampedTokens(ctx);
+        const originOf = async (key: string) =>
+            JSON.parse((await ctx.secrets.get(key)) ?? '{}').origin;
+        expect(await originOf('altium365.tokens')).toEqual(readOAuthConfig());
+        expect(await originOf('altium365.workspaceTokens.ws-1')).toEqual(readOAuthConfig());
+        expect(await originOf('altium365.workspaceTokens.ws-2')).toEqual(prod);
+        expect(await getStoredTokens(ctx, dev)).toBeUndefined();
+    });
+});
+
 /*
  * SKIPPED: VS Code-heavy or Node-HTTP-heavy functions
  * ──────────────────────────────────────────────────────────────────
- * signIn(ctx, cfg):
- *   Thin wrapper around @altium-developer/altium-auth signIn plus VS Code
- *   SecretStorage/auth-state side effects. The package owns ActionWait coverage.
- *
  * readOAuthConfig():
  *   Simple vscode.workspace.getConfiguration accessor.
  *   Low value — just reads named keys.
  *
- * getBaseAccessToken / ensureWorkspaceToken:
- *   These orchestrate the above primitives and the mutex. The
- *   observable outcomes (cache hit/miss) are better verified via
- *   integration testing once a live-workspace environment is available.
+ * getBaseAccessToken:
+ *   Orchestrates refreshTokens and clearAllTokens. The observable
+ *   outcomes are better verified via integration testing once a
+ *   live-workspace environment is available.
  */

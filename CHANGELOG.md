@@ -53,6 +53,14 @@ git history for what changed in them.
   accounts or environments revokes the previous session's token the same way. Revocation
   is best-effort — sign-out still completes locally when the server cannot be reached.
   Access tokens already issued remain valid until they expire.
+- Stored tokens now record the sign-in server that issued them, and are only ever sent
+  back to that server. Previously, keeping the session when switching environments, or
+  editing `altium365.activeEnvironment` by hand, sent the old environment's tokens to the
+  new environment's sign-in and GraphQL endpoints, and signing in or out then revoked
+  them at the wrong server. The extension now shows you as signed out in an environment
+  that uses a different sign-in server, and revokes each token where it was issued. A
+  session stored by an earlier version is assigned to the environment that is active
+  when the extension first starts after the update.
 
 ## 0.4
 

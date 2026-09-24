@@ -17,6 +17,24 @@ const SECRET_WS_TOKEN_PREFIX = 'altium365.workspaceTokens.';
 const GLOBAL_WS_TOKEN_INDEX_KEY = 'altium365.workspaceTokenIds';
 const REVOKE_TIMEOUT_MS = 3_000;
 
+type StoredTokenSet = TokenSet & { origin?: OAuthConfig };
+
+function stampOrigin(tok: TokenSet, origin: OAuthConfig): string {
+    return JSON.stringify({ ...tok, origin });
+}
+
+function isSameAuthServer(a: OAuthConfig, b: OAuthConfig): boolean {
+    return a.tokenEndpoint === b.tokenEndpoint && a.clientId === b.clientId;
+}
+
+function parseTokenIfIssuedBy(raw: string | undefined, cfg: OAuthConfig): TokenSet | undefined {
+    if (!raw) {
+        return undefined;
+    }
+    const tok = JSON.parse(raw) as StoredTokenSet;
+    return !tok.origin || isSameAuthServer(tok.origin, cfg) ? tok : undefined;
+}
+
 export interface AuthState {
     user?: string;
     environment?: string;
@@ -90,7 +108,7 @@ export async function signIn(
         },
     });
 
-    await context.secrets.store(SECRET_TOKENS, JSON.stringify(tok));
+    await context.secrets.store(SECRET_TOKENS, stampOrigin(tok, cfg));
     try {
         const claims = decodeIdTokenClaims(tok.id_token);
         authStateEmitter.fire({ signedIn: true, user: userLabelFromClaims(claims) });
@@ -135,8 +153,8 @@ export async function ensureWorkspaceToken(
     const raw = await context.secrets.get(key);
     if (raw) {
         try {
-            const parsed = JSON.parse(raw) as TokenSet;
-            if (parsed.access_token && !isExpired(parsed)) {
+            const parsed = parseTokenIfIssuedBy(raw, cfg);
+            if (parsed?.access_token && !isExpired(parsed)) {
                 return parsed.access_token;
             }
         } catch {
@@ -151,8 +169,8 @@ export async function ensureWorkspaceToken(
         const rawAfter = await context.secrets.get(key);
         if (rawAfter) {
             try {
-                const parsed = JSON.parse(rawAfter) as TokenSet;
-                if (parsed.access_token && !isExpired(parsed)) {
+                const parsed = parseTokenIfIssuedBy(rawAfter, cfg);
+                if (parsed?.access_token && !isExpired(parsed)) {
                     return parsed.access_token;
                 }
             } catch {
@@ -160,7 +178,7 @@ export async function ensureWorkspaceToken(
             }
         }
         const fresh = await exchangeWorkspaceToken(context, cfg, workspace.authId);
-        await context.secrets.store(key, JSON.stringify(fresh));
+        await context.secrets.store(key, stampOrigin(fresh, cfg));
         const index = context.globalState.get<string[]>(GLOBAL_WS_TOKEN_INDEX_KEY, []);
         if (!index.includes(workspace.workspaceId)) {
             const next = [...index, workspace.workspaceId];
@@ -174,7 +192,7 @@ export async function refreshTokens(
     context: vscode.ExtensionContext,
     cfg: OAuthConfig
 ): Promise<TokenSet | undefined> {
-    const tok = await getStoredTokens(context);
+    const tok = await getStoredTokens(context, cfg);
     if (!tok?.refresh_token) {
         return undefined;
     }
@@ -195,37 +213,39 @@ export async function refreshTokens(
     if (!refreshed.refresh_token && tok.refresh_token) {
         refreshed.refresh_token = tok.refresh_token;
     }
-    await context.secrets.store(SECRET_TOKENS, JSON.stringify(refreshed));
+    await context.secrets.store(SECRET_TOKENS, stampOrigin(refreshed, cfg));
     return refreshed;
 }
 
 export async function getStoredTokens(
-    context: vscode.ExtensionContext
+    context: vscode.ExtensionContext,
+    cfg: OAuthConfig = readOAuthConfig()
 ): Promise<TokenSet | undefined> {
-    const raw = await context.secrets.get(SECRET_TOKENS);
-    return raw ? (JSON.parse(raw) as TokenSet) : undefined;
+    return parseTokenIfIssuedBy(await context.secrets.get(SECRET_TOKENS), cfg);
 }
 
-function storedRefreshToken(raw: string | undefined): string | undefined {
+function tryParseStored(raw: string | undefined): StoredTokenSet | undefined {
     if (!raw) {
         return undefined;
     }
     try {
-        return (JSON.parse(raw) as TokenSet).refresh_token;
+        return JSON.parse(raw) as StoredTokenSet;
     } catch {
         return undefined;
     }
 }
 
 /**
- * Best-effort RFC 7009 revocation of every stored refresh token, under one
- * shared deadline: the library takes no AbortSignal and fetch has no timeout.
+ * Best-effort RFC 7009 revocation of every stored refresh token at the server that minted it,
+ * under one shared deadline: the library takes no AbortSignal and fetch has no timeout.
  */
-async function revokeAll(cfg: OAuthConfig, stored: (string | undefined)[]): Promise<void> {
+async function revokeAll(fallback: OAuthConfig, stored: (string | undefined)[]): Promise<void> {
     const calls = stored
-        .map(storedRefreshToken)
-        .filter((tok): tok is string => !!tok)
-        .map((tok) => revokeRefreshToken(cfg, tok).catch(() => undefined));
+        .map(tryParseStored)
+        .filter((tok): tok is StoredTokenSet & { refresh_token: string } => !!tok?.refresh_token)
+        .map((tok) =>
+            revokeRefreshToken(tok.origin ?? fallback, tok.refresh_token).catch(() => undefined)
+        );
     if (calls.length === 0) {
         return;
     }
@@ -239,12 +259,27 @@ async function revokeAll(cfg: OAuthConfig, stored: (string | undefined)[]): Prom
     clearTimeout(deadline);
 }
 
+function storedTokenKeys(context: vscode.ExtensionContext): string[] {
+    const index = context.globalState.get<string[]>(GLOBAL_WS_TOKEN_INDEX_KEY, []);
+    return [SECRET_TOKENS, ...index.map((id) => SECRET_WS_TOKEN_PREFIX + id)];
+}
+
+/** Assigns the active config as the origin of any stored token that has none. */
+export async function stampUnstampedTokens(context: vscode.ExtensionContext): Promise<void> {
+    const origin = readOAuthConfig();
+    for (const key of storedTokenKeys(context)) {
+        const tok = tryParseStored(await context.secrets.get(key));
+        if (tok && !tok.origin) {
+            await context.secrets.store(key, stampOrigin(tok, origin));
+        }
+    }
+}
+
 export async function clearAllTokens(
     context: vscode.ExtensionContext,
     options?: { silent?: boolean; revokeWith?: OAuthConfig }
 ): Promise<void> {
-    const index = context.globalState.get<string[]>(GLOBAL_WS_TOKEN_INDEX_KEY, []);
-    const keys = [SECRET_TOKENS, ...index.map((id) => SECRET_WS_TOKEN_PREFIX + id)];
+    const keys = storedTokenKeys(context);
     if (options?.revokeWith) {
         await revokeAll(
             options.revokeWith,
@@ -304,7 +339,7 @@ export async function getBaseAccessToken(
     context: vscode.ExtensionContext,
     cfg: OAuthConfig
 ): Promise<string | undefined> {
-    let base = await getStoredTokens(context);
+    let base = await getStoredTokens(context, cfg);
     if (!base) {
         return undefined;
     }
