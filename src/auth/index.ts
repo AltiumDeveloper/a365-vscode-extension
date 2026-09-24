@@ -27,8 +27,7 @@ function isSameAuthServer(a: OAuthConfig, b: OAuthConfig): boolean {
     return a.tokenEndpoint === b.tokenEndpoint && a.clientId === b.clientId;
 }
 
-/** Parses a stored token, hiding one minted by a different auth server than `cfg`. */
-function parseStoredToken(raw: string | undefined, cfg: OAuthConfig): TokenSet | undefined {
+function parseTokenIfIssuedBy(raw: string | undefined, cfg: OAuthConfig): TokenSet | undefined {
     if (!raw) {
         return undefined;
     }
@@ -154,7 +153,7 @@ export async function ensureWorkspaceToken(
     const raw = await context.secrets.get(key);
     if (raw) {
         try {
-            const parsed = parseStoredToken(raw, cfg);
+            const parsed = parseTokenIfIssuedBy(raw, cfg);
             if (parsed?.access_token && !isExpired(parsed)) {
                 return parsed.access_token;
             }
@@ -170,7 +169,7 @@ export async function ensureWorkspaceToken(
         const rawAfter = await context.secrets.get(key);
         if (rawAfter) {
             try {
-                const parsed = parseStoredToken(rawAfter, cfg);
+                const parsed = parseTokenIfIssuedBy(rawAfter, cfg);
                 if (parsed?.access_token && !isExpired(parsed)) {
                     return parsed.access_token;
                 }
@@ -222,7 +221,7 @@ export async function getStoredTokens(
     context: vscode.ExtensionContext,
     cfg: OAuthConfig = readOAuthConfig()
 ): Promise<TokenSet | undefined> {
-    return parseStoredToken(await context.secrets.get(SECRET_TOKENS), cfg);
+    return parseTokenIfIssuedBy(await context.secrets.get(SECRET_TOKENS), cfg);
 }
 
 function tryParseStored(raw: string | undefined): StoredTokenSet | undefined {

@@ -56,9 +56,9 @@ git history for what changed in them.
 - Stored tokens now record the sign-in server that issued them, and are only ever sent
   back to that server. Previously, keeping the session when switching environments, or
   editing `altium365.activeEnvironment` by hand, sent the old environment's tokens to the
-  new environment's sign-in, GraphQL and script endpoints, and sign-in then revoked them
-  at the wrong server. The extension now shows you as signed out in an environment that
-  uses a different sign-in server, and revokes each token where it was issued.
+  new environment's sign-in and GraphQL endpoints, and signing in or out then revoked
+  them at the wrong server. The extension now shows you as signed out in an environment
+  that uses a different sign-in server, and revokes each token where it was issued.
 
 ## 0.4
 

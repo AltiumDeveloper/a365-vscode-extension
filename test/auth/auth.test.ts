@@ -281,7 +281,17 @@ describe('refreshTokens', () => {
         // Token should now be in storage
         const stored = await getStoredTokens(ctx, cfg);
         expect(stored?.access_token).toBe('new_at');
-        expect(await getStoredTokens(ctx)).toBeUndefined();
+    });
+
+    it('records the refreshing config as the token origin', async () => {
+        const ctx = makeExtensionContext();
+        await ctx.secrets.store('altium365.tokens', JSON.stringify({ access_token: 'old', refresh_token: 'rt' }));
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({
+            status: 200,
+            text: async () => JSON.stringify({ access_token: 'new_at', expires_in: 3600 }),
+        }));
+        await refreshTokens(ctx, cfg);
+        expect(JSON.parse((await ctx.secrets.get('altium365.tokens')) ?? '{}').origin).toEqual(cfg);
     });
 
     it('preserves original refresh_token when rotation not returned', async () => {
@@ -339,6 +349,7 @@ describe('token origin', () => {
         vi.stubGlobal('fetch', fetchMock);
         expect(await refreshTokens(ctx, dev)).toBeUndefined();
         expect(fetchMock).not.toHaveBeenCalled();
+        expect(await ctx.secrets.get('altium365.tokens')).toContain('prod-rt');
     });
 
     it('treats a foreign workspace token as a cache miss', async () => {
@@ -347,9 +358,23 @@ describe('token origin', () => {
             'altium365.workspaceTokens.ws-1',
             JSON.stringify({ access_token: 'prod-ws-at', origin: prod })
         );
+        const fetchMock = vi.fn();
+        vi.stubGlobal('fetch', fetchMock);
         const workspace = { workspaceId: 'ws-1', authId: 'auth-1' };
         await expect(ensureWorkspaceToken(ctx, dev, workspace)).rejects.toThrow('Sign in first.');
+        expect(fetchMock).not.toHaveBeenCalled();
         expect(await ensureWorkspaceToken(ctx, prod, workspace)).toBe('prod-ws-at');
+    });
+
+    it('records the exchanging config as the workspace token origin', async () => {
+        const ctx = await seedBase(prod);
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({
+            status: 200,
+            text: async () => JSON.stringify({ access_token: 'prod-ws-at', expires_in: 3600 }),
+        }));
+        await ensureWorkspaceToken(ctx, prod, { workspaceId: 'ws-2', authId: 'auth-2' });
+        const raw = await ctx.secrets.get('altium365.workspaceTokens.ws-2');
+        expect(JSON.parse(raw ?? '{}').origin).toEqual(prod);
     });
 
     it('revokes each token at the server that minted it', async () => {
