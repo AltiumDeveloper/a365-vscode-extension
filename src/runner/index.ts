@@ -29,7 +29,7 @@ const DEBUG_PARAMS_KEY = 'altium365ParamsPath';
 
 const KILL_GRACE_MS = 2000;
 
-const runningScripts = new Set<ChildProcess>();
+const runningScripts = new Map<ChildProcess, string>();
 
 function killProcessTree(
     proc: ChildProcess,
@@ -83,8 +83,9 @@ export function registerRunLifecycle(outputChannel: vscode.OutputChannel): vscod
     });
     return new vscode.Disposable(() => {
         debugCleanup.dispose();
-        for (const proc of runningScripts) {
+        for (const [proc, paramsPath] of runningScripts) {
             killProcessTree(proc, 'SIGKILL', outputChannel);
+            removeParamsFile(paramsPath, outputChannel);
         }
         runningScripts.clear();
     });
@@ -380,7 +381,7 @@ export async function runScriptAtPath(
                         env,
                         detached: process.platform !== 'win32',
                     });
-                    runningScripts.add(proc);
+                    runningScripts.set(proc, paramsPath);
                     const onAbort = () => {
                         killProcessTree(proc, 'SIGTERM', outputChannel);
                         if (process.platform !== 'win32') {

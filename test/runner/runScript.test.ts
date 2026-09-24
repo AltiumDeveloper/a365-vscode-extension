@@ -197,13 +197,14 @@ describe('runScriptAtPath lifetime', () => {
         expect(unlinked).toEqual(written);
     });
 
-    it('kills the process tree of a script still running when the lifecycle is disposed', async () => {
+    it('kills the process tree and removes the params file when the lifecycle is disposed', async () => {
         const lifecycle = registerRunLifecycle(output);
         const done = run();
         await flush();
 
         lifecycle.dispose();
         expectTreeKilled(spawned[0], 'SIGKILL');
+        expect(unlinked).toEqual(written);
         spawned[0].exit(null);
         await done;
     });
