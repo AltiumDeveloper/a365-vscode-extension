@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { onAuthStateChanged } from './auth';
+import { fireAuthStateChanged, getStoredTokens, onAuthStateChanged, stampUnstampedTokens } from './auth';
 import { type A365Node, A365TreeDataProvider } from './ux/panel';
 import { createStatusBar } from './ux/statusBar';
 import { registerScriptCommands } from './scripts/commands';
@@ -44,8 +44,12 @@ export function updateActiveRemoteContext(editor: vscode.TextEditor | undefined)
         'setContext', 'altium365.activeIsRemoteScript', isRemote);
 }
 
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext) {
     outputChannel = vscode.window.createOutputChannel('Altium Developer');
+
+    await stampUnstampedTokens(context).catch((e: Error) => {
+        outputChannel.appendLine(`[Altium 365] Token origin migration failed: ${e.message}`);
+    });
 
     const treeProvider = new A365TreeDataProvider(
         context,
@@ -180,6 +184,10 @@ export function activate(context: vscode.ExtensionContext) {
                 e.affectsConfiguration('altium365.environments')
             ) {
                 applyTreeTitle();
+                void getStoredTokens(context).then(
+                    (tok) => fireAuthStateChanged({ signedIn: !!tok }),
+                    () => undefined
+                );
             }
         }),
         statusBar.item,

@@ -259,12 +259,27 @@ async function revokeAll(fallback: OAuthConfig, stored: (string | undefined)[]):
     clearTimeout(deadline);
 }
 
+function storedTokenKeys(context: vscode.ExtensionContext): string[] {
+    const index = context.globalState.get<string[]>(GLOBAL_WS_TOKEN_INDEX_KEY, []);
+    return [SECRET_TOKENS, ...index.map((id) => SECRET_WS_TOKEN_PREFIX + id)];
+}
+
+/** Assigns the active config as the origin of any stored token that has none. */
+export async function stampUnstampedTokens(context: vscode.ExtensionContext): Promise<void> {
+    const origin = readOAuthConfig();
+    for (const key of storedTokenKeys(context)) {
+        const tok = tryParseStored(await context.secrets.get(key));
+        if (tok && !tok.origin) {
+            await context.secrets.store(key, stampOrigin(tok, origin));
+        }
+    }
+}
+
 export async function clearAllTokens(
     context: vscode.ExtensionContext,
     options?: { silent?: boolean; revokeWith?: OAuthConfig }
 ): Promise<void> {
-    const index = context.globalState.get<string[]>(GLOBAL_WS_TOKEN_INDEX_KEY, []);
-    const keys = [SECRET_TOKENS, ...index.map((id) => SECRET_WS_TOKEN_PREFIX + id)];
+    const keys = storedTokenKeys(context);
     if (options?.revokeWith) {
         await revokeAll(
             options.revokeWith,

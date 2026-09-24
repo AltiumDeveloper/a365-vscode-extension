@@ -88,6 +88,7 @@ export const window = {
 };
 
 export enum ProgressLocation { SourceControl = 1, Window = 10, Notification = 15 }
+export enum ConfigurationTarget { Global = 1, Workspace = 2, WorkspaceFolder = 3 }
 
 // ── workspace stubs ───────────────────────────────────────────────
 export const workspace = {

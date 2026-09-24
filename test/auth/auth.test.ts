@@ -8,10 +8,19 @@ import {
     onAuthStateChanged,
     refreshTokens,
     ensureWorkspaceToken,
+    readOAuthConfig,
+    signIn,
+    stampUnstampedTokens,
     type AuthState,
     type TokenSet,
 } from '../../src/auth';
+import type * as AltiumAuth from '@altium-developer/altium-auth';
 import { makeExtensionContext } from '../__mocks__/vscode';
+
+vi.mock('@altium-developer/altium-auth', async (orig) => ({
+    ...(await orig<typeof AltiumAuth>()),
+    signIn: vi.fn(async () => ({ access_token: 'at', refresh_token: 'rt' })),
+}));
 
 // Helper: build a minimal 3-part JWT with the given payload object
 function makeJwt(payload: object): string {
@@ -398,21 +407,43 @@ describe('token origin', () => {
             'legacy-rt': 'https://auth.dev.example.com/connect/revocation',
         });
     });
+
+    it('signIn records the signing config as the token origin', async () => {
+        const ctx = makeExtensionContext();
+        await signIn(ctx, prod);
+        expect(JSON.parse((await ctx.secrets.get('altium365.tokens')) ?? '{}').origin).toEqual(prod);
+    });
+
+    it('stamps tokens with no origin with the active config, once', async () => {
+        const ctx = await seedBase();
+        await ctx.globalState.update('altium365.workspaceTokenIds', ['ws-1', 'ws-2']);
+        await ctx.secrets.store(
+            'altium365.workspaceTokens.ws-1',
+            JSON.stringify({ access_token: 'legacy-ws-at' })
+        );
+        await ctx.secrets.store(
+            'altium365.workspaceTokens.ws-2',
+            JSON.stringify({ access_token: 'prod-ws-at', origin: prod })
+        );
+        await stampUnstampedTokens(ctx);
+        const originOf = async (key: string) =>
+            JSON.parse((await ctx.secrets.get(key)) ?? '{}').origin;
+        expect(await originOf('altium365.tokens')).toEqual(readOAuthConfig());
+        expect(await originOf('altium365.workspaceTokens.ws-1')).toEqual(readOAuthConfig());
+        expect(await originOf('altium365.workspaceTokens.ws-2')).toEqual(prod);
+        expect(await getStoredTokens(ctx, dev)).toBeUndefined();
+    });
 });
 
 /*
  * SKIPPED: VS Code-heavy or Node-HTTP-heavy functions
  * ──────────────────────────────────────────────────────────────────
- * signIn(ctx, cfg):
- *   Thin wrapper around @altium-developer/altium-auth signIn plus VS Code
- *   SecretStorage/auth-state side effects. The package owns ActionWait coverage.
- *
  * readOAuthConfig():
  *   Simple vscode.workspace.getConfiguration accessor.
  *   Low value — just reads named keys.
  *
- * getBaseAccessToken / ensureWorkspaceToken:
- *   These orchestrate the above primitives and the mutex. The
- *   observable outcomes (cache hit/miss) are better verified via
- *   integration testing once a live-workspace environment is available.
+ * getBaseAccessToken:
+ *   Orchestrates refreshTokens and clearAllTokens. The observable
+ *   outcomes are better verified via integration testing once a
+ *   live-workspace environment is available.
  */
