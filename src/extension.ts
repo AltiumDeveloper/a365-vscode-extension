@@ -11,7 +11,7 @@ import { TestEventFs } from './testEvents/eventFs';
 import { registerTestEventCommands } from './testEvents/commands';
 import { registerTestEventStatusItem } from './testEvents/statusItem';
 import { registerPythonAnalysisSync } from './runner/pythonAnalysis';
-import { resolvePythonPath } from './runner';
+import { registerRunLifecycle, resolvePythonPath } from './runner';
 import { resolveConfig } from './config';
 import {
     doSignIn,
@@ -225,6 +225,8 @@ export function activate(context: vscode.ExtensionContext) {
             updateActiveRemoteContext(vscode.window.activeTextEditor);
         })
     );
+
+    context.subscriptions.push(registerRunLifecycle(outputChannel));
 
     void updateSignedInContext(context);
 }

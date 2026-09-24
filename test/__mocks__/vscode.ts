@@ -98,6 +98,13 @@ export const workspace = {
     fs: { writeFile: vi.fn() },
 };
 
+// ── debug stubs ───────────────────────────────────────────────────
+export const debugSessionTerminated = new EventEmitter<{ configuration?: Record<string, unknown> }>();
+export const debug = {
+    startDebugging: vi.fn(async (_folder: unknown, _config: Record<string, unknown>) => true),
+    onDidTerminateDebugSession: debugSessionTerminated.event,
+};
+
 // ── extensions stubs ──────────────────────────────────────────────
 export const extensions = {
     getExtension: vi.fn<(id: string) => unknown>(),

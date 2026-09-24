@@ -55,7 +55,7 @@ Key points:
 - All VS Code commands prefixed `altium365.`
 - Async/await throughout; errors surfaced via `vscode.window.showErrorMessage` at command boundary
 - GraphQL requests via `graphqlRequest<T = unknown>(endpoint, accessToken, query, variables?): Promise<T | undefined>` in `src/workspace/graphql.ts` — pass the selection-set shape, and keep runtime-guarded fields as `unknown`. `undefined` because a response can carry no `data` without carrying `errors`
-- No module-level state except `outputChannel` singleton
+- Module-level state only for process-wide singletons that cannot live on `context` (the output channel, event emitters, mutexes, registries such as `runningScripts`). Anything scoped to a command or a document belongs on `context` or a parameter
 - FileSystemProvider pattern for virtual documents (`altium365:`, `altium365-event:` schemes)
 - Script identity resolution via `buildIdentity()`/`parseIdentity()` helpers in `testEvents/identity.ts`
 - Test event commands prefixed `altium365.testEvents.*`
