@@ -3,23 +3,20 @@ import * as vscode from 'vscode';
 /**
  * Runs `op` inside a `vscode.window.withProgress` notification with the
  * Altium 365 brand title prefix. Returns whatever `op` resolves to, or
- * `undefined` if the user cancels (when `opts.cancellable` is true).
+ * `undefined` if `op` throws after the user cancels (when `opts.cancellable` is true).
  *
  * Title format is `Altium 365: ${label}` — callers supply any trailing
  * punctuation (e.g. `'Open Script: loading...'`). The helper never
  * appends an ellipsis automatically.
  *
  * Cancellation (cooperative — v1):
- *   The `AbortSignal` passed to `op` is cooperative only. The project's
- *   network helpers (`graphqlRequest`, `ensureWorkspaceToken`, and the
- *   `vscode.workspace.fs` FileSystemProvider readFile/writeFile paths)
- *   do NOT accept an `AbortSignal`, so an in-flight
- *   request started before cancel will run to completion silently in
- *   the background. On cancel, this helper resolves to `undefined`
- *   immediately, the notification dismisses, and callers' existing
- *   `if (!result) return;` checks short-circuit the user-visible flow.
- *   Callers MAY inspect `signal.aborted` between awaits to skip
- *   downstream work.
+ *   The `AbortSignal` passed to `op` is cooperative only, and the helper
+ *   waits for `op` to settle, so the notification stays up until it does.
+ *   The project's network helpers (`graphqlRequest`, `ensureWorkspaceToken`,
+ *   and the `vscode.workspace.fs` FileSystemProvider readFile/writeFile
+ *   paths) do NOT accept an `AbortSignal`, so an in-flight request started
+ *   before cancel runs to completion first. Callers MAY inspect
+ *   `signal.aborted` between awaits to skip downstream work.
  *
  * Error handling: non-cancel errors thrown by `op` are
  * re-thrown unchanged so caller-level `try/catch` + `outputChannel`
