@@ -5,6 +5,7 @@ import {
     readLocalSecrets,
     resolveRunSecrets,
     scanSecretNames,
+    setLocalSecret,
     writeLocalSecrets,
 } from '../../src/secrets';
 
@@ -58,6 +59,14 @@ describe('local secret storage', () => {
         expect(ctx.secrets.delete).toHaveBeenCalledWith('altium365.localSecrets.ws-a');
         expect(await readLocalSecrets(ctx, 'ws-a')).toEqual({});
     });
+
+    it('saves one value without dropping values written since the caller last read', async () => {
+        const ctx = makeExtensionContext();
+        await setLocalSecret(ctx, 'ws', 'A', '1');
+        await setLocalSecret(ctx, 'ws', 'B', '2');
+
+        expect(await readLocalSecrets(ctx, 'ws')).toEqual({ A: '1', B: '2' });
+    });
 });
 
 describe('resolveRunSecrets', () => {
@@ -92,13 +101,15 @@ describe('resolveRunSecrets', () => {
         expect(await resolveRunSecrets(makeExtensionContext(), output, args(remote))).toBeUndefined();
     });
 
-    it('passes every stored secret without prompting when the declarations cannot be read', async () => {
+    it('falls back to the names in the source and passes every stored secret when the declarations cannot be read', async () => {
         const ctx = makeExtensionContext();
         await writeLocalSecrets(ctx, workspace.workspaceId, { A: '1', B: '2' });
         vi.mocked(getScriptSecrets).mockRejectedValue(new Error('not authorized'));
+        source = 'context.get_secret("C")';
+        window.showInputBox.mockResolvedValueOnce('3');
 
-        expect(await resolveRunSecrets(ctx, output, args(remote))).toEqual({ A: '1', B: '2' });
-        expect(window.showInputBox).not.toHaveBeenCalled();
+        expect(await resolveRunSecrets(ctx, output, args(remote))).toEqual({ A: '1', B: '2', C: '3' });
+        expect(window.showInputBox).toHaveBeenCalledTimes(1);
         expect(appendLine).toHaveBeenCalledWith(expect.stringContaining('not authorized'));
     });
 

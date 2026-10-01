@@ -203,6 +203,10 @@ async function doPickTestEvent(
         await vscode.commands.executeCommand('altium365.testEvents.delete', identity);
         return;
     }
+    if (result.kind === 'secrets') {
+        await vscode.commands.executeCommand('altium365.secrets.set');
+        return;
+    }
     // kind === 'empty' — unreachable in current picker UI but kept for
     // exhaustiveness; treat as cancellation.
     output.appendLine(`[Altium 365] testEvents.pick: no-op (kind=empty) for ${identity.identity}`);

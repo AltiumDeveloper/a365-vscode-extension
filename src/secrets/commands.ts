@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { resolveConfig } from '../config';
 import { resolveScriptIdentity } from '../testEvents/identity';
 import { getSelectedWorkspace, resolveWorkspaceFromAuthId, type WorkspaceInfo } from '../workspace';
-import { promptSecretValue, readLocalSecrets, writeLocalSecrets } from '.';
+import { promptSecretValue, readLocalSecrets, setLocalSecret, writeLocalSecrets } from '.';
 
 export function registerSecretCommands(context: vscode.ExtensionContext): vscode.Disposable[] {
     return [
@@ -66,7 +66,7 @@ async function doSetSecret(context: vscode.ExtensionContext): Promise<void> {
     if (value === undefined) {
         return;
     }
-    await writeLocalSecrets(context, ws.workspaceId, { ...stored, [name]: value });
+    await setLocalSecret(context, ws.workspaceId, name, value);
     vscode.window.showInformationMessage(`Altium 365: local secret "${name}" saved for ${ws.name}.`);
 }
 
@@ -88,9 +88,10 @@ async function doClearSecrets(context: vscode.ExtensionContext): Promise<void> {
     if (!picked?.length) {
         return;
     }
+    const remaining = await readLocalSecrets(context, ws.workspaceId);
     for (const name of picked) {
-        delete stored[name];
+        delete remaining[name];
     }
-    await writeLocalSecrets(context, ws.workspaceId, stored);
+    await writeLocalSecrets(context, ws.workspaceId, remaining);
     vscode.window.showInformationMessage(`Altium 365: cleared ${picked.length} local secret(s) for ${ws.name}.`);
 }

@@ -70,10 +70,11 @@ export async function resolveRunSecrets(
     output: vscode.OutputChannel,
     args: RunSecretsArgs
 ): Promise<LocalSecrets | undefined> {
-    const stored = await readLocalSecrets(context, args.workspace.workspaceId);
+    const workspaceId = args.workspace.workspaceId;
     const needed = await neededSecretNames(output, args);
+    let stored = await readLocalSecrets(context, workspaceId);
 
-    for (const name of needed ?? []) {
+    for (const name of needed.names) {
         if (name in stored) {
             continue;
         }
@@ -81,22 +82,34 @@ export async function resolveRunSecrets(
         if (value === undefined) {
             return undefined;
         }
-        stored[name] = value;
-        await writeLocalSecrets(context, args.workspace.workspaceId, stored);
+        stored = await setLocalSecret(context, workspaceId, name, value);
     }
 
-    if (!needed || args.identity.kind === 'local') {
+    if (needed.passAllStored) {
         return stored;
     }
-    return Object.fromEntries(needed.map((name) => [name, stored[name]]));
+    return Object.fromEntries(needed.names.map((name) => [name, stored[name]]));
+}
+
+/** Saves one value over a fresh read, so concurrent prompts for other names are not lost. */
+export async function setLocalSecret(
+    context: vscode.ExtensionContext,
+    workspaceId: string,
+    name: string,
+    value: string
+): Promise<LocalSecrets> {
+    const values = { ...(await readLocalSecrets(context, workspaceId)), [name]: value };
+    await writeLocalSecrets(context, workspaceId, values);
+    return values;
 }
 
 async function neededSecretNames(
     output: vscode.OutputChannel,
     args: RunSecretsArgs
-): Promise<string[] | undefined> {
+): Promise<{ names: string[]; passAllStored: boolean }> {
+    const scanned = () => scanSecretNames(fs.readFileSync(args.scriptPath, 'utf-8'));
     if (args.identity.kind === 'local') {
-        return scanSecretNames(fs.readFileSync(args.scriptPath, 'utf-8'));
+        return { names: scanned(), passAllStored: true };
     }
     let declared;
     try {
@@ -106,12 +119,12 @@ async function neededSecretNames(
             `[Altium 365] Could not read the script's declared secrets (${(e as Error).message}). ` +
                 'Passing every local secret stored for this workspace.'
         );
-        return undefined;
+        return { names: scanned(), passAllStored: true };
     }
     for (const s of declared.filter((d) => d.isMissing)) {
         output.appendLine(
             `[Altium 365] Secret "${s.name}" is declared on this script but no longer exists in the workspace, so it is not passed.`
         );
     }
-    return declared.filter((d) => !d.isMissing).map((d) => d.name);
+    return { names: declared.filter((d) => !d.isMissing).map((d) => d.name), passAllStored: false };
 }
