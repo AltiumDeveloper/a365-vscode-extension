@@ -30,15 +30,14 @@ describe('registerRunLifecycle', () => {
         lifecycle?.dispose();
     });
 
-    it('removes the params file when a debug session terminates', () => {
-        debugSessionTerminated.fire({
-            configuration: { altium365ParamsPath: '/tmp/altium365-params-1.json' },
-        });
+    it('removes the temp files when a debug session terminates', () => {
+        const tempFiles = ['/tmp/altium365-params-1.json', '/tmp/altium365-secrets-1.json'];
+        debugSessionTerminated.fire({ configuration: { altium365TempFiles: tempFiles } });
 
-        expect(unlinked).toEqual(['/tmp/altium365-params-1.json']);
+        expect(unlinked).toEqual(tempFiles);
     });
 
-    it('ignores debug sessions that carry no params path', () => {
+    it('ignores debug sessions that carry no temp files', () => {
         debugSessionTerminated.fire({ configuration: { program: '/tmp/other.py' } });
         debugSessionTerminated.fire({});
 
@@ -50,7 +49,7 @@ describe('registerRunLifecycle', () => {
         lifecycle = undefined;
 
         debugSessionTerminated.fire({
-            configuration: { altium365ParamsPath: '/tmp/altium365-params-2.json' },
+            configuration: { altium365TempFiles: ['/tmp/altium365-params-2.json'] },
         });
 
         expect(unlinked).toEqual([]);

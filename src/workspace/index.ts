@@ -20,8 +20,10 @@ export { type ProjectInfo, listProjects } from './projects';
 export {
     type ScriptInfo,
     type ScriptDetail,
+    type DeclaredSecret,
     listScripts,
     getScript,
+    getScriptSecrets,
     updateScript,
     createScript,
 } from './scripts';

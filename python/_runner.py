@@ -34,6 +34,13 @@ class Context:
         self.workspace_auth_id = workspace_auth_id
         self.workspace_name = workspace_name
         self._gql_client = None
+        self._secrets = None
+
+    def get_secret(self, name: str) -> str:
+        """Return the local value of a secret, exactly as ``altium.ExecutionContext.get_secret`` does."""
+        from altium import ExecutionContext
+
+        return ExecutionContext.get_secret(self, name)
 
     @property
     def gql_client(self):
