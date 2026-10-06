@@ -31,6 +31,7 @@ const DEBUG_TEMP_FILES_KEY = 'altium365TempFiles';
 const KILL_GRACE_MS = 2000;
 
 const runningScripts = new Map<ChildProcess, string[]>();
+const debugTempFiles = new Set<string>();
 
 function killProcessTree(
     proc: ChildProcess,
@@ -57,6 +58,7 @@ function killProcessTree(
 
 function removeTempFiles(paths: string[], outputChannel: vscode.OutputChannel): void {
     for (const file of paths) {
+        debugTempFiles.delete(file);
         try {
             fs.unlinkSync(file);
         } catch (e) {
@@ -94,6 +96,7 @@ export function registerRunLifecycle(outputChannel: vscode.OutputChannel): vscod
             removeTempFiles(tempFiles, outputChannel);
         }
         runningScripts.clear();
+        removeTempFiles([...debugTempFiles], outputChannel);
     });
 }
 
@@ -486,6 +489,7 @@ export async function debugScriptAtPath(
         [DEBUG_TEMP_FILES_KEY]: tempFiles,
     };
 
+    tempFiles.forEach((f) => debugTempFiles.add(f));
     const started = await vscode.debug.startDebugging(undefined, debugConfig);
     if (!started) {
         vscode.window.showErrorMessage(

@@ -290,6 +290,16 @@ describe('debugScriptAtPath lifetime', () => {
         lifecycle.dispose();
     });
 
+    it('removes the secrets file at shutdown when the debug session is still open', async () => {
+        vi.mocked(resolveRunSecrets).mockResolvedValueOnce({ API_KEY: SECRET_VALUE });
+        const lifecycle = registerRunLifecycle(output);
+        await debugScriptAtPath(makeExtensionContext(), output, scriptPath);
+
+        lifecycle.dispose();
+        expect(written).toHaveLength(2);
+        expect(unlinked).toEqual(written);
+    });
+
     it('removes the params file when the debugger fails to start', async () => {
         debug.startDebugging.mockResolvedValueOnce(false);
         await debugScriptAtPath(makeExtensionContext(), output, scriptPath);
