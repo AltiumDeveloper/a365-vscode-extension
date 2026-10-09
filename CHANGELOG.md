@@ -27,6 +27,10 @@ git history for what changed in them.
 - `README.md` now points at the VS Code Marketplace for installation, documents the
   `clientId` and `activeEnvironment` settings, and lists the correct per-environment
   override keys and the side-panel-only commands.
+- Local script run and debug now require Python 3.10 or later, up from 3.8.1. Python
+  3.8 and 3.9 are past end of life. Installing the script dependencies with an older
+  interpreter stops with a message naming the interpreter and its version, instead of
+  failing inside pip.
 
 ### Security
 
@@ -42,7 +46,7 @@ git history for what changed in them.
 - The Python sandbox dependencies are pinned to tested ranges, so a local script run no
   longer resolves whatever `gql` and `requests` happen to be current. `gql` is held to
   the 4.x line, whose aiohttp transport verifies TLS certificates by default, and
-  `requests` to 2.32.4 or later.
+  `requests` to 2.33.0 or later, which fixes GHSA-gc5v-m9x4-r6x2.
 - Installing the Python sandbox dependencies now replaces `python/SandboxProcess/.deps/`
   instead of unpacking over it. `pip install --target` leaves an already-present package
   untouched, so every change to `requirements.txt` since the directory was introduced has
