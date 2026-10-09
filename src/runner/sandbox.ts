@@ -27,6 +27,7 @@ import { spawn } from 'child_process';
  */
 
 const MARKER_FILE = '.installed-marker.json';
+const MIN_PYTHON: [number, number] = [3, 10];
 
 interface InstallMarker {
     requirementsSha256: string;
@@ -105,6 +106,16 @@ export async function ensureSandboxDeps(
           ? 'requirements.txt changed since last install'
           : 'forced reinstall';
 
+    const version = await readPythonVersion(python);
+    if (version && isBelowMinimum(version)) {
+        vscode.window.showErrorMessage(
+            `Altium 365: script dependencies need Python ${MIN_PYTHON.join('.')} or later, ` +
+                `but ${python} is Python ${version.join('.')}. ` +
+                'Set "altium365.pythonPath" to a newer interpreter.'
+        );
+        return false;
+    }
+
     if (!force) {
         const choice = await vscode.window.showInformationMessage(
             `Altium 365 script dependencies need to be installed (${reason}). ` +
@@ -144,6 +155,24 @@ export async function ensureSandboxDeps(
         `[Altium 365] Sandbox dependencies installed to ${depsDir}`
     );
     return true;
+}
+
+// Undefined when the version cannot be read; pip then runs and reports its own failure.
+function readPythonVersion(python: string): Promise<[number, number] | undefined> {
+    return new Promise((resolve) => {
+        const proc = spawn(python, ['-c', 'import sys; print("%d.%d" % sys.version_info[:2])']);
+        let stdout = '';
+        proc.stdout.on('data', (d) => (stdout += d.toString()));
+        proc.on('error', () => resolve(undefined));
+        proc.on('close', () => {
+            const match = /^(\d+)\.(\d+)/.exec(stdout.trim());
+            resolve(match ? [Number(match[1]), Number(match[2])] : undefined);
+        });
+    });
+}
+
+function isBelowMinimum([major, minor]: [number, number]): boolean {
+    return major < MIN_PYTHON[0] || (major === MIN_PYTHON[0] && minor < MIN_PYTHON[1]);
 }
 
 function runPipInstall(
