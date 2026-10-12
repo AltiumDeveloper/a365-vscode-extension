@@ -546,6 +546,6 @@
     "vitest": "^5.0.1"
   },
   "dependencies": {
-    "@altium-developer/altium-auth": "^0.2.0"
+    "@altium-developer/altium-auth": "^0.2.1"
   }
 }
