@@ -15,6 +15,7 @@ See `CONTRIBUTING.md` for how to build, test and submit changes.
 **Runner:** `src/runner/` — Python interpreter resolution, subprocess launch, sandbox, script analysis
 **Scripts:** `src/scripts/` — remote script operations (edit/publish/execute), local cache, `altium365:` FileSystemProvider in `remoteFs.ts`
 **Workspace:** `src/workspace/` — GraphQL queries for workspaces/projects/extension points, `graphqlRequest` helper in `graphql.ts`
+**Secrets:** `src/secrets/` — local secret values in SecretStorage per workspace, the declared-or-scanned names a run needs, Set/Clear commands
 **Shared:** `src/shared/` — `asyncMutex`, `logDedup`
 **Test events:** `src/testEvents/` — test event storage, resolution, FSP, status indicator
   - `identity.ts` — script identity resolution (local path vs remote workspace+scriptId)
@@ -30,6 +31,7 @@ See `CONTRIBUTING.md` for how to build, test and submit changes.
 **Key constraints:** 
 - All tokens stored via `context.secrets` — never plaintext on disk. Temp params files use `os.tmpdir()`.
 - Test events stored in `context.globalState` under `altium365.scriptParams.<identity>` — NOT synced via Settings Sync
+- Local secret values stored in `context.secrets` under `altium365.localSecrets.<workspaceId>`, never in test events. They reach Python only as a 0600 temp file named by `SECRETS_FILE_PATH`
 - Script identity = local absolute path OR `(workspaceId, scriptId)` for remote scripts
 - Status bar indicator shows active Python editor's default test event
 

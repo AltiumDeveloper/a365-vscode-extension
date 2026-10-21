@@ -21,6 +21,15 @@ git history for what changed in them.
 - `SECURITY.md`, `CODE_OF_CONDUCT.md`, issue and pull request templates, and this
   changelog.
 - Contributor documentation covering build, run, test and pull request expectations.
+- Local Run and Debug support script secrets. `context.get_secret(name)` returns a value
+  you set locally, and the extension prompts for any secret a run needs that has no
+  local value yet. Values are kept in VS Code's secret storage per workspace, passed to
+  the script through a temporary file only the current user can read, and never written
+  to the Output channel. New commands **Set Local Secret** and **Clear Local Secrets**.
+- Publishing a script warns if the new version declares fewer secrets than the previous
+  one.
+- The bundled `altium` Python module now matches the platform's, including
+  `get_secret`, `SecretNotFoundError` and `SecretsUnavailableError`.
 
 ### Changed
 

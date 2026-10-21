@@ -22,14 +22,16 @@ import { withScriptProgress } from './progress';
 
 import { resolveScriptIdentity } from '../testEvents/identity';
 import { resolveScriptParameters } from '../testEvents/resolver';
+import { resolveRunSecrets, type LocalSecrets } from '../secrets';
 
 // Echoed back on vscode.DebugSession.configuration, which is the only handle a
 // terminate listener gets on the run that created the file.
-const DEBUG_PARAMS_KEY = 'altium365ParamsPath';
+const DEBUG_TEMP_FILES_KEY = 'altium365TempFiles';
 
 const KILL_GRACE_MS = 2000;
 
-const runningScripts = new Map<ChildProcess, string>();
+const runningScripts = new Map<ChildProcess, string[]>();
+const debugTempFiles = new Set<string>();
 
 function killProcessTree(
     proc: ChildProcess,
@@ -54,40 +56,47 @@ function killProcessTree(
     }
 }
 
-function removeParamsFile(paramsPath: string, outputChannel: vscode.OutputChannel): void {
-    if (!paramsPath) {
-        return;
-    }
-    try {
-        fs.unlinkSync(paramsPath);
-    } catch (e) {
-        const err = e as NodeJS.ErrnoException;
-        if (err.code !== 'ENOENT') {
-            outputChannel.appendLine(
-                `[Altium 365] Failed to remove ${paramsPath}: ${err.message}`
-            );
+function removeTempFiles(paths: string[], outputChannel: vscode.OutputChannel): void {
+    for (const file of paths) {
+        debugTempFiles.delete(file);
+        try {
+            fs.unlinkSync(file);
+        } catch (e) {
+            const err = e as NodeJS.ErrnoException;
+            if (err.code !== 'ENOENT') {
+                outputChannel.appendLine(
+                    `[Altium 365] Failed to remove ${file}: ${err.message}`
+                );
+            }
         }
     }
 }
 
+function writeTempJson(kind: 'params' | 'secrets', values: Record<string, string>): string {
+    const file = path.join(os.tmpdir(), `altium365-${kind}-${Date.now()}-${process.pid}.json`);
+    fs.writeFileSync(file, JSON.stringify(values, null, 2), { encoding: 'utf-8', mode: 0o600 });
+    return file;
+}
+
 /**
- * Terminates scripts still running at shutdown and removes the params file of a
+ * Terminates scripts still running at shutdown and removes the temp files of a
  * debug session once it ends. Register on `context.subscriptions`.
  */
 export function registerRunLifecycle(outputChannel: vscode.OutputChannel): vscode.Disposable {
     const debugCleanup = vscode.debug.onDidTerminateDebugSession((session) => {
-        const paramsPath = session.configuration?.[DEBUG_PARAMS_KEY];
-        if (typeof paramsPath === 'string') {
-            removeParamsFile(paramsPath, outputChannel);
+        const tempFiles: unknown = session.configuration?.[DEBUG_TEMP_FILES_KEY];
+        if (Array.isArray(tempFiles)) {
+            removeTempFiles(tempFiles.filter((f) => typeof f === 'string'), outputChannel);
         }
     });
     return new vscode.Disposable(() => {
         debugCleanup.dispose();
-        for (const [proc, paramsPath] of runningScripts) {
+        for (const [proc, tempFiles] of runningScripts) {
             killProcessTree(proc, 'SIGKILL', outputChannel);
-            removeParamsFile(paramsPath, outputChannel);
+            removeTempFiles(tempFiles, outputChannel);
         }
         runningScripts.clear();
+        removeTempFiles([...debugTempFiles], outputChannel);
     });
 }
 
@@ -100,6 +109,8 @@ interface RunPrep {
     env: NodeJS.ProcessEnv;
     endpoint: string;
     paramsPath: string;
+    secretNames: string[];
+    tempFiles: string[];
     // When the caller passes a `target`, this carries the resolved workspace
     // name so runScriptAtPath / debugScriptAtPath can log it in the
     // OutputChannel header. Undefined for the active-workspace fallback.
@@ -283,39 +294,42 @@ async function prepareRun(
 
     // Test events stored per-script are the sole source of parameters; sibling
     // .params.json auto-detect and the projectId prompt fold into the resolver.
-    let paramsPath = '';
-    {
-        const idResult = resolveScriptIdentity(targetUri);
-        if (idResult) {
-            const params = await resolveScriptParameters(
-                context,
-                idResult,
-                outputChannel,
-                { promptOnFirstRun: true },
-            );
-            if (params !== undefined) {
-                const tmpFile = path.join(
-                    os.tmpdir(),
-                    `altium365-params-${Date.now()}-${process.pid}.json`,
-                );
-                const obj: Record<string, string> = {};
-                for (const p of params) {
-                    obj[p.key] = p.value;
-                }
-                fs.writeFileSync(tmpFile, JSON.stringify(obj, null, 2), {
-                    encoding: 'utf-8',
-                    mode: 0o600,
-                });
-                paramsPath = tmpFile;
-            }
+    let params: Array<{ key: string; value: string }> | undefined;
+    let secrets: LocalSecrets = {};
+    const idResult = resolveScriptIdentity(targetUri);
+    if (idResult) {
+        params = await resolveScriptParameters(
+            context,
+            idResult,
+            outputChannel,
+            { promptOnFirstRun: true },
+        );
+        const resolvedSecrets = await resolveRunSecrets(context, outputChannel, {
+            identity: idResult,
+            scriptPath,
+            workspace: resolvedWs,
+            endpoint,
+            token,
+        });
+        if (!resolvedSecrets) {
+            return undefined;
         }
+        secrets = resolvedSecrets;
     }
+    const paramsPath = params
+        ? writeTempJson('params', Object.fromEntries(params.map((p) => [p.key, p.value])))
+        : '';
+    const secretsPath = Object.keys(secrets).length > 0 ? writeTempJson('secrets', secrets) : '';
+    const tempFiles = [paramsPath, secretsPath].filter((f) => f);
 
     const env: NodeJS.ProcessEnv = { ...process.env, ...extraEnv };
     env.ALTIUM365_GRAPHQL_ENDPOINT = endpoint;
     env.ALTIUM365_TOKEN = token;
     env.PYTHONIOENCODING = 'utf-8';
     env.PYTHONUNBUFFERED = '1';
+    if (secretsPath) {
+        env.SECRETS_FILE_PATH = secretsPath;
+    }
     // When a target workspace was supplied, expose its identity to the runner
     // (NOT the currently-active workspace) so user scripts that read
     // ALTIUM365_WORKSPACE_* see the script's owning workspace.
@@ -341,7 +355,19 @@ async function prepareRun(
         args.push(paramsPath);
     }
 
-    return { python, runnerPath, scriptPath, scriptDir, args, env, endpoint, paramsPath, workspaceName: resolvedWs?.name };
+    return {
+        python,
+        runnerPath,
+        scriptPath,
+        scriptDir,
+        args,
+        env,
+        endpoint,
+        paramsPath,
+        secretNames: Object.keys(secrets),
+        tempFiles,
+        workspaceName: resolvedWs?.name,
+    };
 }
 
 // Reused by src/scripts/commands.ts to run a fetched A365 script body written to os.tmpdir().
@@ -358,7 +384,7 @@ export async function runScriptAtPath(
     if (!prep) {
         return;
     }
-    const { python, runnerPath, scriptPath: resolvedPath, scriptDir, args, env, endpoint, paramsPath, workspaceName } = prep;
+    const { python, runnerPath, scriptPath: resolvedPath, scriptDir, args, env, endpoint, paramsPath, secretNames, tempFiles, workspaceName } = prep;
 
     outputChannel.show(true);
     outputChannel.appendLine(`\n[Altium 365] Running ${resolvedPath}`);
@@ -369,6 +395,9 @@ export async function runScriptAtPath(
     outputChannel.appendLine(`[Altium 365] Python:   ${python}`);
     if (paramsPath) {
         outputChannel.appendLine(`[Altium 365] Params:   ${paramsPath}`);
+    }
+    if (secretNames.length > 0) {
+        outputChannel.appendLine(`[Altium 365] Secrets:  ${secretNames.join(', ')}`);
     }
 
     try {
@@ -381,7 +410,7 @@ export async function runScriptAtPath(
                         env,
                         detached: process.platform !== 'win32',
                     });
-                    runningScripts.set(proc, paramsPath);
+                    runningScripts.set(proc, tempFiles);
                     const onAbort = () => {
                         killProcessTree(proc, 'SIGTERM', outputChannel);
                         if (process.platform !== 'win32') {
@@ -413,7 +442,7 @@ export async function runScriptAtPath(
             { cancellable: true },
         );
     } finally {
-        removeParamsFile(paramsPath, outputChannel);
+        removeTempFiles(tempFiles, outputChannel);
     }
 }
 
@@ -430,7 +459,7 @@ export async function debugScriptAtPath(
     if (!prep) {
         return;
     }
-    const { python, runnerPath, scriptPath: resolvedPath, scriptDir, args, env, endpoint, paramsPath, workspaceName } = prep;
+    const { python, runnerPath, scriptPath: resolvedPath, scriptDir, args, env, endpoint, paramsPath, secretNames, tempFiles, workspaceName } = prep;
 
     outputChannel.show(true);
     outputChannel.appendLine(`\n[Altium 365] Debugging ${resolvedPath}`);
@@ -441,6 +470,9 @@ export async function debugScriptAtPath(
     outputChannel.appendLine(`[Altium 365] Python:   ${python}`);
     if (paramsPath) {
         outputChannel.appendLine(`[Altium 365] Params:   ${paramsPath}`);
+    }
+    if (secretNames.length > 0) {
+        outputChannel.appendLine(`[Altium 365] Secrets:  ${secretNames.join(', ')}`);
     }
 
     const debugConfig: vscode.DebugConfiguration = {
@@ -454,14 +486,15 @@ export async function debugScriptAtPath(
         justMyCode: false,
         python,
         env,
-        [DEBUG_PARAMS_KEY]: paramsPath,
+        [DEBUG_TEMP_FILES_KEY]: tempFiles,
     };
 
+    tempFiles.forEach((f) => debugTempFiles.add(f));
     const started = await vscode.debug.startDebugging(undefined, debugConfig);
     if (!started) {
         vscode.window.showErrorMessage(
             'Failed to start debugger. Make sure the "Python Debugger" (ms-python.debugpy) extension is installed.'
         );
-        removeParamsFile(paramsPath, outputChannel);
+        removeTempFiles(tempFiles, outputChannel);
     }
 }

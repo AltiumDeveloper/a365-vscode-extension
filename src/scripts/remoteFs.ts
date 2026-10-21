@@ -6,9 +6,11 @@ import {
 import {
     GraphQLError,
     getScript,
+    getScriptSecrets,
     getWorkspaceApiUrl,
     getWorkspaceFilesUrl,
     updateScript,
+    type DeclaredSecret,
     type WorkspaceInfo,
     resolveWorkspaceFromAuthId,
 } from '../workspace';
@@ -238,6 +240,10 @@ export class AltiumRemoteScriptFs implements vscode.FileSystemProvider {
         });
         const apiUrl = getWorkspaceApiUrl(ws, this.getEnvGlobalEndpoint());
         const filesUrl = getWorkspaceFilesUrl(ws);
+        const declaredBefore = getScriptSecrets(apiUrl, wsToken, scriptId).catch((e) => {
+            this.logFsError('writeFile getScriptSecrets', uri, e);
+            return undefined;
+        });
 
         let fileToken: string;
         try {
@@ -249,6 +255,7 @@ export class AltiumRemoteScriptFs implements vscode.FileSystemProvider {
             );
         }
 
+        const secretsBefore = await declaredBefore;
         let version;
         try {
             version = await updateScript(
@@ -286,6 +293,35 @@ export class AltiumRemoteScriptFs implements vscode.FileSystemProvider {
         this.output.appendLine(
             `[Altium 365] writeFile ${uri.toString()}: published ${content.length} bytes → scriptVersionId=${version.scriptVersionId}`
         );
+
+        if (secretsBefore?.length) {
+            await this.warnIfSecretsDropped(uri, apiUrl, wsToken, scriptId, version.scriptVersionId, secretsBefore);
+        }
+    }
+
+    /** Publishing copies declared secrets to the new revision best-effort, so a failed copy is silent server-side. */
+    private async warnIfSecretsDropped(
+        uri: vscode.Uri,
+        apiUrl: string,
+        wsToken: string,
+        scriptId: string,
+        scriptVersionId: string,
+        before: DeclaredSecret[]
+    ): Promise<void> {
+        try {
+            const after = new Set(
+                (await getScriptSecrets(apiUrl, wsToken, scriptId, scriptVersionId)).map((s) => s.name)
+            );
+            const dropped = before.map((s) => s.name).filter((name) => !after.has(name));
+            if (dropped.length > 0) {
+                void vscode.window.showWarningMessage(
+                    `Altium 365: published, but the new version no longer declares the secrets ${dropped.join(', ')}. ` +
+                        "Add them back to the script's secrets in the workspace, or runs that use them will fail."
+                );
+            }
+        } catch (e) {
+            this.logFsError('writeFile getScriptSecrets', uri, e);
+        }
     }
 
     /**

@@ -26,6 +26,7 @@ import { type TestEventStore } from './store';
  *                                      testEvents.edit which opens its own
  *                                      eventsOnly picker to choose the target
  *   $(trash) Delete Test Event…     ← same pattern; dispatches testEvents.delete
+ *   $(key)   Set Local Secret…      ← dispatches secrets.set
  */
 
 type PickerResult =
@@ -33,6 +34,7 @@ type PickerResult =
     | { kind: 'create' }
     | { kind: 'edit-any' }
     | { kind: 'delete-any' }
+    | { kind: 'secrets' }
     | { kind: 'empty' };
 
 interface PickerOptions {
@@ -46,7 +48,7 @@ interface PickerOptions {
 }
 
 type PickerItem = vscode.QuickPickItem & {
-    action?: 'create' | 'edit-any' | 'delete-any' | 'empty' | 'default-header';
+    action?: 'create' | 'edit-any' | 'delete-any' | 'secrets' | 'empty' | 'default-header';
     eventName?: string;
 };
 
@@ -100,6 +102,10 @@ export function buildPickerItems(
                 action: 'delete-any',
             });
         }
+        items.push({
+            label: '$(key) Set Local Secret…',
+            action: 'secrets',
+        });
     }
 
     return items;
@@ -138,6 +144,9 @@ export async function pickTestEvent(
         }
         if (picked.action === 'delete-any') {
             return { kind: 'delete-any' };
+        }
+        if (picked.action === 'secrets') {
+            return { kind: 'secrets' };
         }
         if (picked.action === 'empty') {
             return { kind: 'empty' };
