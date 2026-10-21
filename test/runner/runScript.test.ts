@@ -3,7 +3,7 @@ import { EventEmitter as NodeEventEmitter } from 'events';
 import * as fs from 'fs';
 import * as path from 'path';
 import { spawn } from 'child_process';
-import { debug, debugSessionTerminated, makeExtensionContext, window } from '../__mocks__/vscode';
+import { debug, debugSessionTerminated, makeExtensionContext, window, workspace } from '../__mocks__/vscode';
 import { debugScriptAtPath, registerRunLifecycle, runScriptAtPath } from '../../src/runner';
 
 const unlinked: string[] = [];
@@ -123,6 +123,18 @@ describe('runScriptAtPath lifetime', () => {
     afterEach(() => {
         killSpy.mockRestore();
         vi.useRealTimers();
+        workspace.isTrusted = true;
+    });
+
+    it('refuses to run in an untrusted workspace', async () => {
+        workspace.isTrusted = false;
+        await run();
+
+        expect(spawned).toHaveLength(0);
+        expect(written).toHaveLength(0);
+        expect(window.showErrorMessage).toHaveBeenCalledWith(
+            expect.stringContaining('Restricted Mode'),
+        );
     });
 
     it('writes the params file readable only by the current user', async () => {

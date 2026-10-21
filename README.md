@@ -16,7 +16,7 @@ Install **Altium Developer** from the [VS Code Marketplace](https://marketplace.
 code --install-extension altium.developer
 ```
 
-Pre-release builds are published on every push to `main`. To receive them, use **Switch to Pre-Release Version** on the extension's page in VS Code.
+Pre-release builds are published from odd minor versions, such as 0.5.x. To receive them, use **Switch to Pre-Release Version** on the extension's page in VS Code.
 
 ## Getting Started
 
@@ -41,6 +41,8 @@ data = a365.query("query { __typename }")
 ```
 
 While a script runs, a progress notification appears. Cancelling it stops the script and its subprocesses. Closing VS Code does the same for any script still running.
+
+Local run, debug and **Install Script Dependencies** are disabled in [Restricted Mode](https://code.visualstudio.com/docs/editing/workspaces/workspace-trust). Trust the workspace to enable them.
 
 To debug a script, run **Altium Developer: Debug Python Script** from the Command Palette or the editor title bar. The script launches under the VS Code debugger, so breakpoints, step-through, and variable inspection all work. Stop a debug session from the debug toolbar.
 
@@ -70,11 +72,11 @@ Signing out revokes the refresh token at the authorization server and deletes **
 
 ## Switching Environments
 
-Run **Altium Developer: Select Environment** from the Command Palette to switch the active A365 environment. Three environments are pre-configured (Dev, Uat, Prod). Signing out when you switch environments clears the active workspace and workspace token. Run **Altium Developer: Select Workspace** again after switching to pick a workspace in the new environment.
+Run **Altium Developer: Select Environment** from the Command Palette to switch the active A365 environment. Only `Prod` is pre-configured. Signing out when you switch environments clears the active workspace and workspace token. Run **Altium Developer: Select Workspace** again after switching to pick a workspace in the new environment.
 
 If you choose **Keep session** and the new environment uses a different sign-in server, the extension shows you as signed out there. Switching back picks the kept session up again; signing in replaces it.
 
-You can define additional environments under the `altium365.environments` setting; each entry may override `graphqlEndpoint`, `authEndpoint`, `tokenEndpoint`, `actionWaitEndpoint`, `redirectUri`, and `scopes`.
+You can define additional environments under the `altium365.environments` setting in your user settings; each entry may override `graphqlEndpoint`, `authEndpoint`, `tokenEndpoint`, `actionWaitEndpoint`, `redirectUri`, and `scopes`.
 
 ## Remote scripts
 
@@ -99,7 +101,7 @@ From the **Extension Points** tree, right-click an extension point and choose **
 
 ### Authentication + workspaces
 
-Remote scripts use a workspace-scoped token obtained automatically the first time you act on a script in that workspace. Switching environments (e.g. **Prod** ↔ **Dev**) invalidates any open `altium365:` editors — close and reopen them after the switch to pick up tokens from the new environment.
+Remote scripts use a workspace-scoped token obtained automatically the first time you act on a script in that workspace. Switching environments invalidates any open `altium365:` editors — close and reopen them after the switch to pick up tokens from the new environment.
 
 ## Test Events
 
@@ -195,3 +197,5 @@ Key settings (see VS Code Settings for the full list):
 - `altium365.clientId` — OAuth2 `client_id` used for the PKCE flow. This is a public client identifier, not a secret; change it only if you have your own registered Altium application
 - `altium365.extraEnv` — extra environment variables passed to the Python process
 - `altium365.injectHelper` — inject the bundled `a365` helper module on PYTHONPATH (default: `true`)
+
+The endpoint settings, `clientId`, `scopes`, `environments` and `activeEnvironment` are read from your user settings only. VS Code ignores them in a workspace's `.vscode/settings.json`, so opening a repository cannot change where your tokens are sent. In an untrusted workspace, the workspace's `pythonPath` and `extraEnv` are ignored as well.

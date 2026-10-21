@@ -4,7 +4,7 @@ import { graphqlRequest } from './graphql';
 // Extension Points and Assignments
 // =============================================================================
 //
-// GraphQL schema verified against the live A365 Dev environment on 2026-05-28.
+// GraphQL schema verified against a live A365 environment on 2026-05-28.
 // Field names and nesting structure confirmed.
 //
 // Pagination shape (corrected 2026-06-02):
@@ -215,7 +215,7 @@ export async function listExtensionPoints(
 // Extension Points: updateAssignment (auto-update on publish)
 // =============================================================================
 //
-// GraphQL mutation verified against live A365 Dev environment. Updates an
+// GraphQL mutation verified against a live A365 environment. Updates an
 // assignment to reference the latest published script version after a
 // successful publish operation.
 

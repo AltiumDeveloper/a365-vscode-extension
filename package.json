@@ -31,6 +31,16 @@
     "onLanguage:python"
   ],
   "main": "./out/extension.js",
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": "limited",
+      "description": "Running and debugging Python scripts locally is disabled until you trust the workspace.",
+      "restrictedConfigurations": [
+        "altium365.pythonPath",
+        "altium365.extraEnv"
+      ]
+    }
+  },
   "contributes": {
     "viewsContainers": {
       "activitybar": [
@@ -191,36 +201,43 @@
       "properties": {
         "altium365.graphqlEndpoint": {
           "type": "string",
+          "scope": "application",
           "default": "https://eur.365.altium.com/napi/gateway/graphql",
           "description": "Altium 365 GraphQL endpoint URL. Used to list workspaces and as ALTIUM365_GRAPHQL_ENDPOINT for scripts."
         },
         "altium365.clientId": {
           "type": "string",
+          "scope": "application",
           "default": "4BA91DBF-BF57-4B0C-8D67-5E76CEC51A9D",
           "description": "OAuth2 client_id of the desktop application."
         },
         "altium365.authEndpoint": {
           "type": "string",
+          "scope": "application",
           "default": "https://auth.altium.com/connect/authorize",
           "description": "OAuth2 authorization endpoint."
         },
         "altium365.tokenEndpoint": {
           "type": "string",
+          "scope": "application",
           "default": "https://auth.altium.com/connect/token",
           "description": "OAuth2 token endpoint."
         },
         "altium365.actionWaitEndpoint": {
           "type": "string",
+          "scope": "application",
           "default": "https://actionwait.altium.com/await",
           "description": "Altium ActionWait long-poll endpoint used to receive the OAuth authorization code from the browser callback. Populated automatically by 'Altium Developer: Select Environment'."
         },
         "altium365.redirectUri": {
           "type": "string",
+          "scope": "application",
           "default": "https://auth.altium.com/api/AuthComplete",
           "description": "Fixed OAuth redirect URI registered with the Altium auth client (Altium-hosted authCompleted page). Must match the URI sent in both /connect/authorize and /connect/token. Populated automatically by 'Altium Developer: Select Environment'."
         },
         "altium365.scopes": {
           "type": "string",
+          "scope": "application",
           "default": "openid profile offline_access workspace:scripts.manage workspace:scripts.execute",
           "description": "Space-delimited OAuth2 scopes. Must include 'offline_access' so the IdP issues a refresh_token (required for silent token renewal on activation)."
         },
@@ -241,28 +258,14 @@
         },
         "altium365.activeEnvironment": {
           "type": "string",
+          "scope": "application",
           "default": "Prod",
           "description": "Name of the active environment from `altium365.environments`. Managed by the 'Altium Developer: Select Environment' command."
         },
         "altium365.environments": {
           "type": "object",
+          "scope": "application",
           "default": {
-            "Dev": {
-              "graphqlEndpoint": "https://usw2.dev-365.altium.com/napi/gateway/graphql",
-              "authEndpoint": "https://auth.dev1.altium.com/connect/authorize",
-              "tokenEndpoint": "https://auth.dev1.altium.com/connect/token",
-              "actionWaitEndpoint": "https://actionwait.dev1.altium.com/await",
-              "redirectUri": "https://auth.dev1.altium.com/api/AuthComplete",
-              "scopes": "openid profile offline_access workspace:scripts.manage workspace:scripts.execute"
-            },
-            "Uat": {
-              "graphqlEndpoint": "https://eur.uat-365.altium.com/napi/gateway/graphql",
-              "authEndpoint": "https://auth.uat1.altium.com/connect/authorize",
-              "tokenEndpoint": "https://auth.uat1.altium.com/connect/token",
-              "actionWaitEndpoint": "https://actionwait.uat.altium.com/await",
-              "redirectUri": "https://auth.uat1.altium.com/api/AuthComplete",
-              "scopes": "openid profile offline_access workspace:scripts.manage workspace:scripts.execute"
-            },
             "Prod": {
               "graphqlEndpoint": "https://eur.365.altium.com/napi/gateway/graphql",
               "authEndpoint": "https://auth.altium.com/connect/authorize",

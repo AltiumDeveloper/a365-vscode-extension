@@ -59,49 +59,66 @@ locally first.
 - Do not bump the version in `package.json` as part of a feature PR; releases
   are handled separately, as described below.
 
+## Using another Altium 365 environment
+
+The extension ships with the production environment only. To point a development
+build at another Altium 365 environment, add it to `altium365.environments` in your
+**user** settings, then pick it with **Altium Developer: Select Environment**. The
+setting is ignored in workspace settings.
+
+```json
+"altium365.environments": {
+  "Custom": {
+    "graphqlEndpoint": "https://<api-host>/napi/gateway/graphql",
+    "authEndpoint": "https://<auth-host>/connect/authorize",
+    "tokenEndpoint": "https://<auth-host>/connect/token",
+    "actionWaitEndpoint": "https://<actionwait-host>/await",
+    "redirectUri": "https://<auth-host>/api/AuthComplete",
+    "scopes": "openid profile offline_access workspace:scripts.manage workspace:scripts.execute"
+  }
+}
+```
+
 ## Versioning and Release Process
 
-`package.json` always carries the **base version** with patch = 0 (e.g. `0.2.0`, `1.4.0`). The CI workflow derives the actual published version from this base and the release type.
+Releases are published from version tags by the **Release** workflow
+(`.github/workflows/release.yml`). Merging to `main` publishes nothing.
 
-### Pre-release (every push to `main`)
+The Marketplace has no semver pre-release suffix, so the minor version picks the
+channel:
 
-Every push to `main` automatically publishes a **pre-release** to the VS Code Marketplace. The patch segment is replaced with `GITHUB_RUN_NUMBER` to produce a unique, monotonically increasing version (e.g. `0.2.150`). Only users who have opted into pre-release builds in VS Code receive these updates.
-
-Nothing special is required — just push to `main`.
-
-### Stable release
-
-To publish a new stable version:
-
-1. **Rename `## Unreleased` in `CHANGELOG.md`** to the new base version (e.g.
-   `## 0.5`), and leave a fresh empty `## Unreleased` heading above it.
-2. **Bump `package.json`** — increment `major` or `minor`, keep `patch` at `0`:
-   ```
-   0.2.0  →  0.3.0   (minor bump)
-   0.3.0  →  1.0.0   (major bump)
-   ```
-3. **Write the release description as the commit message.** The full commit message body becomes the GitHub Release notes, so make it human-readable.
-4. **Push to `main`.**
-
-The workflow detects that tag `v{version}` does not yet exist and runs the stable path:
-- Creates a GitHub Release tagged `v{version}` with the commit message as release notes and the `.vsix` file attached.
-- Publishes the stable version to the VS Code Marketplace (all users, not just pre-release opt-ins).
-
-No GitHub UI interaction is needed.
-
-### How detection works
-
-The workflow reads `version` from `package.json` and checks whether `v{version}` already exists as a tag on the remote:
-
-| Tag exists? | What happens |
+| Tag | Channel |
 | --- | --- |
-| **Yes** (same major.minor as a previous stable) | Pre-release: stamp `{major}.{minor}.{run_number}`, publish pre-release |
-| **No** (new major.minor) | Stable: create GitHub Release, publish stable |
+| Odd minor, e.g. `v0.5.2` | Pre-release, for users who chose **Switch to Pre-Release Version** |
+| Even minor, e.g. `v0.6.0` | Stable, all users |
+
+The workflow sets the version from the tag before packaging. `package.json` carries
+the last stable version and is only changed for a stable release.
+
+### Publishing a release
+
+1. **Stable only:** open a pull request that renames `## Unreleased` in
+   `CHANGELOG.md` to the new version (e.g. `## 0.6`), leaves a fresh empty
+   `## Unreleased` heading above it, and sets `version` in `package.json` to match.
+2. Tag the commit on `main` and push the tag:
+   ```
+   git tag v0.5.2 origin/main
+   git push origin v0.5.2
+   ```
+3. Approve the run's deployment to the `vscode-marketplace` environment. The workflow
+   runs the tests, packages the VSIX, publishes it to the Marketplace and creates a
+   GitHub Release with the VSIX attached and generated notes.
+
+A ruleset restricts creating, moving and deleting `v*` tags to repository admins. The
+Marketplace refuses a version it has already published, so each tag must be a new
+version.
 
 ### Required secrets
 
-| Secret | Purpose |
-| --- | --- |
-| `VSCE_PAT` | VS Code Marketplace Personal Access Token — create at [dev.azure.com](https://dev.azure.com) with **Marketplace (Manage)** scope |
+| Secret | Where | Purpose |
+| --- | --- | --- |
+| `VSCE_PAT` | `vscode-marketplace` environment | VS Code Marketplace Personal Access Token — create at [dev.azure.com](https://dev.azure.com) with **Marketplace (Manage)** scope |
 
-`GITHUB_TOKEN` (auto-provided by Actions) is used for creating GitHub Releases and requires no manual setup.
+The environment requires a reviewer's approval before a job can read the secret.
+`GITHUB_TOKEN` (auto-provided by Actions) is used for creating GitHub Releases and
+requires no manual setup.

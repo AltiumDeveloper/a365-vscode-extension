@@ -3,10 +3,9 @@
 All notable changes to the Altium Developer extension are documented here. The
 format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-Versioning works as described in [CONTRIBUTING.md](CONTRIBUTING.md): `package.json`
-carries the base `major.minor.0`, every push to `main` publishes a pre-release
-`major.minor.<build>`, and a minor or major bump publishes a stable release. Entries
-here are grouped by the base version, not by individual pre-release build.
+Versioning works as described in [CONTRIBUTING.md](CONTRIBUTING.md): releases are
+published from version tags, odd minor versions as pre-releases and even minor versions
+as stable. Entries here are grouped by stable version, not by individual pre-release.
 
 Entries cover what the extension does and the documentation shipped with it.
 Repository, CI and test-suite changes are not listed; see the git history for those.
@@ -30,6 +29,20 @@ git history for what changed in them.
 
 ### Security
 
+- The endpoint, client and environment settings (`graphqlEndpoint`, `clientId`,
+  `authEndpoint`, `tokenEndpoint`, `actionWaitEndpoint`, `redirectUri`, `scopes`,
+  `environments` and `activeEnvironment`) are now read from user settings only.
+  Previously a repository's `.vscode/settings.json` could set them, and opening it sent
+  your stored access token to a host of its choosing the next time the side panel
+  loaded, without asking you to sign in. If you set any of these in workspace settings,
+  move them to your user settings.
+- Local run, debug and **Install Script Dependencies** are disabled in an untrusted
+  workspace, and the workspace's `altium365.pythonPath` and `altium365.extraEnv` are
+  ignored until you trust it. Previously opening a repository could choose the
+  interpreter and environment variables for your next local run, which receives your
+  access token in `ALTIUM365_TOKEN`.
+- The `altium365.environments` default now contains only `Prod`. Other environments
+  are no longer shipped in the extension; add any you need in your user settings.
 - Running a Python script locally now shows a cancellable progress notification, and
   cancelling it stops the script and its subprocesses. Previously a script that hung or
   looped had no stop control at all and kept running until VS Code exited.

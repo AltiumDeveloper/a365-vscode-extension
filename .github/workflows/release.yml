@@ -1,0 +1,57 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions: {}
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: vscode-marketplace
+    permissions:
+      contents: write  # required for gh release create
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npm test
+
+      # The Marketplace has no semver pre-release suffix: odd minor versions
+      # publish as pre-release, even minor versions as stable.
+      - name: Set version from tag
+        id: version
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          if [[ ! "$VERSION" =~ ^[0-9]+\.([0-9]+)\.[0-9]+$ ]]; then
+            echo "Tag ${GITHUB_REF_NAME} is not vMAJOR.MINOR.PATCH" >&2
+            exit 1
+          fi
+          npm version "$VERSION" --no-git-tag-version --allow-same-version
+          echo "vsix=developer-${VERSION}.vsix" >> "$GITHUB_OUTPUT"
+          if (( BASH_REMATCH[1] % 2 )); then
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Package VSIX
+        run: npm run package -- ${{ steps.version.outputs.prerelease && '--pre-release' || '' }}
+
+      - name: Publish to Marketplace
+        run: npx @vscode/vsce publish --packagePath "$VSIX" ${{ steps.version.outputs.prerelease && '--pre-release' || '' }} --pat "$VSCE_PAT"
+        env:
+          VSIX: ${{ steps.version.outputs.vsix }}
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+
+      - name: Create GitHub Release
+        run: gh release create "$GITHUB_REF_NAME" "$VSIX" --verify-tag --generate-notes ${{ steps.version.outputs.prerelease && '--prerelease' || '' }}
+        env:
+          VSIX: ${{ steps.version.outputs.vsix }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
