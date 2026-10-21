@@ -5,8 +5,8 @@ requests and pull requests are all welcome.
 
 ## Prerequisites
 
-- Node.js 20 or later
-- VS Code 1.85 or later
+- Node.js 22 or later
+- VS Code 1.101 or later
 - Python 3.8 or later, to exercise local script run/debug
 
 ## Getting set up
