@@ -43,7 +43,7 @@ See `CONTRIBUTING.md` for how to build, test and submit changes.
 
 ## Tech Stack
 
-- TypeScript 5.4+, VS Code Extension API (≥1.85.0), Node.js ≥20
+- TypeScript 5.4+, VS Code Extension API (≥1.101.0), Node.js ≥22
 - `esbuild` bundles `src/extension.ts` to a single CJS `out/extension.js`; `tsc --noEmit` typechecks. Required because `@altium-developer/altium-auth` is ESM-only and the extension host loads CommonJS
 - `vsce` for VSIX packaging
 - `vitest` for unit testing

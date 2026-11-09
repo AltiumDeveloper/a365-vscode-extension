@@ -27,6 +27,16 @@ git history for what changed in them.
 - `README.md` now points at the VS Code Marketplace for installation, documents the
   `clientId` and `activeEnvironment` settings, and lists the correct per-environment
   override keys and the side-panel-only commands.
+- The extension now requires VS Code 1.101 or later, up from 1.85. 1.101 is the first
+  release whose extension host runs Node.js 22, which the sign-in library already
+  requires.
+
+### Fixed
+
+- Sign-in now fails straight away on a TLS certificate error, a DNS failure or an
+  unreachable host, instead of retrying until it times out. An OAuth error returned to
+  the sign-in callback, such as `access_denied`, is reported as that error instead of a
+  generic missing-code message.
 
 ### Security
 

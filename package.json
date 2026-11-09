@@ -6,8 +6,8 @@
   "publisher": "altium",
   "license": "MIT",
   "engines": {
-    "vscode": "^1.85.0",
-    "node": ">=20"
+    "vscode": "^1.101.0",
+    "node": ">=22"
   },
   "categories": [
     "Other"
@@ -523,7 +523,7 @@
     "clean": "node -e \"require('fs').rmSync('out',{recursive:true,force:true})\"",
     "compile": "npm run typecheck && npm run bundle",
     "typecheck": "tsc -p ./ --noEmit",
-    "bundle": "esbuild src/extension.ts --bundle --platform=node --format=cjs --target=node18 --external:vscode --outfile=out/extension.js --sourcemap",
+    "bundle": "esbuild src/extension.ts --bundle --platform=node --format=cjs --target=node22 --external:vscode --outfile=out/extension.js --sourcemap",
     "watch": "npm run bundle -- --watch",
     "package": "vsce package",
     "test": "vitest run --passWithNoTests",
@@ -534,7 +534,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/node": "^26.6.5",
-    "@types/vscode": "^1.85.0",
+    "@types/vscode": "^1.101.0",
     "@typescript-eslint/eslint-plugin": "^8.71.2",
     "@typescript-eslint/parser": "^8.71.2",
     "@vitest/coverage-v8": "^5.0.5",
@@ -546,6 +546,6 @@
     "vitest": "^5.0.1"
   },
   "dependencies": {
-    "@altium-developer/altium-auth": "^0.2.1"
+    "@altium-developer/altium-auth": "0.2.1"
   }
 }
