@@ -27,9 +27,12 @@ import { spawn } from 'child_process';
  */
 
 const MARKER_FILE = '.installed-marker.json';
+const MIN_PYTHON: [number, number] = [3, 10];
+const VERSION_PROBE_TIMEOUT_MS = 5000;
 
 interface InstallMarker {
     requirementsSha256: string;
+    pythonVersion?: string;
     installedAt: string;
 }
 
@@ -92,18 +95,33 @@ export async function ensureSandboxDeps(
         );
         return false;
     }
+    const version = await readPythonVersion(python);
+    if (version && isBelowMinimum(version)) {
+        vscode.window.showErrorMessage(
+            `Altium 365 needs Python ${MIN_PYTHON.join('.')} or later to run scripts locally, ` +
+                `but ${python} is Python ${version.join('.')}. ` +
+                'Set "altium365.pythonPath" to a newer interpreter.'
+        );
+        return false;
+    }
+    const pythonVersion = version?.join('.');
+
     const depsDir = getSandboxDepsDir(context);
     const currentHash = hashRequirements(reqPath);
     const marker = readMarker(depsDir);
-    if (!force && marker && marker.requirementsSha256 === currentHash) {
+    const hashMatches = marker?.requirementsSha256 === currentHash;
+    const versionMatches = !pythonVersion || marker?.pythonVersion === pythonVersion;
+    if (!force && hashMatches && versionMatches) {
         return true;
     }
 
     const reason = !marker
         ? 'not yet installed'
-        : marker.requirementsSha256 !== currentHash
+        : !hashMatches
           ? 'requirements.txt changed since last install'
-          : 'forced reinstall';
+          : !versionMatches
+            ? `installed for Python ${marker.pythonVersion ?? 'unknown'}, now running ${pythonVersion}`
+            : 'forced reinstall';
 
     if (!force) {
         const choice = await vscode.window.showInformationMessage(
@@ -138,12 +156,39 @@ export async function ensureSandboxDeps(
     }
     writeMarker(depsDir, {
         requirementsSha256: currentHash,
+        pythonVersion,
         installedAt: new Date().toISOString(),
     });
     output.appendLine(
         `[Altium 365] Sandbox dependencies installed to ${depsDir}`
     );
     return true;
+}
+
+// Undefined when the version cannot be read in time; the version checks are then skipped.
+function readPythonVersion(python: string): Promise<[number, number] | undefined> {
+    return new Promise((resolve) => {
+        const proc = spawn(python, ['-c', 'import sys; print("%d.%d" % sys.version_info[:2])']);
+        const timer = setTimeout(() => {
+            proc.kill();
+            resolve(undefined);
+        }, VERSION_PROBE_TIMEOUT_MS);
+        let stdout = '';
+        proc.stdout.on('data', (d) => (stdout += d.toString()));
+        proc.on('error', () => {
+            clearTimeout(timer);
+            resolve(undefined);
+        });
+        proc.on('close', () => {
+            clearTimeout(timer);
+            const match = /^(\d+)\.(\d+)/.exec(stdout.trim());
+            resolve(match ? [Number(match[1]), Number(match[2])] : undefined);
+        });
+    });
+}
+
+function isBelowMinimum([major, minor]: [number, number]): boolean {
+    return major < MIN_PYTHON[0] || (major === MIN_PYTHON[0] && minor < MIN_PYTHON[1]);
 }
 
 function runPipInstall(
