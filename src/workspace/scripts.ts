@@ -155,6 +155,40 @@ export async function updateScript(
     };
 }
 
+export interface DeclaredSecret {
+    name: string;
+    isMissing: boolean;
+}
+
+const SCRIPT_SECRETS_QUERY = `
+    query ScriptSecrets($scriptId: String!, $scriptVersionId: String) {
+        gloScrScriptSecrets(scriptId: $scriptId, scriptVersionId: $scriptVersionId) {
+            name
+            isMissing
+        }
+    }
+`;
+
+/** Secrets a script revision declares; omit `scriptVersionId` for the latest revision. */
+export async function getScriptSecrets(
+    endpoint: string,
+    workspaceToken: string,
+    scriptId: string,
+    scriptVersionId?: string
+): Promise<DeclaredSecret[]> {
+    const data = await graphqlRequest<{ gloScrScriptSecrets?: unknown }>(
+        endpoint,
+        workspaceToken,
+        SCRIPT_SECRETS_QUERY,
+        { scriptId, scriptVersionId: scriptVersionId ?? null }
+    );
+    const list = data?.gloScrScriptSecrets;
+    if (!Array.isArray(list)) {
+        throw new Error('gloScrScriptSecrets: unexpected response');
+    }
+    return list as DeclaredSecret[];
+}
+
 const CREATE_SCRIPT_MUTATION = `
     mutation CreateScript($input: GloScrCreateScriptInput!) {
         gloScrCreateScript(input: $input) {

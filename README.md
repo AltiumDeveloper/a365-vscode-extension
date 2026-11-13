@@ -1,6 +1,6 @@
 # Altium Developer
 
-Browse Altium 365 workspaces, run and debug Python scripts locally with live API access, and manage remote scripts — all without leaving VS Code.
+Browse Altium 365 workspaces, run and debug Python scripts locally with live API access and your own test values for script secrets, and manage remote scripts — all without leaving VS Code.
 
 ## Prerequisites
 
@@ -31,6 +31,7 @@ Scripts must define a top-level `onExecute(context, input_parameters)` function.
 - `context.auth_token` — the current Altium 365 access token (workspace-scoped when a workspace is selected)
 - `context.graphql_url` — the active GraphQL endpoint
 - `input_parameters` — a dict supplied by the active **test event** for this script (see [Test Events](#test-events) below). For local `.py` files that have never been parameterized, the extension offers a one-time import of a sibling `<script>.params.json` file if present.
+- `context.get_secret(name)` — the value of a secret, read from the local values you set (see [Secrets](#secrets) below)
 
 A bundled `a365` helper module is auto-injected onto `PYTHONPATH`, so scripts can call the Altium 365 GraphQL API directly:
 
@@ -134,6 +135,17 @@ Test events are **not** synced via Settings Sync. This is intentional: parameter
 
 If you store more than 25 events for one script, the extension surfaces a one-time non-blocking toast suggesting you delete unused ones. The warning fires only once per script over the extension's lifetime.
 
+## Secrets
+
+Scripts read workspace secrets with `context.get_secret("NAME")`. Remote executions get the values stored in Altium 365. Altium 365 never returns secret values, so for local Run and Debug you supply your own test values.
+
+- **Which secrets a run needs.** For a script that lives in Altium 365, the extension asks the server which secrets the script declares. For a local `.py` file, it looks for `get_secret("NAME")` calls with a literal name in the source.
+- **Prompting.** When a run needs a secret that has no local value yet, the extension prompts for it after the test event is resolved. Cancelling the prompt cancels the run.
+- **Matching the platform.** A run of an Altium 365 script receives only the secrets that script declares, so a name the script does not declare raises `SecretNotFoundError`, as it would on the server. A declared secret that was deleted from the workspace is not passed, and the Output channel says so. If the declared secrets cannot be read, for example because your account cannot manage scripts in that workspace, the extension prompts for the names it finds in the source, as it does for a local file, and the run receives every local value stored for the workspace. A local `.py` file always receives every local value stored for the workspace.
+- **Storage.** Values are stored in VS Code's secret storage, one set per workspace, so every script in a workspace shares them. They are not stored with test events and are kept when you sign out. Use **Set Local Secret** and **Clear Local Secrets** to change or remove them. **Set Local Secret** is also offered in the test event picker.
+- **During a run.** Values are written to a temporary file that only the current user can read, and the script finds it through the `SECRETS_FILE_PATH` environment variable. The file is deleted when the run or debug session ends. The Output channel lists the secret names passed to a run, never their values.
+- **Publishing.** Publishing a script keeps the secrets it declares. If a new version ends up declaring fewer secrets than the previous one, the extension shows a warning.
+
 ## Commands Reference
 
 All commands are prefixed with **Altium Developer:**. Most are available in the Command Palette; the ones marked **side panel** are offered only from the context menus of the **Workspaces** view in the Altium Developer side panel.
@@ -168,6 +180,12 @@ All commands are prefixed with **Altium Developer:**. Most are available in the 
 | Edit Test Event | Open an event's JSON in a tab (via `altium365-event:` scheme) |
 | Delete Test Event | Remove an event (with confirmation) |
 | Set Default Test Event | Mark an event as the default for Run/Debug/Execute |
+
+### Secrets
+| Command | Description |
+| --- | --- |
+| Set Local Secret | Sets the local value of a secret for the active script's workspace, or the selected workspace |
+| Clear Local Secrets | Removes local secret values for that workspace |
 
 ### Tooling & Setup
 | Command | Description |

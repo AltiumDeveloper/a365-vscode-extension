@@ -10,6 +10,7 @@ import { registerLocalScriptSaveBridge, getLocalScript, rehydrateLocalScriptCach
 import { TestEventFs } from './testEvents/eventFs';
 import { registerTestEventCommands } from './testEvents/commands';
 import { registerTestEventStatusItem } from './testEvents/statusItem';
+import { registerSecretCommands } from './secrets/commands';
 import { registerPythonAnalysisSync } from './runner/pythonAnalysis';
 import { registerRunLifecycle, resolvePythonPath } from './runner';
 import { resolveConfig } from './config';
@@ -196,6 +197,7 @@ export async function activate(context: vscode.ExtensionContext) {
         ...scriptCommandDisposables,
         ...treeCommandDisposables,
         ...testEventCommandDisposables,
+        ...registerSecretCommands(context),
         ...testEventStatusDisposables,
         localScriptSaveBridge,
         ...pythonAnalysisSyncDisposables

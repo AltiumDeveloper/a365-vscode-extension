@@ -84,6 +84,16 @@
         "category": "Altium Developer"
       },
       {
+        "command": "altium365.secrets.set",
+        "title": "Set Local Secret",
+        "category": "Altium Developer"
+      },
+      {
+        "command": "altium365.secrets.clear",
+        "title": "Clear Local Secrets",
+        "category": "Altium Developer"
+      },
+      {
         "command": "altium365.signIn",
         "title": "Sign In",
         "category": "Altium Developer"

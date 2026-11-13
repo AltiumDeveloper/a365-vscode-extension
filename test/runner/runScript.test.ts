@@ -5,6 +5,7 @@ import * as path from 'path';
 import { spawn } from 'child_process';
 import { debug, debugSessionTerminated, makeExtensionContext, window } from '../__mocks__/vscode';
 import { debugScriptAtPath, registerRunLifecycle, runScriptAtPath } from '../../src/runner';
+import { resolveRunSecrets } from '../../src/secrets';
 
 const unlinked: string[] = [];
 const written: string[] = [];
@@ -75,6 +76,12 @@ vi.mock('../../src/testEvents/identity', () => ({
 vi.mock('../../src/testEvents/resolver', () => ({
     resolveScriptParameters: async () => [{ key: 'projectId', value: 'abc' }],
 }));
+
+vi.mock('../../src/secrets', () => ({
+    resolveRunSecrets: vi.fn(async () => ({})),
+}));
+
+const SECRET_VALUE = 'very-secret-value';
 
 const appendLine = vi.fn();
 const output = { appendLine, append: () => {}, show: () => {} } as never;
@@ -209,6 +216,34 @@ describe('runScriptAtPath lifetime', () => {
         await done;
     });
 
+    it('writes secrets to their own private file, passes only its path, and removes it after the run', async () => {
+        vi.mocked(resolveRunSecrets).mockResolvedValueOnce({ API_KEY: SECRET_VALUE });
+        const done = run();
+        await flush();
+        const secretsPath = written.find((p) => p.includes('altium365-secrets-'));
+        const secretsWrite = vi.mocked(fs.writeFileSync).mock.calls.find((c) => c[0] === secretsPath);
+        const env = vi.mocked(spawn).mock.calls[0]?.[2]?.env;
+        spawned[0].exit(0);
+        await done;
+
+        expect(secretsWrite?.[1]).toContain(SECRET_VALUE);
+        expect(secretsWrite?.[2]).toMatchObject({ mode: 0o600 });
+        expect(env?.SECRETS_FILE_PATH).toBe(secretsPath);
+        expect(JSON.stringify(env)).not.toContain(SECRET_VALUE);
+        expect(JSON.stringify(appendLine.mock.calls)).not.toContain(SECRET_VALUE);
+        expect(appendLine).toHaveBeenCalledWith(expect.stringContaining('API_KEY'));
+        expect(unlinked).toEqual(written);
+        expect(written).toHaveLength(2);
+    });
+
+    it('does not start the script when a secret prompt is cancelled', async () => {
+        vi.mocked(resolveRunSecrets).mockResolvedValueOnce(undefined);
+        await run();
+
+        expect(spawned).toEqual([]);
+        expect(written).toEqual([]);
+    });
+
     it('logs when the params file cannot be removed', async () => {
         vi.mocked(fs.unlinkSync).mockImplementationOnce(() => {
             throw Object.assign(new Error('permission denied'), { code: 'EACCES' });
@@ -240,6 +275,29 @@ describe('debugScriptAtPath lifetime', () => {
         debugSessionTerminated.fire({ configuration: cfg });
         expect(unlinked).toEqual(written);
         lifecycle.dispose();
+    });
+
+    it('removes the secrets file when the debug session ends', async () => {
+        vi.mocked(resolveRunSecrets).mockResolvedValueOnce({ API_KEY: SECRET_VALUE });
+        const lifecycle = registerRunLifecycle(output);
+        await debugScriptAtPath(makeExtensionContext(), output, scriptPath);
+        const cfg = debug.startDebugging.mock.calls[0]?.[1];
+        expect(JSON.stringify(cfg)).not.toContain(SECRET_VALUE);
+
+        debugSessionTerminated.fire({ configuration: cfg });
+        expect(written).toHaveLength(2);
+        expect(unlinked).toEqual(written);
+        lifecycle.dispose();
+    });
+
+    it('removes the secrets file at shutdown when the debug session is still open', async () => {
+        vi.mocked(resolveRunSecrets).mockResolvedValueOnce({ API_KEY: SECRET_VALUE });
+        const lifecycle = registerRunLifecycle(output);
+        await debugScriptAtPath(makeExtensionContext(), output, scriptPath);
+
+        lifecycle.dispose();
+        expect(written).toHaveLength(2);
+        expect(unlinked).toEqual(written);
     });
 
     it('removes the params file when the debugger fails to start', async () => {

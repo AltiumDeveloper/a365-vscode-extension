@@ -91,6 +91,12 @@ describe('buildPickerItems', () => {
         expect(items.some(i => i.label?.includes('Create new'))).toBe(false);
         expect(items.some(i => i.label?.includes('Edit Test'))).toBe(false);
         expect(items.some(i => i.label?.includes('Delete Test'))).toBe(false);
+        expect(items.some(i => i.action === 'secrets')).toBe(false);
+    });
+
+    it('offers Set Local Secret alongside the test event actions', () => {
+        const items = buildPickerItems(undefined, {});
+        expect(items.find(i => i.action === 'secrets')?.label).toContain('Set Local Secret');
     });
 
     it('includes Edit and Delete actions when events exist in non-eventsOnly mode', () => {

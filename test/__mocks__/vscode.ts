@@ -74,6 +74,7 @@ export const window = {
     showInformationMessage: vi.fn(),
     showWarningMessage: vi.fn(),
     showQuickPick: vi.fn(),
+    showInputBox: vi.fn(),
     createQuickPick: vi.fn(),
     setStatusBarMessage: vi.fn(),
     withProgress: vi.fn(
