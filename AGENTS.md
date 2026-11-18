@@ -32,6 +32,7 @@ See `CONTRIBUTING.md` for how to build, test and submit changes.
 - Test events stored in `context.globalState` under `altium365.scriptParams.<identity>` — NOT synced via Settings Sync
 - Script identity = local absolute path OR `(workspaceId, scriptId)` for remote scripts
 - Status bar indicator shows active Python editor's default test event
+- Endpoint, auth and environment settings are `application`-scoped, so a workspace cannot set them. Anything that spawns Python calls `requireTrustedWorkspace()` first
 
 ## Key shipped features
 

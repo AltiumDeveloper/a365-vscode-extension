@@ -145,12 +145,25 @@ export async function resolvePythonPath(): Promise<string> {
     return process.platform === 'win32' ? 'python' : 'python3';
 }
 
+export function requireTrustedWorkspace(): boolean {
+    if (vscode.workspace.isTrusted) {
+        return true;
+    }
+    vscode.window.showErrorMessage(
+        'Running Python scripts locally is disabled in Restricted Mode. Trust this workspace to enable it.'
+    );
+    return false;
+}
+
 async function prepareRun(
     context: vscode.ExtensionContext,
     outputChannel: vscode.OutputChannel,
     uriOrPath?: vscode.Uri | string,
     target?: { workspaceId: string; workspaceAuthId: string }
 ): Promise<RunPrep | undefined> {
+    if (!requireTrustedWorkspace()) {
+        return undefined;
+    }
     let targetUri: vscode.Uri | undefined =
         typeof uriOrPath === 'string' ? vscode.Uri.file(uriOrPath) : uriOrPath;
     if (!targetUri) {

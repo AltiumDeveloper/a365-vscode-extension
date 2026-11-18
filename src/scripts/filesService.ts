@@ -4,11 +4,11 @@
  * The Files Service exposes raw script source bytes — GraphQL only carries
  * file *tokens* (UUIDs); the actual byte content flows over a separate REST
  * service whose contract is NOT introspectable. The endpoints, verbs, body
- * shape, and response envelope below are encoded from a live dev1 portal
+ * shape, and response envelope below are encoded from a live portal
  * smoke-probe captured by an operator on 2026-05-20. Re-verify if portal
  * traffic visibly changes.
  *
- * Pinned contract (operator-captured 2026-05-20, dev1 portal):
+ * Pinned contract (operator-captured 2026-05-20):
  *
  *   DOWNLOAD (read script body)
  *     - URL:    `${filesServiceUrl}/File/Download?id=${fileToken}`
@@ -38,7 +38,7 @@
  *   truncated to 500 characters; `Authorization` header is never echoed.
  */
 
-// Pinned smoke-probe constants — operator-captured 2026-05-20 (dev1 portal).
+// Pinned smoke-probe constants — operator-captured 2026-05-20.
 const DOWNLOAD_PATH_PREFIX = '/File/Download'; // `?id=<token>` query string
 const UPLOAD_PATH = '/File/Upload';             // multipart POST
 const UPLOAD_FORM_FIELD = 'file';               // multipart field name

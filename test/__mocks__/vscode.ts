@@ -92,6 +92,7 @@ export enum ConfigurationTarget { Global = 1, Workspace = 2, WorkspaceFolder = 3
 
 // ── workspace stubs ───────────────────────────────────────────────
 export const workspace = {
+    isTrusted: true,
     getConfiguration: vi.fn((): { get: (key: string) => unknown } => ({
         get: vi.fn(() => undefined),
     })),
